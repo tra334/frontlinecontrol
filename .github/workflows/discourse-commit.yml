@@ -15,26 +15,30 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Publish commits to Discourse
+      - name: Publish detailed commit topics
         env:
           DISCOURSE_URL: ${{ secrets.DISCOURSE_URL }}
           DISCOURSE_API_KEY: ${{ secrets.DISCOURSE_API_KEY }}
           DISCOURSE_API_USERNAME: ${{ secrets.DISCOURSE_API_USERNAME }}
-          COMMITS: ${{ toJSON(github.event.commits) }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPOSITORY: ${{ github.repository }}
+          COMMITS: ${{ toJSON(github.event.commits) }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_SHA: ${{ github.sha }}
         run: |
           python - <<'PY'
-          import json
           import os
+          import json
           import urllib.request
           import urllib.error
           import urllib.parse
+          import html
 
           base = os.environ["DISCOURSE_URL"].rstrip("/")
           api_key = os.environ["DISCOURSE_API_KEY"]
           username = os.environ["DISCOURSE_API_USERNAME"]
           repo = os.environ["REPOSITORY"]
-          commits = json.loads(os.environ.get("COMMITS") or "[]")
+          github_token = os.environ["GITHUB_TOKEN"]
 
           headers = {
               "Api-Key": api_key,
@@ -42,54 +46,144 @@ jobs:
               "Accept": "application/json"
           }
 
-          def post_topic(title, raw):
-              payload = urllib.parse.urlencode({
-                  "title": title,
-                  "raw": raw,
-                  "category": "7"
-              }).encode()
-
+          def discourse_post(path, data):
+              payload = urllib.parse.urlencode(data).encode()
               request = urllib.request.Request(
-                  base + "/posts.json",
+                  base + path,
                   data=payload,
                   headers=headers,
                   method="POST"
               )
-
               with urllib.request.urlopen(request, timeout=30) as response:
                   return json.load(response)
 
+          def github_commit(sha):
+              request = urllib.request.Request(
+                  f"https://api.github.com/repos/{repo}/commits/{sha}",
+                  headers={
+                      "Authorization": f"Bearer {github_token}",
+                      "Accept": "application/vnd.github+json",
+                      "X-GitHub-Api-Version": "2022-11-28"
+                  }
+              )
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  return json.load(response)
+
+          commits = json.loads(os.environ.get("COMMITS") or "[]")
+
+          # Manual runs publish the selected event commit.
+          if not commits and os.environ["EVENT_NAME"] == "workflow_dispatch":
+              commits = [{"id": os.environ["EVENT_SHA"],
+                          "message": "Manual update"}]
+
           if not commits:
-              print("No commits supplied by this event.")
-              print("The workflow ran successfully.")
+              print("No commits found for this event.")
               raise SystemExit(0)
 
-          for commit in commits:
-              sha = commit.get("id", "")
+          for item in commits:
+              sha = item.get("id", "")
               if not sha:
                   continue
 
-              message = commit.get("message", "Code update").splitlines()[0]
-              author = commit.get("author", {}).get("name", "Unknown")
-              commit_url = f"https://github.com/{repo}/commit/{sha}"
-
-              title = f"Commit: {message}"[:250]
-              raw = (
-                  f"**Repository:** `{repo}`\n\n"
-                  f"**Author:** {author}\n\n"
-                  f"**Commit:** `{sha[:7]}`\n\n"
-                  f"**Message:** {message}\n\n"
-                  f"[View commit on GitHub]({commit_url})"
+              details = github_commit(sha)
+              commit_data = details.get("commit", {})
+              message = commit_data.get("message", "Code update").splitlines()[0]
+              author = (
+                  (details.get("author") or {}).get("login")
+                  or commit_data.get("author", {}).get("name", "Unknown")
+              )
+              files = details.get("files", [])
+              stats = details.get("stats", {})
+              commit_url = details.get(
+                  "html_url",
+                  f"https://github.com/{repo}/commit/{sha}"
               )
 
+              added = [f for f in files if f.get("status") == "added"]
+              modified = [f for f in files if f.get("status") == "modified"]
+              removed = [f for f in files if f.get("status") == "removed"]
+              renamed = [f for f in files if f.get("status") == "renamed"]
+
+              lines = [
+                  "# Frontline Control — Development Update",
+                  "",
+                  f"**Commit:** `{sha[:7]}`",
+                  f"**Author:** {author}",
+                  f"**Repository:** `{repo}`",
+                  "",
+                  "## Summary",
+                  "",
+                  message,
+                  "",
+                  "## Change statistics",
+                  "",
+                  f"- Files changed: **{len(files)}**",
+                  f"- Lines added: **{stats.get('additions', 0)}**",
+                  f"- Lines removed: **{stats.get('deletions', 0)}**",
+                  "",
+                  "## Files changed",
+                  ""
+              ]
+
+              if not files:
+                  lines.append("GitHub did not return a file list for this commit.")
+              else:
+                  for file in files[:100]:
+                      status = file.get("status", "changed")
+                      name = file.get("filename", "Unknown file")
+                      additions = file.get("additions", 0)
+                      deletions = file.get("deletions", 0)
+                      lines.append(
+                          f"- **{status.title()}** `{name}` "
+                          f"(+{additions} / -{deletions})"
+                      )
+
+              lines += [
+                  "",
+                  "## Change overview",
+                  "",
+                  f"This commit changed {len(files)} file(s), "
+                  f"adding {stats.get('additions', 0)} line(s) "
+                  f"and removing {stats.get('deletions', 0)} line(s)."
+              ]
+
+              if added:
+                  lines.append(
+                      f"- New files: {len(added)}"
+                  )
+              if modified:
+                  lines.append(
+                      f"- Modified files: {len(modified)}"
+                  )
+              if removed:
+                  lines.append(
+                      f"- Deleted files: {len(removed)}"
+                  )
+              if renamed:
+                  lines.append(
+                      f"- Renamed files: {len(renamed)}"
+                  )
+
+              lines += [
+                  "",
+                  f"[View full commit and code diff on GitHub]({commit_url})"
+              ]
+
+              title = f"Update: {message}"[:250]
+              raw = "\n".join(lines)
+
               try:
-                  result = post_topic(title, raw)
+                  result = discourse_post("/posts.json", {
+                      "title": title,
+                      "raw": raw,
+                      "category": "7"
+                  })
                   print(
-                      f"Published {sha[:7]} "
-                      f"as topic {result.get('topic_id')}"
+                      f"Published {sha[:7]} as topic "
+                      f"{result.get('topic_id')}"
                   )
               except urllib.error.HTTPError as error:
-                  print(f"Discourse returned HTTP {error.code}.")
+                  print(f"Discourse returned HTTP {error.code}")
                   print(error.read().decode()[:1000])
                   raise
 
