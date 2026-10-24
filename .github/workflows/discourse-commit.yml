@@ -1,0 +1,88 @@
+
+name: Publish commits to Discourse
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Publish commits to Discourse
+        env:
+          DISCOURSE_URL: ${{ secrets.DISCOURSE_URL }}
+          DISCOURSE_API_KEY: ${{ secrets.DISCOURSE_API_KEY }}
+          DISCOURSE_API_USERNAME: ${{ secrets.DISCOURSE_API_USERNAME }}
+          COMMITS: ${{ toJSON(github.event.commits) }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import urllib.request
+          import urllib.error
+          import urllib.parse
+
+          base = os.environ["DISCOURSE_URL"].rstrip("/")
+          headers = {
+              "Api-Key": os.environ["DISCOURSE_API_KEY"],
+              "Api-Username": os.environ["DISCOURSE_API_USERNAME"],
+              "Accept": "application/json"
+          }
+          repo = os.environ["REPOSITORY"]
+          commits = json.loads(os.environ.get("COMMITS") or "[]")
+
+          def api(path, data=None):
+              if data is not None:
+                  data = urllib.parse.urlencode(data).encode()
+              req = urllib.request.Request(
+                  base + path,
+                  data=data,
+                  headers=headers,
+                  method="POST" if data is not None else "GET"
+              )
+              with urllib.request.urlopen(req, timeout=30) as response:
+                  return json.load(response)
+
+          categories = api("/categories.json")
+          available = categories["category_list"]["categories"]
+          category = next(
+              (c for c in available
+               if c["name"].lower() == "development updates"),
+              None
+          )
+
+          if not category:
+              raise RuntimeError(
+                  "Create the Development Updates category in Discourse first."
+              )
+
+          for commit in commits:
+              sha = commit.get("id", "")
+              if not sha:
+                  continue
+
+              message = commit.get("message", "Code update").splitlines()[0]
+              author = commit.get("author", {}).get("name", "Unknown")
+              url = f"https://github.com/{repo}/commit/{sha}"
+
+              result = api("/posts.json", {
+                  "title": f"Commit: {message}"[:250],
+                  "category": category["id"],
+                  "raw": (
+                      f"**Repository:** `{repo}`\n\n"
+                      f"**Author:** {author}\n\n"
+                      f"**Commit:** `{sha[:7]}`\n\n"
+                      f"[View commit on GitHub]({url})"
+                  )
+              })
+              print(f"Published commit {sha[:7]} as topic {result.get('topic_id')}")
+
+          PY
