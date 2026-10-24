@@ -322,7 +322,7 @@ const T=[
 ["a","Cat 1 – advanced life support","“He’s collapsed and turned blue.”",{dca:1,ccc:1,"tr:advpara":1},60,1300],
 ["a","Cat 2 – remote rescue","“Walker’s fallen off the hillside, we can’t reach him.”",{air:1,dca:1},80,1700],
 ["a","Cat 3 – cyclist down","“Cyclist came off, grazed and sore.”",{bike:1},30,250],
-["p","Welfare check","“I haven’t seen my neighbour for days and I’m really worried about them.”",{irv:1},50,400]];
+["p","Welfare check","“I haven’t seen my neighbour for days and I’m worried about them.”",{irv:1},50,400]];
 const FACT={f:["Crews on scene, building is well alight.","Fire’s contained for now.","Neighbours evacuated to the street."],p:["Officers on scene, area is secure.","Witnesses giving statements.","Suspect has left the area."],a:["Crew with patient, observations ongoing.","Patient conscious and talking.","Family members at the scene."]};
 const GC=["","#dc2626","#f97316","#eab308","#64748b"],GO={"Burglary in progress":2,"Domestic disturbance":2,"Drink driver":2,"Missing child":1,"House fire":1,"Armed robbery":1,"Fatal collision":1,"Stolen vehicle pursuit":2,"Chemical spill":1,"Person in river":1,"Mental health crisis":2,"Suspicious death":2,"Car fire":3,"Welfare check":3};
 const gr=k=>{const t=T[k],c=/^Cat (\d)/.exec(t[1]);return c?+c[1]:GO[t[1]]||(t[5]>=2000?1:t[5]>=1000?2:t[5]>=450?3:4)},gch=g=>`<span class="gd" style="background:${GC[g]};color:${g===3?"#000":"#fff"}">G${g}</span>`;
