@@ -9,10 +9,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - name: Deploy (SFTP)
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
         with:
           server: ${{ secrets.FTP_SERVER }}
+          port: 22
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          server-dir: /public/
+          local_path: './*'
+          remote_path: '/public'
+          sftp_only: true
