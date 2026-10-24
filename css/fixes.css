@@ -1,0 +1,24 @@
+/* ---- scroll fixes ---- */
+main,#sheet,#plb,#rlb{overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+@media(max-width:999px){
+#sw{width:100%;max-width:760px;display:flex;flex-direction:column;position:relative;max-height:88vh;max-height:88dvh;min-height:0}
+#sheet{flex:1 1 auto;min-height:0;max-height:none}
+}
+@media(min-width:1000px){
+#sw{max-height:86vh;min-height:0}
+#sheet{flex:1 1 auto;min-height:0;max-height:none}
+#pl{contain:size}
+}
+
+input,select,textarea{font-size:16px!important}
+
+/* ---- toast must never cover an open modal (dispatch Send button / tabs) ---- */
+body.tm #toast{top:calc(env(safe-area-inset-top,0px) + 8px)}
+body.tm #modal{padding-top:calc(var(--th,0px) + env(safe-area-inset-top,0px) + 16px)}
+@media(max-width:999px){body.tm #sw{max-height:min(88vh,calc(100vh - var(--th,0px) - env(safe-area-inset-top,0px) - 16px));max-height:min(88dvh,calc(100dvh - var(--th,0px) - env(safe-area-inset-top,0px) - 16px))}}
+@media(min-width:1000px){body.tm #toast{top:12px}body.tm #modal{padding-top:calc(var(--th,0px) + 24px)}body.tm #sw{max-height:min(86vh,calc(100vh - var(--th,0px) - 36px))}}
+/* status bubble: bold, text centred in the pill */
+.u{align-items:center;gap:10px}.u .st{flex:none;min-width:98px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;text-align:center;font-size:12px;font-weight:800;line-height:1.2;padding:4px 10px}
+/* close X: fixed to the top-right of the panel on its own opaque bar, so scrolling content never slides under it */
+#sw::before{content:"";position:absolute;top:1px;left:1px;right:1px;height:42px;background:var(--bg);border-bottom:1px solid var(--bd);border-radius:11px 11px 0 0;z-index:1;pointer-events:none}
+#sheet{padding-top:50px!important}#xb{top:7px!important;right:9px!important;z-index:3!important}
