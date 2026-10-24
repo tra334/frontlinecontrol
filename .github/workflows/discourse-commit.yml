@@ -31,43 +31,38 @@ jobs:
           import urllib.parse
 
           base = os.environ["DISCOURSE_URL"].rstrip("/")
-          headers = {
-              "Api-Key": os.environ["DISCOURSE_API_KEY"],
-              "Api-Username": os.environ["DISCOURSE_API_USERNAME"],
-              "Accept": "application/json"
-          }
+          api_key = os.environ["DISCOURSE_API_KEY"]
+          username = os.environ["DISCOURSE_API_USERNAME"]
           repo = os.environ["REPOSITORY"]
           commits = json.loads(os.environ.get("COMMITS") or "[]")
 
-          def api(path, data=None):
-              if data is not None:
-                  data = urllib.parse.urlencode(data).encode()
-              req = urllib.request.Request(
-                  base + path,
-                  data=data,
+          headers = {
+              "Api-Key": api_key,
+              "Api-Username": username,
+              "Accept": "application/json"
+          }
+
+          def post_topic(title, raw):
+              payload = urllib.parse.urlencode({
+                  "title": title,
+                  "raw": raw,
+                  "category": "7"
+              }).encode()
+
+              request = urllib.request.Request(
+                  base + "/posts.json",
+                  data=payload,
                   headers=headers,
-                  method="POST" if data is not None else "GET"
+                  method="POST"
               )
-              with urllib.request.urlopen(req, timeout=30) as response:
+
+              with urllib.request.urlopen(request, timeout=30) as response:
                   return json.load(response)
 
-          # Find the existing Updates category
-          categories = api("/categories.json")
-          available = categories["category_list"]["categories"]
-
-          category = next(
-              (c for c in available
-               if c["name"].strip().lower() == "updates"),
-              None
-          )
-
-          if not category:
-              raise RuntimeError(
-                  "Could not find the Updates category. "
-                  "Check its name and API permissions."
-              )
-
-          print(f"Using category: {category['name']} (ID {category['id']})")
+          if not commits:
+              print("No commits supplied by this event.")
+              print("The workflow ran successfully.")
+              raise SystemExit(0)
 
           for commit in commits:
               sha = commit.get("id", "")
@@ -76,7 +71,7 @@ jobs:
 
               message = commit.get("message", "Code update").splitlines()[0]
               author = commit.get("author", {}).get("name", "Unknown")
-              url = f"https://github.com/{repo}/commit/{sha}"
+              commit_url = f"https://github.com/{repo}/commit/{sha}"
 
               title = f"Commit: {message}"[:250]
               raw = (
@@ -84,18 +79,18 @@ jobs:
                   f"**Author:** {author}\n\n"
                   f"**Commit:** `{sha[:7]}`\n\n"
                   f"**Message:** {message}\n\n"
-                  f"[View commit on GitHub]({url})"
+                  f"[View commit on GitHub]({commit_url})"
               )
 
-              result = api("/posts.json", {
-                  "title": title,
-                  "category": category["id"],
-                  "raw": raw
-              })
-
-              print(
-                  f"Published commit {sha[:7]} "
-                  f"as topic {result.get('topic_id')}"
-              )
+              try:
+                  result = post_topic(title, raw)
+                  print(
+                      f"Published {sha[:7]} "
+                      f"as topic {result.get('topic_id')}"
+                  )
+              except urllib.error.HTTPError as error:
+                  print(f"Discourse returned HTTP {error.code}.")
+                  print(error.read().decode()[:1000])
+                  raise
 
           PY
