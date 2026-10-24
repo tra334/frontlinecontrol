@@ -1,7 +1,7 @@
 const full=m=>{const t=T[m.k];return mrg(m.hid?mrg(t[3],m.hid.n):t[3],m.xn||{})},shown=m=>mrg(m.hid&&m.rev?mrg(T[m.k][3],m.hid.n):T[m.k][3],m.xn||{});
 const has=(u,k)=>k.startsWith("tr:")?(u.tr||[]).includes(k.slice(3)):u.ty===k,nm=k=>k.startsWith("tr:")?"🎓 "+TR[k.slice(3)][0]:U[k][1],need=(nd,u)=>Object.keys(nd).some(k=>has(u,k))?1:0,kr=k=>k.startsWith("tr:")?TR[k.slice(3)][2]:U[k][3],ks=(k,t)=>k.startsWith("tr:")?t[0]:U[k][0];
 const cadGen=()=>{const d=new Date();return "CAD: "+(1000+Math.floor(Math.random()*9000))+String(d.getDate()).padStart(2,"0")+["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"][d.getMonth()]+String(d.getFullYear()).slice(-2)};
-const ringH=m=>{const d=T[m.k][4]*1000,p=m.end?Math.min(1,Math.max(0,1-(m.end-now())/d)):0,C=2*Math.PI*14.5,L=Math.round((1-p)*100)/100*C;return L<=0?"":`<svg viewBox="0 0 32 32" style="position:absolute;left:-3px;top:-3px;width:32px;height:32px;pointer-events:none"><circle cx="16" cy="16" r="14.5" fill="none" stroke="#22c55e" stroke-width="3" stroke-dasharray="${L.toFixed(2)} ${C.toFixed(2)}" transform="rotate(${(-90+360*p).toFixed(1)} 16 16)"/></svg>`};
+const ringH=m=>{const d=T[m.k][4]*1000,p=wk(m)?Math.min(1,Math.max(0,1-(m.end-now())/d)):0,C=2*Math.PI*14.5,L=Math.round((1-p)*100)/100*C;return L<=0?"":`<svg viewBox="0 0 32 32" style="position:absolute;left:-3px;top:-3px;width:32px;height:32px;pointer-events:none"><circle cx="16" cy="16" r="14.5" fill="none" stroke="#22c55e" stroke-width="3" stroke-dasharray="${L.toFixed(2)} ${C.toFixed(2)}" transform="rotate(${(-90+360*p).toFixed(1)} 16 16)"/></svg>`};
 const cadOf=m=>{if(m.cad&&m.cad.indexOf("CAD: ")!==0)m.cad=m.cad.replace(/^CAD:?\s*/,"CAD: ");return m.cad||(m.cad=cadGen())};
 const onS=(m,k)=>S.un.filter(u=>u.mid===m.id&&u.st==="scene"&&has(u,k)).length,asg=(m,k)=>S.un.filter(u=>u.mid===m.id&&has(u,k)).length;
 const sk=()=>S.st.map(s=>s.name+(s.lv||0)).join()+S.un.length+"-"+S.st.length+"-"+S.hs.map(x=>x.name).join()+"-"+rank()+"-"+Math.floor(S.cr/500)+"-"+S.un.map(u=>u.st+u.cs+u.tr.length).join(",")+"-"+EXP.size+"-"+hTab+S.hs.map(h=>hpts(h).map(p=>p.id).join(".")).join("|")+"|"+S.st.map(x=>(x.cl?1:0)+"."+hpts(x).length).join(",");
@@ -12,7 +12,7 @@ const fpc=(la,lo)=>{const L="ABDEFGHJLNPQRSTUWXYZ",r=()=>L[Math.floor(Math.rando
 const NM=["James","Sarah","Mohammed","Emma","Oliver","Priya","Callum","Aoife","Gareth","Chloe"],NS=["Smith","Jones","Patel","Taylor","Williams","Brown","Murphy","Khan","Davies","Wilson"];
 async function addr(la,lo,road){const j=await J("https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&addressdetails=1&lat="+la+"&lon="+lo),a=(j&&j.address)||{},t=a.town||a.village||a.city||a.suburb||a.hamlet||near(la,lo),c=a.county||a.state_district||"";
 return{s:(a.house_number||Math.ceil(R(1,98)))+" "+(a.road||road||pick(ROADS)),t:t+(c&&c!==t?", "+c:""),pc:a.postcode||fpc(la,lo)}}
-const met=m=>Object.entries(full(m)).every(([k,n])=>onS(m,k)>=n);
+const met=m=>Object.entries(full(m)).every(([k,n])=>onS(m,k)>=n),wk=m=>!!m.end&&m.pz==null&&met(m);
 let spb=0;
 // mission distance from its station: 1-8 km, 2-6 km most likely
 const KMW=[4,12,18,20,18,12,6,4];
@@ -60,9 +60,9 @@ const needTr=m=>{const k=tdKind(m);if(!k)return false;const on=S.un.filter(u=>u.
 if(k==="h")return on.some(u=>u.ty==="dca"||u.ty==="air")&&S.hs.some(x=>x.ty!=="pn"&&hbusy(x)<HBEDS[x.ty]);
 return on.some(u=>PT.has(u.ty))&&(S.hs.some(x=>x.ty==="pn"&&hbusy(x)<HBEDS.pn)||S.st.some(x=>x.cl&&hbusy(x)<CELLCAP))};
 function holdTr(m){if(m.td||window._sim||!needTr(m))return false;if(!m._h){m._h=1;dirty=true;const k=tdKind(m),x="⏸ "+T[m.k][1]+" complete – select where to take the "+(k==="h"?"patient":"prisoner")+" to close the call.";log(x,1,m.id);rtoast(x)}return true}
-const remT=m=>{if(!m.end)return"";if(m._h&&!m.td&&!m.hold0)return"";const l=Math.max(0,Math.ceil((m.end-now())/1000));return"⏱ "+Math.floor(l/60)+":"+String(l%60).padStart(2,"0")+" until call completion"};
-const trqH=m=>m._h&&!m.td&&m.end?`<div class="trq" onclick="event.stopPropagation();openQ(${m.id})">🚨 TRANSPORT REQUIRED<span>Tap to choose destination</span></div>`:"";
-const remH=m=>m.end?`<div class="mu" style="font-size:12px;margin-top:3px;font-variant-numeric:tabular-nums">${remT(m)}</div>`:"";
+const remT=m=>{if(!wk(m))return"";if(m._h&&!m.td&&!m.hold0)return"";const l=Math.max(0,Math.ceil((m.end-now())/1000));return"⏱ "+Math.floor(l/60)+":"+String(l%60).padStart(2,"0")+" until call completion"};
+const trqH=m=>m._h&&!m.td&&wk(m)?`<div class="trq" onclick="event.stopPropagation();openQ(${m.id})">🚨 TRANSPORT REQUIRED<span>Tap to choose destination</span></div>`:"";
+const remH=m=>wk(m)?`<div class="mu" style="font-size:12px;margin-top:3px;font-variant-numeric:tabular-nums">${remT(m)}</div>`:"";
 function setTD(id,v){const m=mm(id);if(!m||!v)return;m.td=v;dirty=true;persist();if(curM===id&&!$("#modal").hidden)closeM();else paint()}
 const tdH=m=>{const k=tdKind(m);if(!k||!m._h||m.td)return"";const L=(k==="h"?S.hs.filter(x=>x.ty!=="pn"):S.hs.filter(x=>x.ty==="pn").concat(S.st.filter(x=>x.sv==="p"&&x.cl))).map(d=>({d,km:km([m.la,m.lo],[d.lat,d.lon]),f:dcap(d)-hbusy(d)})).sort((x,y)=>x.km-y.km),
 row=(v,t,sub,dis)=>`<button ${dis?"disabled":""} onclick="setTD(${m.id},'${v}')" style="display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;margin-top:6px;padding:10px 12px;border-radius:8px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font:inherit;cursor:${dis?"not-allowed":"pointer"};opacity:${dis?.45:1}"><span style="font-weight:600">${t}</span><span class="mu" style="white-space:nowrap;font-size:12px">${sub}</span></button>`;
@@ -96,7 +96,7 @@ S.un.forEach(u=>{if(u.st==="out"&&u.rt&&dd(u)>=u.rt.len){credit(u);u.rt=null;con
 else if(u.st==="out"&&u.rt&&!u.half&&dd(u)>=u.rt.len*.5){u.half=1;if(mm(u.mid)){const n=Math.max(1,Math.ceil((u.rt.len-dd(u))/(SP[u.ty]*spd())*60));log("📻 "+u.cs+": “Control, "+u.cs+", approximately "+n+" min"+(n>1?"s":"")+" from scene.”",1,u.mid)}}});
 S.ms.slice().forEach(m=>{const tp=T[m.k];
 if(!m.ans){if(t-m.born>RING){log("❌ Missed 999 call");S.ms=S.ms.filter(x=>x!==m)}}
-else if(m.end){if(t>=m.end&&!holdTr(m)){const hb=S.hbp||0,xb=m.xb||0;S.hbp=0;S.cr+=tp[5]+xb+hb;S.done++;S.jl=(S.jl||[]).filter(x=>x.t>now()-6048e5).slice(-499);S.jl.push({t:now(),k:"j",n:tp[1],e:tp[5]+xb+hb,b:S.cr});const r0=rank();log("✅ "+tp[1]+" resolved. +£"+fmt(tp[5]+xb+hb)+(xb?" (incl. £"+fmt(xb)+" multi-agency expansion)":"")+(hb?" (incl. £"+fmt(hb)+" hospital bonus)":""));recall(m);if(rank()>r0){log("🎖 Promoted to "+RK[rank()][0]+"! New vehicles unlocked. Claim your £50,000 bonus in the Ranks tab.",1);toast("Promoted to "+RK[rank()][0]+" – claim your £50,000 bonus in Ranks")}}}
+else if(m.end&&!met(m)){if(m.pz==null){m.pz=Math.max(0,m.end-t);log("⏸ Paused: "+tp[1]+" – required units no longer on scene");dirty=true}m.end=t+m.pz}else if(m.end){if(m.pz!=null){m.pz=null;log("▶ Resumed: "+tp[1]);dirty=true}if(t>=m.end&&!holdTr(m)){const hb=S.hbp||0,xb=m.xb||0;S.hbp=0;S.cr+=tp[5]+xb+hb;S.done++;S.jl=(S.jl||[]).filter(x=>x.t>now()-6048e5).slice(-499);S.jl.push({t:now(),k:"j",n:tp[1],e:tp[5]+xb+hb,b:S.cr});const r0=rank();log("✅ "+tp[1]+" resolved. +£"+fmt(tp[5]+xb+hb)+(xb?" (incl. £"+fmt(xb)+" multi-agency expansion)":"")+(hb?" (incl. £"+fmt(hb)+" hospital bonus)":""));recall(m);if(rank()>r0){log("🎖 Promoted to "+RK[rank()][0]+"! New vehicles unlocked. Claim your £50,000 bonus in the Ranks tab.",1);toast("Promoted to "+RK[rank()][0]+" – claim your £50,000 bonus in Ranks")}}}
 else if(met(m)){m.end=t+tp[4]*1000;log("🛠 Working: "+tp[1])}
 else if(t-m.born>TIMEOUT){log("❌ Incident abandoned: "+tp[1]);recall(m,1)}});
 if(!S.un.length)S.next=Math.max(S.next,t+4000);if(t>=S.next&&S.un.length&&S.ms.length<10&&!S.pz)spawn();
