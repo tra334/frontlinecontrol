@@ -55,7 +55,7 @@ jobs:
           available = categories["category_list"]["categories"]
           category = next(
               (c for c in available
-               if c["name"].lower() == "development updates"),
+               if c["name"].lower() == "updates"),
               None
           )
 
