@@ -82,7 +82,12 @@ function upgrade(id){const s=stn(id);if(!s)return;const l=s.lv||0;if(l>=UP.lengt
 const RANKBONUS=50000,DR=[20000,40000,50000,60000,70000,80000,100000],ymd=d=>d.toLocaleDateString("en-CA");
 function drState(){const d=S.dr||{last:"",day:0},t=new Date(),y=new Date();y.setDate(y.getDate()-1);
 if(d.last===ymd(t))return{can:false,day:d.day};return{can:true,day:d.last===ymd(y)?d.day%7+1:1}}
-function claimDaily(){const d=drState();if(!d.can)return;S.cr+=DR[d.day-1];ldg("bn","Daily reward (day "+d.day+")",DR[d.day-1]);S.dr={last:ymd(new Date()),day:d.day};log("🎁 Daily reward (day "+d.day+"): +£"+fmt(DR[d.day-1]));persist();paint()}
+function claimDaily(){const d=drState();if(!d.can)return;S.cr+=DR[d.day-1];ldg("bn","Daily reward (day "+d.day+")",DR[d.day-1]);S.dr={last:ymd(new Date()),day:d.day};log("🎁 Daily reward (day "+d.day+"): +£"+fmt(DR[d.day-1]));persist();paint();dailyPop(d.day)}
+function dailyPop(day){const nd=day%7+1,amt=DR[day-1],nx=new Date();nx.setHours(24,0,0,0);const ms=Math.max(0,nx-new Date()),h=Math.floor(ms/36e5),m=Math.ceil(ms%36e5/6e4),tm=h>0?h+"h "+m+"m":m+"m";
+const w=document.createElement("div");w.style.cssText="position:fixed;inset:0;z-index:100002;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;padding:16px";
+w.innerHTML='<div style="width:100%;max-width:380px;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:14px;padding:18px;text-align:center"><div style="font-size:34px">\uD83C\uDF81</div><div style="font-size:18px;font-weight:700;margin:6px 0 8px">Daily reward claimed!</div><div style="line-height:1.5">You have been granted <b>\u00A3'+fmt(amt)+'</b></div><div style="color:var(--mu);line-height:1.5;margin-top:10px">Come back in <b>'+tm+'</b> for your Day '+nd+' reward of <b>\u00A3'+fmt(DR[nd-1])+'</b></div><button id="drx" style="width:100%;margin-top:14px">Close</button></div>';
+document.body.appendChild(w);$("#drx").onclick=()=>w.remove();w.onclick=e=>{if(e.target===w)w.remove()}}
+
 function claimRank(){const n=rank()-(S.rcl||0);if(n<=0)return;S.cr+=n*RANKBONUS;ldg("bn","Rank-up bonus",n*RANKBONUS);S.rcl=rank();log("🎖 Rank-up bonus claimed: +£"+fmt(n*RANKBONUS));persist();paint()}
 const DEVBONUS=10000000;
 const devH=()=>`<div class="card" style="border-left-color:#eab308"><div class="row"><span class="t">🛠 Dev bonus</span><span class="mu">£${fmt(DEVBONUS)} · one-time</span></div><div style="margin-top:8px">`+(S.dv?`<div class="mu">✅ Dev bonus already claimed.</div>`:`<button onclick="claimDev()">Claim £${fmt(DEVBONUS)}</button>`)+`</div></div>`;
