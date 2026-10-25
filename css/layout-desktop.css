@@ -35,4 +35,5 @@ body.rp-off nav,body.rp-off main{display:none!important}
 #rpt{position:absolute;right:0;top:50%;transform:translateY(-50%);z-index:600;width:22px;height:64px;padding:0;display:flex;align-items:center;justify-content:center;border:1px solid var(--bd);border-right:0;border-radius:8px 0 0 8px;background:#0d1620;color:var(--tx);font:700 16px/1 system-ui;cursor:pointer;opacity:.85;box-shadow:-2px 0 8px #0005}
 #rpt:hover{opacity:1;background:#16263a}
 #rpt:focus-visible{outline:2px solid #4f8cff;outline-offset:-2px}
+#bm{white-space:normal;width:min(400px,38vw)}#bsr{top:118px}
 }

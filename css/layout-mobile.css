@@ -22,3 +22,4 @@ main>*{max-width:760px;margin-left:auto;margin-right:auto}
 .gd{display:inline-block;min-width:24px;text-align:center;padding:0 5px;border-radius:6px;font-size:12px;font-weight:700;margin-right:4px}
 .dx,#pl,#rl{display:none}
 @media(max-width:999px){#rpt{display:none!important}}
+@media(max-width:999px){#bsr{bottom:calc(var(--nh,48px) + 118px)}}
