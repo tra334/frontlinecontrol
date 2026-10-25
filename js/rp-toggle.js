@@ -4,7 +4,7 @@ const b=document.getElementById("rpt");if(!b)return;
 const K="rpOff";
 const set=off=>{
 document.body.classList.toggle("rp-off",off);
-b.textContent=off?"‹":"›";
+b.innerHTML=off?lci("chevron-left",18):lci("chevron-right",18);
 const l=off?"Show side panel":"Hide side panel";b.setAttribute("aria-label",l);b.title=l;
 try{localStorage.setItem(K,off?"1":"0")}catch(e){}
 /* keep the map canvas in step with the animated resize */
