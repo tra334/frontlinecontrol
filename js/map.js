@@ -8,7 +8,42 @@ function nextTiles(){if(ti<TP.length-1){ti++;useTiles()}else if(!tok&&!tmsg){tms
 function useTiles(){clearTimeout(tmo);if(tl)map.removeLayer(tl);tok=0;tbad=0;const mine=tl=L.tileLayer(TP[ti][0],Object.assign({referrerPolicy:"origin",keepBuffer:3,updateWhenIdle:false},TP[ti][1])).addTo(map);
 mine.on("tileload",()=>{if(mine===tl)tok++});mine.on("tileerror",()=>{if(mine===tl&&!tok&&++tbad>=3)nextTiles()});
 tmo=setTimeout(()=>{if(mine===tl&&!tok)nextTiles()},7000)}
-useTiles();
+
+/* ===== selectable base map: OpenStreetMap raster (default) or OpenFreeMap vector styles ===== */
+const MAP_STYLES={osm:{n:"OpenStreetMap (default)"},positron:{n:"Positron",u:"positron"},bright:{n:"Bright",u:"bright"},liberty:{n:"Liberty",u:"liberty"},dark:{n:"Dark",u:"dark"},fiord:{n:"Fiord",u:"fiord"},"3d":{n:"3D",u:"liberty",d3:1}};
+const OFM_ATTR='<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> Data from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
+let vl=null,vId="osm",vseq=0,vlibs=null;
+const mapStyleId=()=>{const v=getSet().mapStyle;return MAP_STYLES[v]?v:"osm"};
+function loadScript(u){return new Promise((ok,no)=>{const e=document.createElement("script");e.src=u;e.onload=ok;e.onerror=()=>{e.remove();no(new Error(u))};document.head.appendChild(e)})}
+async function loadAny(us){let er;for(const u of us){try{await loadScript(u);return}catch(e){er=e}}throw er}
+/* MapLibre is only downloaded when a vector style is actually chosen, so the default OSM map loads exactly as before */
+function loadVectorLibs(){if(window.maplibregl&&L.maplibreGL)return Promise.resolve();
+return vlibs||(vlibs=(async()=>{if(!document.getElementById("mlcss")){const c=document.createElement("link");c.id="mlcss";c.rel="stylesheet";c.href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css";document.head.appendChild(c)}
+if(!window.maplibregl)await loadAny(["https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js","https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"]);
+if(!L.maplibreGL)await loadAny(["https://cdn.jsdelivr.net/npm/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js","https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js"])})().catch(e=>{vlibs=null;throw e}))}
+function dropRaster(){clearTimeout(tmo);if(tl){map.removeLayer(tl);tl=null}}
+function dropVector(){if(vl){try{map.removeLayer(vl)}catch(e){}vl=null}}
+function refreshSettings(){const o=document.getElementById("setov");if(o&&o._draw)o._draw()}
+/* 3D: Liberty with extruded buildings (the Leaflet overlay stays top-down so markers stay on their exact spot) */
+function glBuildings(gl,on){try{if(gl.getLayer("building-3d")){gl.setLayoutProperty("building-3d","visibility",on?"visible":"none");return}
+if(!on)return;const sts=gl.getStyle(),src=sts.sources.openmaptiles?"openmaptiles":Object.keys(sts.sources).find(k=>sts.sources[k].type==="vector");if(!src)return;
+const lab=sts.layers.find(l=>l.type==="symbol");
+gl.addLayer({id:"ofm-3d",type:"fill-extrusion",source:src,"source-layer":"building",minzoom:14,paint:{"fill-extrusion-color":["interpolate",["linear"],["coalesce",["get","render_height"],0],0,"#e4e1da",60,"#c9c5bb",200,"#a9a59b"],"fill-extrusion-height":["coalesce",["get","render_height"],0],"fill-extrusion-base":["coalesce",["get","render_min_height"],0],"fill-extrusion-opacity":.92}},lab&&lab.id)}catch(e){console.warn("3D buildings unavailable",e)}}
+async function showVector(id){const my=++vseq,st=MAP_STYLES[id],prev=vId;
+const fail=m=>{if(my!==vseq)return;if(newL&&newL!==vl){try{map.removeLayer(newL)}catch(e){}}
+if(prev==="osm"&&!vl&&!tl)useTiles();setSet("mapStyle",vl?prev:"osm");vId=vl?prev:"osm";toast(m);refreshSettings()};
+let newL=null;
+if(L.shim){fail("Vector map styles need the full map library, which couldn't be loaded – using OpenStreetMap.");return}
+try{await loadVectorLibs()}catch(e){fail("Couldn't load the "+st.n+" map style (check your connection or blockers) – keeping the current map.");return}
+if(my!==vseq)return;
+let gl;try{newL=L.maplibreGL({style:"https://tiles.openfreemap.org/styles/"+st.u,pane:"tilePane",attribution:OFM_ATTR}).addTo(map);gl=newL.getMaplibreMap()}catch(e){fail("Couldn't start the "+st.n+" map style – keeping the current map.");return}
+let done=0;const to=setTimeout(()=>{if(!done){done=1;fail("The "+st.n+" map style took too long to load – keeping the current map.")}},15000);
+gl.on("error",e=>{if(!done&&e&&!e.tile&&!e.sourceId){done=1;clearTimeout(to);fail("Couldn't load the "+st.n+" map style – keeping the current map.")}});
+gl.once("load",()=>{if(done)return;done=1;clearTimeout(to);if(my!==vseq){try{map.removeLayer(newL)}catch(e){}return}
+glBuildings(gl,!!st.d3);const old=vl;vl=newL;vId=id;dropRaster();if(old&&old!==newL){try{map.removeLayer(old)}catch(e){}}})}
+function applyMapStyle(id){id=MAP_STYLES[id]?id:"osm";if(id==="osm"){++vseq;dropVector();vId="osm";if(!tl)useTiles();return}showVector(id)}
+/* start-up: only fetch OSM raster tiles straight away when OSM is the chosen map */
+if(mapStyleId()==="osm")useTiles();else applyMapStyle(mapStyleId());
 
 const MK={s:{},m:{},u:{},r:{},p:{},h:{}},ic=h=>L.divIcon({html:h,className:"mk",iconSize:[0,0]});
 map.createPane("bg").style.zIndex=150;
