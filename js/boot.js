@@ -3,7 +3,7 @@ async function pickState(){const lk=KEY+"_"+AU.user.id;curKey=lk;let loc=null,cl
 try{loc=JSON.parse(localStorage.getItem(lk))}catch(e){}
 try{cl=await cloudGet()}catch(e){if(e.authFail){sesClear();return null}off=true;console.error("Cloud load error",e);cloudMsg="⚠ Cloud load failed ("+(e.status||"")+": "+String(e.message||"").slice(0,80)+") – using device save"}
 if(off){cloudDirty=true;return loc}
-if(cl){let lv=null;try{lv=localStorage.getItem(lk+"_ver")}catch(e){}if(loc&&lv&&lv===cloudVer&&(loc.ts||0)>(cl.ts||0)){cloudDirty=true;return loc}try{localStorage.setItem(lk+"_ver",cloudVer)}catch(e){}return cl}
+if(cl){let lv=null;try{lv=localStorage.getItem(lk+"_ver")}catch(e){}if(loc&&(loc.ts||0)>(cl.ts||0)){cloudDirty=true;return loc}try{localStorage.setItem(lk+"_ver",cloudVer)}catch(e){}return cl}
 let g=null;try{g=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 if(!loc&&g&&(g.done>0||(g.st&&g.st.length))&&confirm("Upload the progress saved on this device to your new account?\n\nOK = upload it, Cancel = start a fresh game."))loc=g;
 cloudDirty=true;return loc}

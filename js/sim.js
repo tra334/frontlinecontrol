@@ -35,7 +35,7 @@ function leg(u,a,b,st){credit(u);u.st=st;u.rt=null;u.a=a;u.b=b;const tk=u.lk=(u.
 const fin=(p,len)=>{if(u.lk!==tk)return;if(p.length<2)p=[a,b];const d=[0];for(let i=1;i<p.length;i++)d.push(+(d[i-1]+km(p[i-1],p[i])).toFixed(3));u.rt={p,d,len:len||d[d.length-1]};u.t0=now();dirty=true};
 if(fly){fin([a,b],km(a,b));return}
 J("https://router.project-osrm.org/route/v1/driving/"+a[1]+","+a[0]+";"+b[1]+","+b[0]+"?overview="+(km(a,b)>40?"simplified":"full")+"&geometries=geojson",12000).then(j=>{const q=j&&j.routes&&j.routes[0];q?fin(q.geometry.coordinates.map(c=>[+c[1].toFixed(5),+c[0].toFixed(5)])):fin([a,b],km(a,b)*1.3)})}
-function send(u,m){u.dsp=(u.dsp||0)+1;const bk=u.st==="back",from=upos(u);u.mid=m.id;u.half=0;leg(u,from,mp(m),"out");const g=gr(m.k),e=Math.max(1,Math.ceil(eta(u,m)/60)),sn=stn(u.sid).name;
+function send(u,m){cloudSoon();u.dsp=(u.dsp||0)+1;const bk=u.st==="back",from=upos(u);u.mid=m.id;u.half=0;leg(u,from,mp(m),"out");const g=gr(m.k),e=Math.max(1,Math.ceil(eta(u,m)/60)),sn=stn(u.sid).name;
 log("📻 Control → "+u.cs+": “"+u.cs+", "+T[m.k][1]+", Grade "+g+", at "+m.loc+(m.rev&&m.hid?". Caller reports "+(hk(m)==="h"?"persons injured":"possible weapons or hazards"):"")+". "+(g<=2?"Respond on blue lights.":"Respond as soon as you can.")+" Acknowledge.”",1,m.id);
 setTimeout(()=>{const r=u.cs+": “Control, "+u.cs+", received. "+(bk?"Diverting from return to "+sn+", ETA ":"Mobile from "+sn+", ETA ")+e+" min"+(e>1?"s":"")+".”";log("📻 "+r,1,m.id);rtoast(r)},R(1200,2800))}
 // hospital transfer: nearest player-built hospital with a free bed
