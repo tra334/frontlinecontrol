@@ -20,7 +20,7 @@ for(let i=0;i<5&&!AU;i++){const r=await authUI(mode,note);if(r==="guest"){startG
 if(!AU)return;
 const st=await pickState();if(!st&&!AU){return bootAuth()}
 startGame(st)}
-setInterval(()=>{if(cloudDirty&&AU&&gameOn)pushCloud()},12000);
+setInterval(()=>{if(cloudDirty&&AU&&gameOn)pushCloud()},60000);
 addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden"&&AU&&gameOn){persist();pushCloud(1)}});
 addEventListener("pagehide",()=>{if(AU&&gameOn){persist();pushCloud(1)}});
 
