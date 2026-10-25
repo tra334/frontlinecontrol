@@ -15,7 +15,7 @@ function bsrClear(){const l=$("#bsl");if(l&&l.firstChild)l.textContent="";const 
 function bsrMsg(t){const l=$("#bsl");l.textContent="";const d=document.createElement("div");d.className="n";d.textContent=t;l.appendChild(d)}
 async function bsrGo(q){q=q.trim();if(!q)return;bsrMsg("Searching…");const j=await J("https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&q="+encodeURIComponent(q),9000);
 if(!j){bsrMsg("Search failed. Check your connection and try again.");return}if(!j.length){bsrMsg("No results found. Try a fuller address or a postcode.");return}
-const l=$("#bsl");l.textContent="";j.forEach(r=>{const d=document.createElement("div");d.innerHTML=lci("map-pin")+" "+esc(r.display_name);d.onclick=()=>{const la=+r.lat,lo=+r.lon;map.setView([la,lo],16);if(mv)doMove(la,lo);else if(bm)place(la,lo);if(!(bm||mv))bsrClear()};l.appendChild(d)})}
+const l=$("#bsl");l.textContent="";j.forEach(r=>{const d=document.createElement("div");d.innerHTML=lci("map-pin")+" "+esc(r.display_name);d.onclick=()=>{const la=+r.lat,lo=+r.lon;map.setView([la,lo],16);if(bm||mv){bpSet(la,lo,16);$("#bsl").textContent=""}if(!(bm||mv))bsrClear()};l.appendChild(d)})}
 $("#bsf").onsubmit=e=>{e.preventDefault();bsrGo($("#bsi").value)};
 ['click','dblclick','mousedown','touchstart','wheel'].forEach(ev=>$("#bsr").addEventListener(ev,e=>e.stopPropagation()));
 function ask(i){const m=mm(curM);m.qa.push([QS[i][0],QS[i][1](m)]);if(!m.adc&&m.qa.some(x=>x[0]===QS[0][0])){m.adc=1;log("📍 Address taken: "+m.loc)}dirty=true;drawQ()}
