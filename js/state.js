@@ -3,7 +3,7 @@ const gr=k=>{const t=T[k],c=/^Cat (\d)/.exec(t[1]);return c?+c[1]:GO[t[1]]||(t[5
 const locT=m=>m.adc?lci("map-pin")+" "+m.loc:lci("map-pin")+" Address not taken yet"+(m.adr&&m.adr.t?" – near "+m.adr.t:"");
 const RING=45000,TIMEOUT=1500000,KEY="ukdispatch_v2";
 const rateMs=()=>Math.round(R(30,150)*1000);
-let S,tab="m",si=0,dirty=false,lastSave=0,dbDoc=null,sel=new Set(),curM=0,bm=null,mv=null,VB={x:0,y:0,w:460},pts=new Map(),tt=0;
+let S,tab="m",si=0,dirty=false,lastSave=0,dbDoc=null,sel=new Set(),curM=0,bm=null,mv=null,bpin=null,bll=null,bpTok=0,VB={x:0,y:0,w:460},pts=new Map(),tt=0;
 let SIMOFF=0;const $=s=>document.querySelector(s),now=()=>Date.now()+SIMOFF,R=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.length)],fmt=n=>n.toLocaleString("en-GB");
 const P=(la,lo)=>[(lo+11)*34.44,(61-la)*60],mrg=(a,b)=>{const o={...a};for(const k in b)o[k]=(o[k]||0)+b[k];return o};
 function pip(lat,lon,poly){let c=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const[xi,yi]=poly[i],[xj,yj]=poly[j];if((yi>lat)!==(yj>lat)&&lon<(xj-xi)*(lat-yi)/(yj-yi)+xi)c=!c}return c}
