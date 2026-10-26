@@ -40,7 +40,7 @@ const sv=U[u.ty][0],sn=stn(u.sid),m=u.mid&&mm(u.mid),resp=m&&(u.st==="out"||u.st
 let mi=(u.km||0);if(u.rt&&u.t0&&(u.st==="out"||u.st==="back"||u.st==="hosp"))mi+=Math.min(Math.max(0,dd(u)),u.rt.len);mi*=0.621371;
 const r=(a,b)=>`<div class="u"><span>${a}</span><b style="text-align:right">${b}</b></div>`;
 const edu=(u.tr&&u.tr.length)?lci("graduation-cap")+" "+u.tr.map(k=>TR[k][0]).join(", "):"No special training";
-ov.innerHTML=`<div style="width:100%;max-width:400px;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:14px;padding:18px"><div class="row"><span class="t" style="font-size:18px">${u.cs}</span><button class="s g" onclick="closeUI()">${lci("x")}</button></div><div class="mu" style="margin-bottom:6px">${U[u.ty][1]} · ${SV[sv]}</div>`
+ov.innerHTML=`<div style="width:100%;max-width:400px;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:14px;padding:18px"><div class="row"><span class="t" style="font-size:18px">${u.cs}</span><button class="cx" aria-label="Close" onclick="closeUI()">${lci("x",16)}</button></div><div class="mu" style="margin-bottom:6px">${U[u.ty][1]} · ${SV[sv]}</div>`
 +r("Home station",sn?`<span class="ulk" onclick="closeUI();openS(${sn.id})">${sn.name}</span>`:"—")
 +r("Status",`<span class="st ${u.st}">${SLU(u)}</span>`)
 +(resp?r("Responding to",`<span class="ulk" onclick="closeUI();openQ(${m.id})">${T[m.k][1]}</span>`):"")
