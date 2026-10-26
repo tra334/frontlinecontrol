@@ -8,6 +8,8 @@ const {
 const m = ISSUE_BODY.match(/<!--\s*discourse-topic-id:\s*(\d+)\s*-->/);
 if (!m) { console.log("Issue not linked to Discourse, skipping"); process.exit(0); }
 
+if (/<!--\s*discourse-post-id:/.test(COMMENT_BODY)) { console.log("Comment came from Discourse, skipping"); process.exit(0); }
+
 const isThomas = COMMENTER.toLowerCase() === GITHUB_THOMAS_LOGIN.toLowerCase();
 const raw = isThomas
   ? COMMENT_BODY
