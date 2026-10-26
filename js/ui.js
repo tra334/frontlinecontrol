@@ -63,7 +63,8 @@ function openH(id){const h=S.hs.find(x=>x.id===id);if(!h)return;mnOpen="";mInfo=
 let mnOpen="",mInfo=0;
 const sr=(a,b)=>`<div class="sr"><span>${a}</span><b>${b}</b></div>`;
 const mnItem=(ic,l,fn,cls)=>`<button class="mni ${cls||""}" onclick="event.stopPropagation();mnClose();${fn}">${lci(ic,18)}<span>${l}</span></button>`;
-const mnBox=(k,ic,items,up)=>`<div class="mnw"><button class="mnb" aria-label="Options" aria-expanded="${mnOpen===k}" onclick="mnT(event,'${k}')">${lci(ic,20)}</button>${mnOpen===k?`<div class="mn${up?" up":""}">${items}</div>`:""}</div>`;
+const DOTS='<svg class="li" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>';
+const mnBox=(k,ic,items,up)=>`<div class="mnw"><button class="mnb" aria-label="Options" aria-expanded="${mnOpen===k}" onclick="mnT(event,'${k}')">${ic==="ellipsis-vertical"?DOTS:lci(ic,20)}</button>${mnOpen===k?`<div class="mn${up?" up":""}">${items}</div>`:""}</div>`;
 function redrawP(){const e=$("#sheet"),y=e.scrollTop;if(hi)drawH();else if(si)drawS();e.scrollTop=y}
 function mnT(e,k){e.stopPropagation();mnOpen=mnOpen===k?"":k;redrawP()}
 function mnClose(){if(mnOpen){mnOpen="";redrawP()}}
