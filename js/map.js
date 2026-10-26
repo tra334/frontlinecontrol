@@ -10,7 +10,7 @@ mine.on("tileload",()=>{if(mine===tl)tok++});mine.on("tileerror",()=>{if(mine===
 tmo=setTimeout(()=>{if(mine===tl&&!tok)nextTiles()},7000)}
 
 /* ===== selectable base map: OpenStreetMap raster (default) or OpenFreeMap vector styles ===== */
-const MAP_STYLES={osm:{n:"OpenStreetMap (default)"},positron:{n:"Positron",u:"positron"},bright:{n:"Bright",u:"bright"},liberty:{n:"Liberty",u:"liberty"},dark:{n:"Dark",u:"dark"},fiord:{n:"Fiord",u:"fiord"},"3d":{n:"3D",u:"liberty",d3:1}};
+const MAP_STYLES={osm:{n:"OpenStreetMap (default)"},positron:{n:"Positron",u:"positron"},bright:{n:"Bright",u:"bright"},liberty:{n:"Liberty",u:"liberty"},dark:{n:"Dark",u:"dark"},fiord:{n:"Fiord",u:"fiord"},"3d":{n:"3D",u:"liberty",d3:1},cadD:{n:"CAD – dark (control room)",u:"dark",dp:"d"},cadL:{n:"CAD – light",u:"positron",dp:"l"}};
 const OFM_ATTR='<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> Data from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
 let vl=null,vId="osm",vseq=0,vlibs=null;
 const mapStyleId=()=>{const v=getSet().mapStyle;return MAP_STYLES[v]?v:"osm"};
@@ -24,6 +24,30 @@ if(!L.maplibreGL)await loadAny(["https://cdn.jsdelivr.net/npm/@maplibre/maplibre
 function dropRaster(){clearTimeout(tmo);if(tl){map.removeLayer(tl);tl=null}}
 function dropVector(){if(vl){try{map.removeLayer(vl)}catch(e){}vl=null}}
 function refreshSettings(){const o=document.getElementById("setov");if(o&&o._draw)o._draw()}
+/* CAD look (like a real CAD/control-room map): muted land & water, no POI/shop clutter, road hierarchy
+   emphasised so unit markers and routes stand out. Restyles whichever OpenFreeMap style loaded, by layer id / source-layer. */
+function dispatchStyle(gl,mode){const dk=mode==="d",C=dk?{bg:"#0b0f14",land:"#0f151c",water:"#0a2236",park:"#0f1b1a",bld:"#161e27",mw:"#e8b04a",tr:"#c9d3df",pr:"#a9b6c5",sc:"#6f7f91",mi:"#46535f",cs:"#05080b",txt:"#d3dce6",hal:"#05080b",rail:"#3f4c5a",bd:"#2b3744"}
+:{bg:"#e9ecef",land:"#eceff2",water:"#bcd3e6",park:"#d8e6d4",bld:"#dde1e6",mw:"#f2a33a",tr:"#f5c06a",pr:"#ffffff",sc:"#ffffff",mi:"#fafbfc",cs:"#b4bcc6",txt:"#4a5563",hal:"#ffffff",rail:"#9aa4b0",bd:"#a9b2bd"};
+const set=(id,k,v)=>{try{gl.setPaintProperty(id,k,v)}catch(e){}},hide=id=>{try{gl.setLayoutProperty(id,"visibility","none")}catch(e){}};
+const rd=(i,t)=>{const a=/motorway/.test(i)?0:/trunk/.test(i)?1:/primary/.test(i)?2:/secondary|tertiary/.test(i)?3:4;return a};
+try{gl.getStyle().layers.forEach(l=>{const id=l.id,sl=l["source-layer"]||"",ty=l.type;
+if(ty==="background"){set(id,"background-color",C.bg);return}
+if(ty==="symbol"){if(/poi|housenumber|peak|aeroway|aerodrome|airport|rail|station|ferry|waterway|water_name/.test(id+" "+sl)&&!/place/.test(sl)){hide(id);return}
+set(id,"text-color",C.txt);set(id,"text-halo-color",C.hal);set(id,"text-halo-width",1.4);return}
+if(ty==="fill-extrusion"){return}
+if(sl==="water"||/water/.test(id)&&ty==="fill"){set(id,"fill-color",C.water);return}
+if(ty==="line"&&/waterway|river|stream|canal/.test(id)){set(id,"line-color",C.water);return}
+if(sl==="building"||/building/.test(id)){if(ty==="fill"){set(id,"fill-color",C.bld);set(id,"fill-outline-color",C.bd)}return}
+if(ty==="fill"&&/park|wood|forest|grass|green|landcover|landuse|nature|scrub|farm/.test(id+" "+sl)){set(id,"fill-color",C.park);set(id,"fill-opacity",.85);return}
+if(ty==="fill"&&/landuse|residential|land/.test(id)){set(id,"fill-color",C.land);return}
+if(ty==="line"&&/rail|transit|subway|tram/.test(id)){set(id,"line-color",C.rail);return}
+if(ty==="line"&&/boundary|admin/.test(id)){set(id,"line-color",C.bd);return}
+if(ty==="line"&&(sl==="transportation"||/road|highway|bridge|tunnel|motorway|street|path|service|link|ramp|trunk|primary|secondary|tertiary|minor/.test(id))){
+const cs=/casing|outline/.test(id),r=rd(id);
+if(/path|track|pedestrian|cycleway|footway|steps/.test(id)){set(id,"line-color",C.mi);set(id,"line-opacity",.5);return}
+set(id,"line-color",cs?C.cs:[C.mw,C.tr,C.pr,C.sc,C.mi][r]);
+if(!cs&&dk)set(id,"line-opacity",r<=1?1:.95);return}
+if(ty==="fill"){set(id,"fill-color",C.land)}})}catch(e){console.warn("dispatch style failed",e)}}
 /* 3D: Liberty with extruded buildings (the Leaflet overlay stays top-down so markers stay on their exact spot) */
 function glBuildings(gl,on){try{if(gl.getLayer("building-3d")){gl.setLayoutProperty("building-3d","visibility",on?"visible":"none");return}
 if(!on)return;const sts=gl.getStyle(),src=sts.sources.openmaptiles?"openmaptiles":Object.keys(sts.sources).find(k=>sts.sources[k].type==="vector");if(!src)return;
@@ -40,7 +64,7 @@ let gl;try{newL=L.maplibreGL({style:"https://tiles.openfreemap.org/styles/"+st.u
 let done=0;const to=setTimeout(()=>{if(!done){done=1;fail("The "+st.n+" map style took too long to load – keeping the current map.")}},15000);
 gl.on("error",e=>{if(!done&&e&&!e.tile&&!e.sourceId){done=1;clearTimeout(to);fail("Couldn't load the "+st.n+" map style – keeping the current map.")}});
 gl.once("load",()=>{if(done)return;done=1;clearTimeout(to);if(my!==vseq){try{map.removeLayer(newL)}catch(e){}return}
-glBuildings(gl,!!st.d3);const old=vl;vl=newL;vId=id;dropRaster();if(old&&old!==newL){try{map.removeLayer(old)}catch(e){}}})}
+glBuildings(gl,!!st.d3);if(st.dp)dispatchStyle(gl,st.dp);const old=vl;vl=newL;vId=id;dropRaster();if(old&&old!==newL){try{map.removeLayer(old)}catch(e){}}})}
 function applyMapStyle(id){id=MAP_STYLES[id]?id:"osm";if(id==="osm"){++vseq;dropVector();vId="osm";if(!tl)useTiles();return}showVector(id)}
 /* start-up: only fetch OSM raster tiles straight away when OSM is the chosen map */
 if(mapStyleId()==="osm")useTiles();else applyMapStyle(mapStyleId());
