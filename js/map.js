@@ -10,7 +10,7 @@ mine.on("tileload",()=>{if(mine===tl)tok++});mine.on("tileerror",()=>{if(mine===
 tmo=setTimeout(()=>{if(mine===tl&&!tok)nextTiles()},7000)}
 
 /* ===== selectable base map: OpenStreetMap raster (default) or OpenFreeMap vector styles ===== */
-const MAP_STYLES={osm:{n:"OpenStreetMap (default)"},positron:{n:"Positron",u:"positron"},bright:{n:"Bright",u:"bright"},liberty:{n:"Liberty",u:"liberty"},dark:{n:"Dark",u:"dark"},fiord:{n:"Fiord",u:"fiord"},"3d":{n:"3D",u:"liberty",d3:1},cadD:{n:"CAD – dark (control room)",u:"dark",dp:"d"},cadL:{n:"CAD – light",u:"positron",dp:"l"}};
+const MAP_STYLES={osm:{n:"OpenStreetMap (default)"},positron:{n:"Positron",u:"positron"},bright:{n:"Bright",u:"bright"},liberty:{n:"Liberty",u:"liberty"},dark:{n:"Dark",u:"dark"},fiord:{n:"Fiord",u:"fiord"},"3d":{n:"3D",u:"liberty",d3:1},cadD:{n:"CAD - Dark",u:"dark",dp:"d"},cadL:{n:"CAD - Light",u:"positron",dp:"l"}};
 const OFM_ATTR='<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="https://www.openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> Data from <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
 let vl=null,vId="osm",vseq=0,vlibs=null;
 const mapStyleId=()=>{const v=getSet().mapStyle;return MAP_STYLES[v]?v:"osm"};
