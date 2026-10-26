@@ -47,7 +47,30 @@ const raw =
   `>\n` +
   `> 🔗 [#${E.ISSUE_NUMBER} ${E.ISSUE_TITLE}](${E.ISSUE_URL}) · 🕒 [date=${now.slice(0, 10)} time=${now.slice(11, 19)} timezone="UTC"]`;
 
+// Instant GitHub label -> Discourse tag (the scheduled sync reconciles any race).
+const norm = (x) =>
+  String(x).toLowerCase().trim().replace(/\s+/g, "-").replace(/[\/?#\[\]@!$&'()*+,;=.:<>%\\"]/g, "");
+async function syncTag() {
+  if (!["labeled", "unlabeled"].includes(E.ACTION) || E.LABEL_NAME === "discourse") return;
+  const headers = { "Api-Key": DISCOURSE_API_KEY, "Api-Username": FRONTLINE_USER, "Content-Type": "application/json" };
+  const r = await fetch(`${DISCOURSE_URL}/t/${topicId}.json`, { headers });
+  if (!r.ok) throw new Error(`Discourse topic ${r.status}`);
+  const topic = await r.json();
+  const next = new Set((topic.tags ?? []).map((t) => norm(typeof t === "string" ? t : t.name ?? t.slug)));
+  const tag = norm(E.LABEL_NAME);
+  const had = next.has(tag);
+  if (E.ACTION === "labeled") next.add(tag); else next.delete(tag);
+  if (had === next.has(tag)) return;
+  const tags = [...next];
+  const put = await fetch(`${DISCOURSE_URL}/t/-/${topicId}.json`, {
+    method: "PUT", headers, body: JSON.stringify({ tags: tags.length ? tags : [""] }),
+  });
+  if (!put.ok) throw new Error(`Discourse tag update ${put.status}: ${await put.text()}`);
+  console.log(`Tag "${tag}" ${E.ACTION === "labeled" ? "added to" : "removed from"} topic ${topicId}`);
+}
+
 (async () => {
+  await syncTag().catch((e) => console.error("Tag sync failed:", e.message));
   const res = await fetch(`${DISCOURSE_URL}/posts.json`, {
     method: "POST",
     headers: {

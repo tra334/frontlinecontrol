@@ -1,6 +1,8 @@
-// Runs on a schedule. Two jobs:
+// Runs on a schedule. Jobs:
 //  1. New Discourse topics (category CATEGORY_ID) -> GitHub issues, then reply as Frontline.
-//  2. New replies on linked topics -> GitHub issue comments (ignoring IGNORE_USERS).
+//  2. Tags <-> labels: Discourse topic tags and GitHub issue labels are kept in sync
+//     (3-way merge against a hidden "discourse-tags" marker in the issue body).
+//  3. New replies on linked topics -> GitHub issue comments (ignoring IGNORE_USERS).
 // Node 18+, no dependencies.
 const {
   DISCOURSE_URL, DISCOURSE_API_KEY, GITHUB_TOKEN, GITHUB_REPO,
@@ -8,10 +10,17 @@ const {
   IGNORE_USERS = "Frontline",
 } = process.env;
 
+const SKIP_LABEL = "discourse"; // internal label, never mirrored as a tag
 const ignored = new Set(
   [...IGNORE_USERS.split(","), FRONTLINE_USER, "system"].map((u) => u.trim().toLowerCase()).filter(Boolean)
 );
 const cutoff = Date.now() - Number(LOOKBACK_HOURS) * 3600 * 1000;
+
+// Discourse tag rules: lowercase, spaces -> hyphens, no special characters.
+const norm = (s) =>
+  String(s).toLowerCase().trim().replace(/\s+/g, "-").replace(/[\/?#\[\]@!$&'()*+,;=.:<>%\\"]/g, "");
+const tagNames = (topic) =>
+  (topic.tags ?? []).map((t) => norm(typeof t === "string" ? t : t.name ?? t.slug)).filter(Boolean);
 
 const dHeaders = (user = FRONTLINE_USER) => ({
   "Api-Key": DISCOURSE_API_KEY,
@@ -44,15 +53,43 @@ async function ghAll(path) {
   return out;
 }
 
+const labelNames = (labels) => (labels ?? []).map((l) => (typeof l === "string" ? l : l.name));
+
 // Every GitHub issue created by this sync, with its Discourse topic id.
 async function linkedIssues() {
-  const issues = await ghAll(`/repos/${GITHUB_REPO}/issues?state=all&labels=discourse`);
+  const issues = await ghAll(`/repos/${GITHUB_REPO}/issues?state=all&labels=${SKIP_LABEL}`);
   const linked = [];
   for (const i of issues) {
     const m = (i.body ?? "").match(/<!--\s*discourse-topic-id:\s*(\d+)\s*-->/);
-    if (m) linked.push({ number: i.number, state: i.state, topicId: Number(m[1]) });
+    if (m) linked.push({ number: i.number, state: i.state, topicId: Number(m[1]), body: i.body ?? "", labels: labelNames(i.labels) });
   }
   return linked;
+}
+
+// Map normalised tag -> an existing repo label name (so "good-first-issue" reuses "good first issue").
+let labelMap = new Map();
+const labelFor = (tag) => labelMap.get(tag) ?? tag;
+
+// ---------- hidden tag marker ----------
+function parseBase(body) {
+  const m = (body ?? "").match(/<!--\s*discourse-tags:\s*([^>]*?)\s*-->/);
+  return new Set(m && m[1] ? m[1].split(",").map((s) => s.trim()).filter(Boolean) : []);
+}
+function withMarker(body, set) {
+  const marker = `<!-- discourse-tags: ${[...set].sort().join(",")} -->`;
+  return /<!--\s*discourse-tags:/.test(body)
+    ? body.replace(/<!--\s*discourse-tags:[^>]*-->/, marker)
+    : `${body}\n\n${marker}`;
+}
+const sameSet = (a, b) => a.size === b.size && [...a].every((x) => b.has(x));
+
+async function setDiscourseTags(topicId, tags) {
+  const res = await fetch(`${DISCOURSE_URL}/t/-/${topicId}.json`, {
+    method: "PUT",
+    headers: dHeaders(),
+    body: JSON.stringify({ tags: tags.length ? tags : [""] }),
+  });
+  if (!res.ok) throw new Error(`Discourse tag update on topic ${topicId} ${res.status}: ${await res.text()}`);
 }
 
 // ---------- 1. Discourse topics -> GitHub issues ----------
@@ -78,18 +115,25 @@ async function syncTopics(linked) {
     if (raw.ok) firstPost = await raw.text();
 
     let author = "unknown";
+    let tags = [];
     const info = await fetch(`${DISCOURSE_URL}/t/${t.id}.json`, { headers: dHeaders() });
-    if (info.ok) author = (await info.json()).details?.created_by?.username ?? author;
+    if (info.ok) {
+      const topic = await info.json();
+      author = topic.details?.created_by?.username ?? author;
+      tags = tagNames(topic).filter((x) => x !== SKIP_LABEL);
+    }
 
     const issue = await gh(`/repos/${GITHUB_REPO}/issues`, {
       method: "POST",
       body: JSON.stringify({
         title: t.title,
-        labels: ["discourse"],
-        body: `${firstPost}\n\n---\nPosted by **${author}** on the forum: ${topicUrl}\n\n<!-- discourse-topic-id: ${t.id} -->`,
+        labels: [SKIP_LABEL, ...tags.map(labelFor)],
+        body:
+          `${firstPost}\n\n---\nPosted by **${author}** on the forum: ${topicUrl}\n\n` +
+          `<!-- discourse-topic-id: ${t.id} -->\n<!-- discourse-tags: ${[...tags].sort().join(",")} -->`,
       }),
     });
-    linked.push({ number: issue.number, state: "open", topicId: t.id });
+    linked.push({ number: issue.number, state: "open", topicId: t.id, body: issue.body ?? "", labels: labelNames(issue.labels) });
 
     const reply = await fetch(`${DISCOURSE_URL}/posts.json`, {
       method: "POST",
@@ -101,55 +145,93 @@ async function syncTopics(linked) {
   }
 }
 
-// ---------- 2. Discourse replies -> GitHub comments ----------
-async function syncReplies(linked) {
-  for (const issue of linked.filter((l) => l.state === "open")) {
-    const tr = await fetch(`${DISCOURSE_URL}/t/${issue.topicId}.json`, { headers: dHeaders() });
-    if (!tr.ok) { console.warn(`Topic ${issue.topicId}: ${tr.status}`); continue; }
-    const topic = await tr.json();
+// ---------- 2. Tags <-> labels ----------
+async function reconcileTags(issue, topic) {
+  const base = parseBase(issue.body);
+  const tags = new Set(tagNames(topic).filter((x) => x !== SKIP_LABEL));
+  const labels = new Map(); // normalised -> actual label name
+  for (const l of issue.labels) if (norm(l) !== SKIP_LABEL) labels.set(norm(l), l);
 
-    // Skip topics with no recent activity.
-    if (new Date(topic.last_posted_at).getTime() < cutoff) continue;
+  // 3-way merge: additions and removals from either side win over the last synced state.
+  const merged = new Set(base);
+  for (const t of tags) if (!base.has(t)) merged.add(t);
+  for (const t of base) if (!tags.has(t)) merged.delete(t);
+  for (const l of labels.keys()) if (!base.has(l)) merged.add(l);
+  for (const t of base) if (!labels.has(t)) merged.delete(t);
 
-    const stream = topic.post_stream.stream; // all post ids, in order
-    const candidates = stream.slice(1);      // first post is already in the issue body
-    if (!candidates.length) continue;
+  // Discourse first: if this fails we stop, so the marker never claims a sync that didn't happen.
+  if (!sameSet(merged, tags)) await setDiscourseTags(issue.topicId, [...merged]);
 
-    // Which Discourse posts already have a GitHub comment?
-    const comments = await ghAll(`/repos/${GITHUB_REPO}/issues/${issue.number}/comments`);
-    const synced = new Set();
-    for (const c of comments) {
-      for (const m of (c.body ?? "").matchAll(/<!--\s*discourse-post-id:\s*(\d+)\s*-->/g)) synced.add(Number(m[1]));
-    }
+  const toAdd = [...merged].filter((t) => !labels.has(t)).map(labelFor);
+  if (toAdd.length) await gh(`/repos/${GITHUB_REPO}/issues/${issue.number}/labels`, { method: "POST", body: JSON.stringify({ labels: toAdd }) });
+  for (const [key, name] of labels) {
+    if (merged.has(key)) continue;
+    try { await gh(`/repos/${GITHUB_REPO}/issues/${issue.number}/labels/${encodeURIComponent(name)}`, { method: "DELETE" }); }
+    catch (e) { if (!String(e.message).includes(" 404")) throw e; }
+  }
 
-    for (const id of candidates) {
-      if (synced.has(id)) continue;
+  if (!sameSet(merged, base) || !/<!--\s*discourse-tags:/.test(issue.body)) {
+    issue.body = withMarker(issue.body, merged);
+    await gh(`/repos/${GITHUB_REPO}/issues/${issue.number}`, { method: "PATCH", body: JSON.stringify({ body: issue.body }) });
+    console.log(`Tags for issue #${issue.number} synced: ${[...merged].join(", ") || "(none)"}`);
+  }
+}
 
-      const pr = await fetch(`${DISCOURSE_URL}/posts/${id}.json`, { headers: dHeaders() });
-      if (!pr.ok) continue;
-      const p = await pr.json();
+// ---------- 3. Discourse replies -> GitHub comments ----------
+async function syncReplies(issue, topic) {
+  if (new Date(topic.last_posted_at).getTime() < cutoff) return;
 
-      if (![1, 2].includes(p.post_type)) continue;          // regular + moderator posts only
-      if (p.hidden || p.user_deleted || p.deleted_at) continue;
-      if (new Date(p.created_at).getTime() < cutoff) continue;
-      if (ignored.has(String(p.username).toLowerCase())) continue;
+  const candidates = topic.post_stream.stream.slice(1); // first post is already in the issue body
+  if (!candidates.length) return;
 
-      const postUrl = `${DISCOURSE_URL}/t/${issue.topicId}/${p.post_number}`;
-      await gh(`/repos/${GITHUB_REPO}/issues/${issue.number}/comments`, {
-        method: "POST",
-        body: JSON.stringify({
-          body:
-            `> 💬 **${p.username}** replied on the forum · [view post](${postUrl})\n\n` +
-            `${p.raw}\n\n<!-- discourse-post-id: ${id} -->`,
-        }),
-      });
-      console.log(`Post ${id} by ${p.username} -> issue #${issue.number}`);
-    }
+  const comments = await ghAll(`/repos/${GITHUB_REPO}/issues/${issue.number}/comments`);
+  const synced = new Set();
+  for (const c of comments) {
+    for (const m of (c.body ?? "").matchAll(/<!--\s*discourse-post-id:\s*(\d+)\s*-->/g)) synced.add(Number(m[1]));
+  }
+
+  for (const id of candidates) {
+    if (synced.has(id)) continue;
+
+    const pr = await fetch(`${DISCOURSE_URL}/posts/${id}.json`, { headers: dHeaders() });
+    if (!pr.ok) continue;
+    const p = await pr.json();
+
+    if (![1, 2].includes(p.post_type)) continue; // regular + moderator posts only
+    if (p.hidden || p.user_deleted || p.deleted_at) continue;
+    if (new Date(p.created_at).getTime() < cutoff) continue;
+    if (ignored.has(String(p.username).toLowerCase())) continue;
+
+    const postUrl = `${DISCOURSE_URL}/t/${issue.topicId}/${p.post_number}`;
+    await gh(`/repos/${GITHUB_REPO}/issues/${issue.number}/comments`, {
+      method: "POST",
+      body: JSON.stringify({
+        body:
+          `> 💬 **${p.username}** replied on the forum · [view post](${postUrl})\n\n` +
+          `${p.raw}\n\n<!-- discourse-post-id: ${id} -->`,
+      }),
+    });
+    console.log(`Post ${id} by ${p.username} -> issue #${issue.number}`);
   }
 }
 
 (async () => {
+  const repoLabels = await ghAll(`/repos/${GITHUB_REPO}/labels`);
+  labelMap = new Map(repoLabels.map((l) => [norm(l.name), l.name]));
+
   const linked = await linkedIssues();
   await syncTopics(linked);
-  await syncReplies(linked);
+
+  for (const issue of linked.filter((l) => l.state === "open")) {
+    try {
+      const tr = await fetch(`${DISCOURSE_URL}/t/${issue.topicId}.json`, { headers: dHeaders() });
+      if (!tr.ok) { console.warn(`Topic ${issue.topicId}: ${tr.status}`); continue; }
+      const topic = await tr.json();
+      await reconcileTags(issue, topic);
+      await syncReplies(issue, topic);
+    } catch (e) {
+      console.error(`Issue #${issue.number}:`, e.message);
+      process.exitCode = 1; // fail the run so GitHub emails you
+    }
+  }
 })().catch((e) => { console.error(e); process.exit(1); });
