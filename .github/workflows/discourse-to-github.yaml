@@ -26,3 +26,4 @@ jobs:
           FRONTLINE_USER: Frontline
           LOOKBACK_HOURS: "24"
           CATEGORY_ID: "6"
+          IGNORE_USERS: "Frontline"
