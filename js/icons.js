@@ -57,4 +57,4 @@ const EMO={"📻":"radio","📞":"phone","☎":"phone","📍":"map-pin","🔒":"
 const EMC={"circle-check":"#16a34a","circle-x":"#dc2626","triangle-alert":"#f59e0b","star":"#f59e0b"};
 /* 🔒 directly before " Opened" is the prison building icon in the event log, so it stays as emoji */
 const EMRE=/(🔒(?= Opened ))|(📻|📞|☎|📍|🔒|☁|🗑|✏|🎓|✕|⚠|🛠|❌|＋|✅|🎁|🏗|⏸|▶|🎖|🚨|🚔|🏢|🗺|⚙|🖼|💸|📋|📡|❓|🚦|⏱|↩|⏳|👤|⭐|⏭|🎲)\uFE0F?/g;
-function emi(h){return String(h).replace(EMRE,(m,k,e)=>{if(k)return k;const n=EMO[e];return lci(n,0,EMC[n])})}
+function emi(h){return String(h).replace(/🔒(?= Opened )/g,"⛓️").replace(EMRE,(m,k,e)=>{if(k)return k;const n=EMO[e];return lci(n,0,EMC[n])})}
