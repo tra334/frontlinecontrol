@@ -47,7 +47,7 @@ const HSTAY=600000,FN=["Oliver","Amelia","George","Isla","Harry","Ava","Jack","M
   hlock=h=>S.un.filter(u=>u.hid===h.id&&(u.st==="hosp"||u.st==="hand")).length+hpts(h).length,hn=u=>(dst(u.hid)||{}).name||(u.pr?"custody":"hospital");
 const HMAX=30;
 /* ===== prisoners: prisons (reuse the hospital system, ty "pn") + police station cells ===== */
-const PBONUS=800,CELLCOST=15000,CELLCAP=2,PSTAY=900000,PT=new Set(["irv","van","rp","dog","arv","sgt","po"]),NOPRIS=new Set(["Motorcycle collision","Mental health crisis","Missing child","Missing person – woods"]);
+const PBONUS=800,CELLCOST=15000,CELLCAP=2,PSTAY=900000,PT=new Set(["irv","van","rp","dog","arv","sgt","po"]),NOPRIS=new Set(["Motorcycle collision","Mental health crisis","Missing child","Missing person – woods","Traffic hazard – debris","Vulnerable person on bridge","Suspicious package"]);
 const dst=id=>S.hs.find(x=>x.id===id)||S.st.find(x=>x.id===id),dcap=d=>d.sv?(d.cl?CELLCAP:0):HBEDS[d.ty];
 function pickP(u){const lim=getSet().nearHosp;let best=null,bd=1e9;S.hs.concat(S.st).forEach(h=>{if(h.sv?(h.sv!=="p"||!h.cl):h.ty!=="pn")return;if(hbusy(h)>=dcap(h))return;const d=km(u.b,[h.lat,h.lon]);if(lim&&d>HMAX)return;if(d<bd){bd=d;best=h}});return best}
 function toPris(u,h){S.cr+=PBONUS;S.tb=(S.tb||0)+1;ldg("hb","Prisoner transfer bonus – "+h.name,PBONUS);log("🚔 Prisoner being transferred to "+h.name+". +£"+fmt(PBONUS)+" prisoner transfer bonus.");const from=u.b,d=km(from,[h.lat,h.lon])*1.3,e=Math.max(1,Math.ceil(d/(SP[u.ty]*spd())*60));u.hid=h.id;u.pr=1;u.rt=null;
