@@ -45,3 +45,38 @@ body.tm #modal{padding-top:calc(var(--th,0px) + env(safe-area-inset-top,0px) + 1
 .cx.cxb{margin:12px auto 0!important}
 #toast .tx{width:26px;height:26px}
 .upop .ux{display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#dc2626;color:#fff;opacity:1;top:5px;right:5px}
+
+/* ---- clean building popups (station / hospital): header + gear menu, More Info, row menus ---- */
+.ph2{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:2px 0 6px}
+.pt{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+.pt>span:first-child{margin-right:0!important}
+.pn{font-size:20px;font-weight:750;line-height:1.2;overflow-wrap:anywhere}
+.pen{flex:none;width:28px;height:28px;padding:0;border-radius:8px;background:none!important;color:var(--mu);display:flex;align-items:center;justify-content:center}
+.pen:hover{color:var(--tx);background:var(--bd)!important}
+.mnw{position:relative;flex:none}
+.mnb{width:40px;height:40px;padding:0;border-radius:12px;background:var(--bd);color:var(--tx);display:flex;align-items:center;justify-content:center}
+.mn{position:absolute;right:0;top:calc(100% + 6px);z-index:20;min-width:170px;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:6px;box-shadow:0 10px 28px rgba(0,0,0,.45)}
+.mn.up{top:auto;bottom:calc(100% + 6px)}
+.mni{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;color:var(--tx);font-weight:500;font-size:14px;padding:9px 10px;border-radius:8px;white-space:nowrap}
+.mni:hover{background:var(--bd)}.mni.dg{color:#f04438}
+.mor{display:inline-flex;align-items:center;gap:4px;background:none;color:var(--tx);padding:2px 0;font-size:13px;font-weight:700}
+.mor span{display:inline-flex;transition:transform .15s}.mor span.o{transform:rotate(90deg)}
+.mi{margin-top:6px}.stt{margin-top:8px}
+.sr{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--bd);font-size:16px}
+.sr b{text-align:right;font-weight:750;overflow-wrap:anywhere}
+.vl{margin:12px 0 2px;color:var(--mu);font-size:14px}
+.vr{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-top:1px solid var(--bd)}
+.vr .vi2{flex:1;min-width:0;cursor:pointer;font-size:15px;line-height:1.4}
+.vr .vact{display:flex;align-items:center;gap:10px;flex:none}
+.vr .mnb{width:34px;height:34px;border-radius:10px}
+.vr .st{min-width:84px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;padding:4px 10px}
+
+/* ---- buy vehicles section ---- */
+.bvh{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;margin-top:14px;padding:11px 12px;border-radius:12px;background:var(--card);border:1px solid var(--bd);color:var(--tx);font-size:15px;font-weight:700;text-align:left}
+.bvh .mu{font-weight:500;display:inline-flex;align-items:center;gap:4px}
+.bvc{display:inline-flex;transition:transform .15s}.bvc.o{transform:rotate(90deg)}
+.bvl{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.bv{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--bd);border-radius:12px;background:var(--card)}
+.bv.lk{opacity:.6}.bv .bi{flex:1;min-width:0;line-height:1.4}.bv .bi b{font-size:15px}
+.bvb{flex:none;min-width:92px;padding:8px 12px;border-radius:10px;font-size:13px;background:var(--a);color:#fff}
+.bvb:disabled{background:var(--bd);color:var(--mu);opacity:1}
