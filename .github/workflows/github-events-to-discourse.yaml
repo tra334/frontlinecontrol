@@ -1,0 +1,30 @@
+name: GitHub issue activity to Discourse
+
+on:
+  issues:
+    types: [assigned, unassigned, labeled, unlabeled, closed, reopened, edited, milestoned, demilestoned]
+
+permissions:
+  contents: read
+
+jobs:
+  relay:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node .github/scripts/issue-event-to-discourse.js
+        env:
+          DISCOURSE_URL: ${{ secrets.DISCOURSE_URL }}
+          DISCOURSE_API_KEY: ${{ secrets.DISCOURSE_API_KEY }}
+          FRONTLINE_USER: Frontline
+          ACTION: ${{ github.event.action }}
+          ACTOR: ${{ github.event.sender.login }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          STATE_REASON: ${{ github.event.issue.state_reason }}
+          LABEL_NAME: ${{ github.event.label.name }}
+          ASSIGNEE: ${{ github.event.assignee.login }}
+          MILESTONE: ${{ github.event.milestone.title }}
+          OLD_TITLE: ${{ github.event.changes.title.from }}
