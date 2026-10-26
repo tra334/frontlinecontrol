@@ -38,3 +38,10 @@ body.tm #modal{padding-top:calc(var(--th,0px) + env(safe-area-inset-top,0px) + 1
 .bpn{width:34px;height:34px;border-radius:50%;border:3px solid #fff;box-sizing:border-box;color:#fff;font:700 16px/28px system-ui;text-align:center;box-shadow:0 3px 10px rgba(0,0,0,.45);cursor:grab}
 .bpt{width:0;height:0;margin:-2px auto 0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:10px solid #fff;filter:drop-shadow(0 2px 2px rgba(0,0,0,.3))}
 .leaflet-dragging .bpsvg{cursor:grabbing!important}
+
+/* every close control = the red round X used on the Stations tab */
+.cx,#xb,#toast .tx{width:30px;height:30px;padding:0;border-radius:50%;border:0!important;background:#dc2626!important;color:#fff!important;display:flex;align-items:center;justify-content:center;line-height:1;cursor:pointer}
+.cx:hover,#xb:hover,#toast .tx:hover{background:#b91c1c!important}
+.cx.cxb{margin:12px auto 0!important}
+#toast .tx{width:26px;height:26px}
+.upop .ux{display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#dc2626;color:#fff;opacity:1;top:5px;right:5px}
