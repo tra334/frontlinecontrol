@@ -1,0 +1,28 @@
+name: Discourse topics to GitHub issues
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"   # GitHub's minimum; runs can lag a few minutes
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+concurrency:
+  group: discourse-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node .github/scripts/sync-topics.js
+        env:
+          DISCOURSE_URL: ${{ secrets.DISCOURSE_URL }}
+          DISCOURSE_API_KEY: ${{ secrets.DISCOURSE_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ github.repository }}
+          FRONTLINE_USER: Frontline
+          LOOKBACK_HOURS: "24"
+          CATEGORY_ID: "6"
