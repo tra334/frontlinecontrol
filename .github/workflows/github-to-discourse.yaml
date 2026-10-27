@@ -20,6 +20,8 @@ jobs:
           ISSUE_BODY: ${{ github.event.issue.body }}
           COMMENT_BODY: ${{ github.event.comment.body }}
           COMMENT_URL: ${{ github.event.comment.html_url }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
           COMMENTER: ${{ github.event.comment.user.login }}
           FRONTLINE_USER: Frontline
           THOMAS_USER: Frontline
