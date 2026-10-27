@@ -5,10 +5,13 @@
 //  3. New replies on linked topics -> GitHub issue comments (ignoring IGNORE_USERS).
 // Node 18+, no dependencies.
 const {
-  DISCOURSE_URL, DISCOURSE_API_KEY, GITHUB_TOKEN, GITHUB_REPO,
+  DISCOURSE_URL: DISCOURSE_URL_RAW, DISCOURSE_API_KEY, GITHUB_TOKEN, GITHUB_REPO,
   FRONTLINE_USER = "Frontline", LOOKBACK_HOURS = "24", CATEGORY_ID = "6",
   IGNORE_USERS = "Frontline",
+  ISSUE_STYLE = "card", // "note" (callout header) or "card" (table header)
 } = process.env;
+
+const DISCOURSE_URL = String(DISCOURSE_URL_RAW).replace(/\/+$/, ""); // tolerate a trailing slash in the secret
 
 const CLOSE_TAG = "fixed"; // adding this tag closes the linked issue
 const SKIP_LABEL = "discourse"; // internal label, never mirrored as a tag
@@ -93,6 +96,72 @@ async function setDiscourseTags(topicId, tags) {
   if (!res.ok) throw new Error(`Discourse tag update on topic ${topicId} ${res.status}: ${await res.text()}`);
 }
 
+
+// ---------- formatting helpers ----------
+const fmtDate = (iso) =>
+  new Date(iso).toLocaleString("en-GB", {
+    day: "numeric", month: "short", year: "numeric",
+    hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC",
+  }) + " UTC";
+
+// Discourse stores images as ![alt|594x500](upload://abc.png), which GitHub can't render.
+// Resolve those to real URLs and strip the size hint from the alt text.
+async function resolveUploads(raw) {
+  const shorts = [...new Set([...raw.matchAll(/upload:\/\/[A-Za-z0-9]+(?:\.[A-Za-z0-9]+)?/g)].map((m) => m[0]))];
+  const urls = new Map();
+  if (shorts.length) {
+    try {
+      const res = await fetch(`${DISCOURSE_URL}/uploads/lookup-urls.json`, {
+        method: "POST",
+        headers: { ...dHeaders(), "Content-Type": "application/x-www-form-urlencoded" },
+        body: shorts.map((s) => `short_urls[]=${encodeURIComponent(s)}`).join("&"),
+      });
+      if (res.ok) {
+        for (const r of await res.json()) {
+          if (r.url) urls.set(r.short_url, r.url.startsWith("/") ? `${DISCOURSE_URL}${r.url}` : r.url);
+        }
+      }
+    } catch (e) { console.warn("Upload lookup failed:", e.message); }
+  }
+  return raw
+    .replace(/!\[([^\]]*?)\|\d+x\d+(?:,\s*\d+%)?\]\(/g, "![$1](") // drop "|594x500" from alt text
+    .replace(/!\[([^\]]*)\]\((upload:\/\/[^)\s]+)\)/g, (_, alt, src) =>
+      {
+        // Resolved URL if Discourse gave one, otherwise its short-url redirect (same /uploads/short-url/ route the forum itself uses).
+        const url = urls.get(src) ?? `${DISCOURSE_URL}/uploads/short-url/${src.slice("upload://".length)}`;
+        return `[![${alt || "image"}](${url})](${url})`; // click to open full size
+      })
+    .replace(/\[([^\]]+?)\|attachment\]\((upload:\/\/[^)\s]+)\)/g, (_, name, src) =>
+      urls.has(src) ? `[📎 ${name}](${urls.get(src)})` : `📎 ${name}`);
+}
+
+// Discourse avatar_template looks like "/user_avatar/host/thomas/{size}/12_2.png" (or a CDN URL).
+function avatarUrl(tpl, size = 96) {
+  if (!tpl) return "";
+  const u = String(tpl).replace("{size}", size);
+  if (/^https?:/.test(u)) return u;
+  return u.startsWith("//") ? `https:${u}` : `${DISCOURSE_URL}${u}`;
+}
+
+// Discourse staff flags -> short role label (admin wins over moderator).
+const roleOf = (post) => (post?.admin ? "Admin" : post?.moderator ? "Mod" : "");
+
+// Avatar + name (+ staff shield) on one line, meta underneath. Plain inline HTML, no table, so GitHub draws no borders.
+function authorHeader({ name, avatar, role, action, when, url, urlText, px = 40 }) {
+  const img = avatar ? `<img src="${avatar}" width="${px}" height="${px}" align="middle" alt="${name}"> &nbsp;` : "";
+  const shield = role ? ` 🛡️ <sub><b>${role}</b></sub>` : "";
+  return `${img}<b>${name}</b>${shield} <sub>· ${action}</sub><br>\n<sub>🕒 ${when} &nbsp;·&nbsp; 🔗 <a href="${url}">${urlText}</a></sub>`;
+}
+
+// Plain-URL list of every image, so they stay reachable even if GitHub can't render one inline.
+function imageLinksBlock(text) {
+  const seen = new Map();
+  for (const m of text.matchAll(/!\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g)) if (!seen.has(m[2])) seen.set(m[2], m[1] || "image");
+  if (!seen.size) return "";
+  const items = [...seen].map(([url, alt]) => `- [${alt}](${url})`).join("\n");
+  return `<details>\n<summary>🖼️ Image links (${seen.size})</summary>\n\n${items}\n\n</details>`;
+}
+
 // ---------- 1. Discourse topics -> GitHub issues ----------
 async function syncTopics(linked) {
   const res = await fetch(`${DISCOURSE_URL}/latest.json?order=created`, { headers: dHeaders() });
@@ -112,26 +181,67 @@ async function syncTopics(linked) {
 
     const topicUrl = `${DISCOURSE_URL}/t/${t.slug}/${t.id}`;
     let firstPost = "";
-    const raw = await fetch(`${DISCOURSE_URL}/raw/${t.id}`, { headers: dHeaders() });
-    if (raw.ok) firstPost = await raw.text();
-
+    let createdAt = t.created_at;
     let author = "unknown";
+    let avatar = "";
+    let role = "";
     let tags = [];
+
     const info = await fetch(`${DISCOURSE_URL}/t/${t.id}.json`, { headers: dHeaders() });
     if (info.ok) {
       const topic = await info.json();
       author = topic.details?.created_by?.username ?? author;
       tags = tagNames(topic).filter((x) => x !== SKIP_LABEL);
+      const first = topic.post_stream?.posts?.[0];
+      if (first) {
+        avatar = avatarUrl(first.avatar_template);
+        role = roleOf(first);
+        // /posts/:id.json returns the clean markdown (no "user | date | #1" header line).
+        const pr = await fetch(`${DISCOURSE_URL}/posts/${first.id}.json`, { headers: dHeaders() });
+        if (pr.ok) {
+          const p = await pr.json();
+          firstPost = p.raw ?? "";
+          createdAt = p.created_at ?? createdAt;
+        }
+      }
     }
+    if (!firstPost) {
+      const raw = await fetch(`${DISCOURSE_URL}/raw/${t.id}`, { headers: dHeaders() });
+      if (raw.ok) {
+        firstPost = (await raw.text())
+          .replace(/^[^\n]*\|\s*#\d+\s*\n+/, "") // "Thomas | 2026-10-27 ... | #1"
+          .replace(/\n*-{3,}\s*$/, "");            // trailing rule Discourse adds
+      }
+    }
+
+    const content = (await resolveUploads(firstPost)).trim() || "_No description provided._";
+    const images = imageLinksBlock(content);
+    const when = fmtDate(createdAt);
+    const card = ISSUE_STYLE === "card";
+    const header = authorHeader({
+      name: author, avatar, role, action: "reported this on the forum", when, url: topicUrl, urlText: "Open discussion ↗",
+    });
+    const body = [
+      header,
+      "",
+      ...(card ? ["### 📝 Description", ""] : []),
+      content,
+      "",
+      ...(images ? [images, ""] : []),
+      ...(card ? ["> [!TIP]", "> Reply here or on the forum — comments are mirrored both ways.", ""] : []),
+      "---",
+      `<sub>Synced from [Discourse](${DISCOURSE_URL}) · topic #${t.id}${card ? "" : " · replies and comments are mirrored both ways"}</sub>`,
+      "",
+      `<!-- discourse-topic-id: ${t.id} -->`,
+      `<!-- discourse-tags: ${[...tags].sort().join(",")} -->`,
+    ].join("\n");
 
     const issue = await gh(`/repos/${GITHUB_REPO}/issues`, {
       method: "POST",
       body: JSON.stringify({
         title: t.title,
         labels: [SKIP_LABEL, ...tags.map(labelFor)],
-        body:
-          `${firstPost}\n\n---\nPosted by **${author}** on the forum: ${topicUrl}\n\n` +
-          `<!-- discourse-topic-id: ${t.id} -->\n<!-- discourse-tags: ${[...tags].sort().join(",")} -->`,
+        body,
       }),
     });
     linked.push({ number: issue.number, state: "open", topicId: t.id, body: issue.body ?? "", labels: labelNames(issue.labels) });
@@ -219,12 +329,14 @@ async function syncReplies(issue, topic) {
     if (ignored.has(String(p.username).toLowerCase())) continue;
 
     const postUrl = `${DISCOURSE_URL}/t/${issue.topicId}/${p.post_number}`;
+    const replyHeader = authorHeader({
+      name: p.username, avatar: avatarUrl(p.avatar_template, 64), role: roleOf(p), action: "replied on the forum",
+      when: fmtDate(p.created_at), url: postUrl, urlText: "View post ↗", px: 28,
+    });
     await gh(`/repos/${GITHUB_REPO}/issues/${issue.number}/comments`, {
       method: "POST",
       body: JSON.stringify({
-        body:
-          `> 💬 **${p.username}** replied on the forum · [view post](${postUrl})\n\n` +
-          `${p.raw}\n\n<!-- discourse-post-id: ${id} -->`,
+        body: `${replyHeader}\n\n${(await resolveUploads(p.raw ?? "")).trim()}\n\n<!-- discourse-post-id: ${id} -->`,
       }),
     });
     console.log(`Post ${id} by ${p.username} -> issue #${issue.number}`);
