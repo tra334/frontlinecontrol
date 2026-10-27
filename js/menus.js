@@ -122,3 +122,5 @@ function tlay(){const t=$("#toast"),m=$("#modal"),on=!t.hidden&&!m.hidden;docume
 lay();if(window.ResizeObserver){const ro=new ResizeObserver(()=>lay());ro.observe($("header"));ro.observe($("nav"))}addEventListener("resize",()=>{dock();lay();map.invalidateSize()});dock();paint();sync();try{catchUp()}catch(e){console.error(e)}setInterval(tick,1000);setInterval(dbgUp,250);setInterval(sync,500);setTimeout(()=>map.invalidateSize(),300);if(drState().can)setTimeout(()=>toast("Daily reward ready – open Ranks to claim it"),2000);
 if(S.st.length)map.fitBounds(S.st.map(x=>[x.lat,x.lon]),{maxZoom:13,padding:[30,30]});
 gameOn=true;cloudDirty=!!AU;sbStatus();}
+// Tap the header balance to open Logs (same as Account > Logs)
+{const c=$("#cr");if(c){c.style.cursor="pointer";c.onclick=()=>openJobLogs()}}
