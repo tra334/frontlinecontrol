@@ -1,4 +1,3 @@
-
 name: Publish commits to Discourse
 
 on:
@@ -25,10 +24,14 @@ jobs:
           COMMITS: ${{ toJSON(github.event.commits) }}
           EVENT_NAME: ${{ github.event_name }}
           EVENT_SHA: ${{ github.sha }}
+          BRANCH: ${{ github.ref_name }}
+          PUSHER: ${{ github.actor }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           TOPIC_ID: ${{ vars.DISCOURSE_COMMITS_TOPIC_ID }}
         run: |
           python - <<'PY'
           import os
+          import re
           import json
           import urllib.request
           import urllib.error
@@ -36,6 +39,9 @@ jobs:
 
           base = os.environ["DISCOURSE_URL"].rstrip("/")
           repo = os.environ["REPOSITORY"]
+          branch = os.environ.get("BRANCH") or "main"
+          pusher = os.environ.get("PUSHER") or ""
+          run_url = os.environ.get("RUN_URL") or ""
           topic_id = (os.environ.get("TOPIC_ID") or "").strip()
           if not topic_id:
               raise SystemExit(
@@ -43,14 +49,36 @@ jobs:
                   "ID of the Discourse topic that should receive commit posts."
               )
 
-          MAX_PATCH = 3000     # per-file diff preview
-          MAX_POST = 30000     # stay under Discourse's post length limit
+          MAX_PATCH = 3000      # per-file diff preview
+          MAX_POST = 30000      # stay under Discourse's post length limit
+          MAX_TABLE_ROWS = 40   # rows in the file summary table
+          MAX_BODY = 1500       # commit message body preview
+
+          STATUS = {
+              "added": ("🟢", "Added"),
+              "modified": ("🟡", "Modified"),
+              "removed": ("🔴", "Removed"),
+              "renamed": ("🔀", "Renamed"),
+              "copied": ("📋", "Copied"),
+              "changed": ("✏️", "Changed"),
+              "unchanged": ("⚪", "Unchanged"),
+          }
+
+          TYPES = {
+              "fix": "✅",
+              "bug": "🐞",
+              "feature": "✨", "feat": "✨",
+              "ux": "🎨",
+              "revert": "⏪",
+              "add": "➕",
+          }
 
           discourse_headers = {
               "Api-Key": os.environ["DISCOURSE_API_KEY"],
               "Api-Username": os.environ["DISCOURSE_API_USERNAME"],
               "Accept": "application/json"
           }
+
 
           def get_github_commit(sha):
               url = f"https://api.github.com/repos/{repo}/commits/{sha}"
@@ -65,6 +93,7 @@ jobs:
               with urllib.request.urlopen(request, timeout=30) as response:
                   return json.load(response)
 
+
           def post_discourse(data):
               request = urllib.request.Request(
                   base + "/posts.json",
@@ -74,6 +103,36 @@ jobs:
               )
               with urllib.request.urlopen(request, timeout=30) as response:
                   return json.load(response)
+
+
+          def esc_cell(text):
+              return str(text).replace("|", "\\|").replace("\n", " ")
+
+
+          def change_bar(adds, dels, width=10):
+              total = adds + dels
+              if total == 0:
+                  return "⬜" * width
+              green = round(width * adds / total)
+              if adds and green == 0:
+                  green = 1
+              if dels and green == width:
+                  green = width - 1
+              return "🟩" * green + "🟥" * (width - green)
+
+
+          def date_tag(iso):
+              # Discourse renders [date] in each reader's own timezone.
+              m = re.match(r"(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})", iso or "")
+              if not m:
+                  return iso or "Unknown"
+              return f'[date={m.group(1)} time={m.group(2)} timezone="UTC"]'
+
+
+          def commit_emoji(message):
+              m = re.match(r"\s*(?:\[?)(\w+)", message.lower())
+              return TYPES.get(m.group(1), "📌") if m else "📌"
+
 
           commits = json.loads(os.environ.get("COMMITS") or "[]")
 
@@ -87,51 +146,156 @@ jobs:
 
               details = get_github_commit(sha)
               commit = details.get("commit", {})
-              message = commit.get("message", "Code update").splitlines()[0]
-              author = (
-                  (details.get("author") or {}).get("login")
-                  or commit.get("author", {}).get("name", "Unknown")
-              )
+              full_message = commit.get("message", "Code update")
+              message_lines = full_message.splitlines() or ["Code update"]
+              title = message_lines[0]
+
+              # Body, with co-author trailers pulled out
+              co_authors = []
+              body_lines = []
+              for line in message_lines[1:]:
+                  m = re.match(r"\s*Co-authored-by:\s*(.+?)\s*(?:<.*>)?\s*$", line, re.I)
+                  if m:
+                      co_authors.append(m.group(1))
+                  else:
+                      body_lines.append(line)
+              body = "\n".join(body_lines).strip()
+              if len(body) > MAX_BODY:
+                  body = body[:MAX_BODY].rstrip() + " …"
+
+              gh_author = details.get("author") or {}
+              login = gh_author.get("login")
+              git_author = commit.get("author", {})
+              author_name = git_author.get("name", "Unknown")
+              if login:
+                  author = f"[{login}]({gh_author.get('html_url', 'https://github.com/' + login)})"
+              else:
+                  author = author_name
+
+              committer = commit.get("committer", {}) or {}
+              committer_name = committer.get("name", "")
+
               files = details.get("files", [])
               stats = details.get("stats", {})
-              commit_url = details.get("html_url", "")
-              
+              adds = stats.get("additions", 0)
+              dels = stats.get("deletions", 0)
+              commit_url = details.get("html_url", f"https://github.com/{repo}/commit/{sha}")
+              parents = details.get("parents", [])
+              verified = (commit.get("verification") or {}).get("verified")
+              when = date_tag(git_author.get("date", ""))
+
+              server = "https://github.com"
+              tree_url = f"{server}/{repo}/tree/{sha}"
+              branch_url = f"{server}/{repo}/tree/{urllib.parse.quote(branch)}"
+
+              # ---- Header and info table
               lines = [
-                  f"### [`{sha[:7]}`]({commit_url}) — {message}",
+                  f"## {commit_emoji(title)} {title}",
                   "",
-                  f"**Author:** {author} · **Files:** {len(files)} · "
-                  f"**+{stats.get('additions', 0)} / -{stats.get('deletions', 0)}**",
-                  ""
+                  "| | |",
+                  "|---|---|",
+                  f"| **Commit** | [`{sha[:7]}`]({commit_url}) |",
+                  f"| **Author** | {author}"
+                  + (f" (+{len(co_authors)} co-author{'s' if len(co_authors) != 1 else ''})" if co_authors else "")
+                  + " |",
+                  f"| **Branch** | [`{branch}`]({branch_url}) |",
+                  f"| **Repository** | [{repo}]({server}/{repo}) |",
+                  f"| **When** | {when} |",
+                  f"| **Changes** | {change_bar(adds, dels)} **+{adds}** / **-{dels}** "
+                  f"across **{len(files)}** file{'s' if len(files) != 1 else ''} |",
               ]
-
-              for file in files:
-                  filename = file.get("filename", "Unknown file")
-                  status = file.get("status", "changed")
-                  patch = file.get("patch", "")
-                  summary = (
-                      f"`{filename}` ({status}, "
-                      f"+{file.get('additions', 0)} / -{file.get('deletions', 0)})"
+              if verified is not None:
+                  lines.append(f"| **Signature** | {'✅ Verified' if verified else '⚠️ Unverified'} |")
+              if committer_name and committer_name != author_name:
+                  lines.append(f"| **Committer** | {esc_cell(committer_name)} |")
+              if co_authors:
+                  lines.append(f"| **Co-authors** | {esc_cell(', '.join(co_authors))} |")
+              if parents:
+                  parent_links = ", ".join(
+                      f"[`{p['sha'][:7]}`]({p.get('html_url', '')})" for p in parents
                   )
+                  lines.append(f"| **Parent{'s' if len(parents) != 1 else ''}** | {parent_links} |")
+              lines.append("")
 
-                  if patch:
-                      shortened = len(patch) > MAX_PATCH
-                      block = [
-                          f'[details="{summary}"]',
-                          "",
-                          "```diff",
-                          patch[:MAX_PATCH],
-                          "```",
-                      ]
-                      if shortened:
-                          block.append("_Diff shortened. See the full commit on GitHub._")
-                      block.extend(["[/details]", ""])
-                  else:
-                      block = [f"- {summary} — no inline diff (binary or too large)", ""]
+              if body:
+                  quoted = "\n".join("> " + l if l else ">" for l in body.splitlines())
+                  lines.extend(["### 📝 Description", "", quoted, ""])
 
-                  if len("\n".join(lines + block)) > MAX_POST - 300:
-                      lines.append("_More files changed. See the full commit on GitHub._")
-                      break
-                  lines.extend(block)
+              # ---- File summary table
+              if files:
+                  lines.extend([
+                      "### 📂 Files changed",
+                      "",
+                      "| | File | Status | + | − |",
+                      "|:-:|---|---|--:|--:|",
+                  ])
+                  for f in files[:MAX_TABLE_ROWS]:
+                      name = f.get("filename", "Unknown file")
+                      status = f.get("status", "changed")
+                      emoji, label = STATUS.get(status, ("✏️", status.title()))
+                      display = f"`{name}`"
+                      if status == "renamed" and f.get("previous_filename"):
+                          display = f"`{f['previous_filename']}` → `{name}`"
+                      if status != "removed":
+                          url = f"{server}/{repo}/blob/{sha}/{urllib.parse.quote(name)}"
+                          display = f"[{display}]({url})" if status != "renamed" else display
+                      lines.append(
+                          f"| {emoji} | {esc_cell(display)} | {label} | "
+                          f"{f.get('additions', 0)} | {f.get('deletions', 0)} |"
+                      )
+                  if len(files) > MAX_TABLE_ROWS:
+                      lines.append(f"| … | _and {len(files) - MAX_TABLE_ROWS} more files_ | | | |")
+                  lines.append("")
+
+                  # ---- Per-file diffs
+                  lines.extend(["### 🔍 Diffs", ""])
+                  truncated = False
+                  for f in files:
+                      name = f.get("filename", "Unknown file")
+                      status = f.get("status", "changed")
+                      emoji, label = STATUS.get(status, ("✏️", status.title()))
+                      patch = f.get("patch", "")
+                      summary = (
+                          f"{emoji} {name.replace(chr(34), '')} · {label} · "
+                          f"+{f.get('additions', 0)} / -{f.get('deletions', 0)}"
+                      )
+
+                      if patch:
+                          block = [
+                              f'[details="{summary}"]',
+                              "",
+                              "```diff",
+                              patch[:MAX_PATCH],
+                              "```",
+                          ]
+                          if len(patch) > MAX_PATCH:
+                              block.append(
+                                  f"_Diff shortened ({len(patch) - MAX_PATCH:,} more characters). "
+                                  f"[See the full commit on GitHub]({commit_url})._"
+                              )
+                          block.extend(["[/details]", ""])
+                      else:
+                          block = [f"- {emoji} `{name}` · {label} — no inline diff (binary or too large)", ""]
+
+                      if len("\n".join(lines + block)) > MAX_POST - 600:
+                          truncated = True
+                          break
+                      lines.extend(block)
+
+                  if truncated:
+                      lines.extend([
+                          f"_More diffs not shown. [See the full commit on GitHub]({commit_url})._",
+                          ""
+                      ])
+
+              # ---- Footer
+              footer = [
+                  f"[🔗 View commit]({commit_url})",
+                  f"[🌲 Browse files at this commit]({tree_url})",
+              ]
+              if run_url:
+                  footer.append(f"[⚙️ Workflow run]({run_url})")
+              lines.extend(["---", "", " · ".join(footer)])
 
               raw = "\n".join(lines)
 
@@ -148,5 +312,4 @@ jobs:
                   print(f"Discourse returned HTTP {error.code}")
                   print(error.read().decode()[:1500])
                   raise
-
           PY
