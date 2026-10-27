@@ -1,4 +1,4 @@
-/* ===== user Points of Interest (POIs): placed in Settings, boost matching mission spawns ===== */
+/* ===== user Points of Interest (POIs): placed in Settings, always boost matching mission spawns. Hiding them on the map is done from the map filter (js/map-filter.js) and never affects spawning. ===== */
 const POI_MAX=50,POI_CHANCE=.6,POI_BUSY_KM=.06;
 const POI_TYPES=[
 {id:"pub",n:"Pub / bar",e:"🍺",m:"Pub brawl, drink driver",r:/Pub brawl|Drink driver/},
@@ -16,22 +16,21 @@ const POI_TYPES=[
 const poiT=id=>POI_TYPES.find(t=>t.id===id);
 const poiL=()=>S.poi||(S.poi=[]);
 const poiCnt=id=>poiL().filter(p=>p.t===id).length;
-const poiOn=()=>getSet().poiOn!==false;
 /* pick a POI for a mission template: higher chance only, never forced; skips POIs with an active mission there */
-function poiPick(t){if(!poiOn())return null;const nm=t[1],ids=POI_TYPES.filter(x=>x.r.test(nm)).map(x=>x.id);if(!ids.length)return null;
+function poiPick(t){const nm=t[1],ids=POI_TYPES.filter(x=>x.r.test(nm)).map(x=>x.id);if(!ids.length)return null;
 const pool=poiL().filter(p=>ids.includes(p.t));if(!pool.length||Math.random()>POI_CHANCE)return null;
 const free=pool.filter(p=>!S.ms.some(m=>km([m.la,m.lo],[p.la,p.lo])<POI_BUSY_KM));return free.length?pick(free):null}
 /* ---- map markers ---- */
 var POIM={};
-function poiSync(){const on=poiOn(),seen={};if(on)poiL().forEach(p=>{seen[p.id]=1;const ty=poiT(p.t);if(!ty)return;let o=POIM[p.id];if(!o){o=POIM[p.id]=L.marker([p.la,p.lo],{zIndexOffset:-500,icon:ic('<div style="width:24px;height:24px;border-radius:50%;background:#7c3aed;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 1px 4px rgba(0,0,0,.5)">'+ty.e+'</div>')}).addTo(map);o.on("click",()=>poiDel(p.id))}else o.setLatLng([p.la,p.lo])});
+function poiSync(){const seen={};poiL().forEach(p=>{seen[p.id]=1;const ty=poiT(p.t);if(!ty)return;let o=POIM[p.id];if(!o){o=POIM[p.id]=L.marker([p.la,p.lo],{zIndexOffset:-500,icon:ic('<div data-f="poi" style="width:24px;height:24px;border-radius:50%;background:#7c3aed;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 1px 4px rgba(0,0,0,.5)">'+ty.e+'</div>')}).addTo(map);o.on("click",()=>poiDel(p.id))}else o.setLatLng([p.la,p.lo])});
 for(const id in POIM)if(!seen[id]){map.removeLayer(POIM[id]);delete POIM[id]}}
 function poiDel(id){const p=poiL().find(x=>x.id===id);if(!p)return;if(pm)return;if(!confirm("Remove this "+(poiT(p.t)||{n:"POI"}).n+" POI?"))return;S.poi=poiL().filter(x=>x.id!==id);persist();poiSync();refreshSettings()}
 /* ---- settings section ---- */
 var poiOpen=false;
-function poiSettingsH(){const on=poiOn(),tot=poiL().length;
-return `<div style="padding:12px 0;border-bottom:1px solid var(--bd)"><div id="set_poih" style="display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer"><div><div style="font-weight:600">${lci("map-pin")} Custom Points of interest <span style="color:var(--mu);font-weight:400;font-size:12px">(${tot}${on?"":", off"}) ${poiOpen?"▲":"▼"}</span></div>${poiOpen?`<div style="color:var(--mu);font-size:12px;margin-top:2px">Place your own POIs. While the switch is off they are hidden and not used for spawning. Matching missions are more likely to spawn there, but can still spawn anywhere. If a mission is already active at a POI, another POI or a random area is used. Max ${POI_MAX} of each type (${tot} placed).</div>`:`<div style="color:var(--mu);font-size:12px;margin-top:2px">Tap to expand</div>`}</div><button id="set_poi" role="switch" aria-checked="${on}" style="flex:none;width:50px;height:30px;padding:0;border-radius:15px;border:0;position:relative;cursor:pointer;background:${on?"var(--a)":"var(--bd)"}"><span style="position:absolute;top:3px;left:${on?23:3}px;width:24px;height:24px;border-radius:50%;background:#fff;transition:left .15s"></span></button></div>`+
+function poiSettingsH(){const tot=poiL().length;
+return `<div style="padding:12px 0;border-bottom:1px solid var(--bd)"><div id="set_poih" style="display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer"><div><div style="font-weight:600">${lci("map-pin")} Custom Points of interest <span style="color:var(--mu);font-weight:400;font-size:12px">(${tot}) ${poiOpen?"▲":"▼"}</span></div>${poiOpen?`<div style="color:var(--mu);font-size:12px;margin-top:2px">Place your own POIs. Matching missions are more likely to spawn at them, but can still spawn anywhere. To hide them on the map without affecting spawning, use the filter button at the top right of the map. If a mission is already active at a POI, another POI or a random area is used. Max ${POI_MAX} of each type (${tot} placed).</div>`:`<div style="color:var(--mu);font-size:12px;margin-top:2px">Tap to expand</div>`}</div></div>`+
 (poiOpen?POI_TYPES.map(t=>{const c=poiCnt(t.id),f=c>=POI_MAX;return `<div style="display:flex;align-items:center;gap:8px;margin-top:8px"><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:13px">${t.e} ${t.n} <span style="color:var(--mu);font-weight:400">${c}/${POI_MAX}</span></div><div style="color:var(--mu);font-size:11px">${t.m}</div></div><button data-poi="${t.id}" ${f?"disabled":""} style="flex:none;padding:7px 12px;border:0;border-radius:8px;background:${f?"var(--bd)":"#7c3aed"};color:#fff;font:700 12px system-ui;cursor:${f?"not-allowed":"pointer"}">${f?"Full":"Place"}</button></div>`}).join(""):"")+`</div>`}
-function poiBind(ov,draw){const t=ov.querySelector("#set_poi");const h=ov.querySelector("#set_poih");if(h)h.onclick=()=>{poiOpen=!poiOpen;draw()};if(t)t.onclick=e=>{e.stopPropagation();const v=!poiOn();setSet("poiOn",v);poiSync();draw()};
+function poiBind(ov,draw){const h=ov.querySelector("#set_poih");if(h)h.onclick=()=>{poiOpen=!poiOpen;draw()};
 ov.querySelectorAll("[data-poi]").forEach(b=>b.onclick=()=>poiStart(b.dataset.poi))}
 /* ---- placement mode (reuses the draggable pin) ---- */
 function poiStart(id){if(!poiT(id)||poiCnt(id)>=POI_MAX)return;bm=null;mv=null;pm={t:id,n:0};

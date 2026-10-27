@@ -80,3 +80,29 @@ body.tm #modal{padding-top:calc(var(--th,0px) + env(safe-area-inset-top,0px) + 1
 .bv.lk{opacity:.6}.bv .bi{flex:1;min-width:0;line-height:1.4}.bv .bi b{font-size:15px}
 .bvb{flex:none;min-width:92px;padding:8px 12px;border-radius:10px;font-size:13px;background:var(--a);color:#fff}
 .bvb:disabled{background:var(--bd);color:var(--mu);opacity:1}
+
+/* ---- map filter (top right of map): hides markers visually only, game logic untouched ---- */
+body[data-hf~="f"] [data-f="f"],body[data-hf~="p"] [data-f="p"],body[data-hf~="a"] [data-f="a"],body[data-hf~="h"] [data-f="h"],body[data-hf~="pn"] [data-f="pn"],body[data-hf~="poi"] [data-f="poi"]{display:none!important}
+#mfb{position:absolute;right:8px;top:calc(var(--hh,52px) + 8px);z-index:1160;width:36px;height:36px;padding:0;display:flex;align-items:center;justify-content:center;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+#mfb.act{background:var(--ac);color:#fff;border-color:var(--ac)}
+#mfb.act::after{content:"";position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:#f59e0b;border:2px solid var(--card)}
+#mfb.shim{margin-top:70px}
+#mfp{position:absolute;right:8px;top:calc(var(--hh,52px) + 50px);z-index:1160;width:min(260px,calc(100% - 16px));max-height:calc(100% - var(--hh,52px) - var(--nh,48px) - 70px);overflow-y:auto;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:12px;padding:8px;box-shadow:0 8px 24px rgba(0,0,0,.45)}
+#mfp.shim{margin-top:70px}
+#mfp[hidden]{display:none!important}
+#mfp .mfh{font:700 12px system-ui;letter-spacing:.06em;text-transform:uppercase;color:var(--mu);padding:4px 6px 6px}
+#mfp .mfr{display:flex;align-items:center;gap:10px;width:100%;padding:7px 6px;border-radius:8px;background:none;color:var(--tx);font:600 14px system-ui;text-align:left}
+#mfp .mfr:hover{background:var(--bd)}
+#mfp .mfi{flex:none;width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font:700 14px/1 system-ui}
+#mfp .mfl{flex:1;min-width:0}
+#mfp .mfs{flex:none;position:relative;width:38px;height:22px;border-radius:11px;background:var(--bd);transition:background .15s}
+#mfp .mfs.on{background:var(--a)}
+#mfp .mfs i{position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .15s}
+#mfp .mfs.on i{left:18px}
+#mfp .mfn{color:var(--mu);font-size:11px;line-height:1.35;padding:6px 6px 2px}
+#mfp .mfa{display:block;width:100%;margin-top:6px;padding:8px;border-radius:8px;background:var(--bd);color:var(--tx);font:700 13px system-ui}
+@media(min-width:1000px){#mfb{top:8px}#mfp{top:50px;max-height:calc(100% - 66px)}}
+
+/* search bar always sits just clear of the placement banner (height set by js/map-filter.js as --bmh) */
+@media(min-width:1000px){#bsr{top:calc(12px + var(--bmh,98px) + 8px)}}
+@media(max-width:999px){#bsr{bottom:calc(var(--nh,48px) + 10px + var(--bmh,100px) + 8px)}}
