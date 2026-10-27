@@ -10,6 +10,7 @@ const {
   IGNORE_USERS = "Frontline",
 } = process.env;
 
+const CLOSE_TAG = "fixed"; // adding this tag closes the linked issue
 const SKIP_LABEL = "discourse"; // internal label, never mirrored as a tag
 const ignored = new Set(
   [...IGNORE_USERS.split(","), FRONTLINE_USER, "system"].map((u) => u.trim().toLowerCase()).filter(Boolean)
@@ -168,6 +169,21 @@ async function reconcileTags(issue, topic) {
     if (merged.has(key)) continue;
     try { await gh(`/repos/${GITHUB_REPO}/issues/${issue.number}/labels/${encodeURIComponent(name)}`, { method: "DELETE" }); }
     catch (e) { if (!String(e.message).includes(" 404")) throw e; }
+  }
+
+  // "fixed" newly added (on Discourse or GitHub) -> close the issue as completed.
+  // Only fires on the transition, so reopening an issue that still has the tag won't re-close it.
+  if (merged.has(CLOSE_TAG) && !base.has(CLOSE_TAG)) {
+    await gh(`/repos/${GITHUB_REPO}/issues/${issue.number}/comments`, {
+      method: "POST",
+      body: JSON.stringify({ body: "Issue has been marked as fixed and closed" }),
+    });
+    await gh(`/repos/${GITHUB_REPO}/issues/${issue.number}`, {
+      method: "PATCH",
+      body: JSON.stringify({ state: "closed", state_reason: "completed" }),
+    });
+    issue.state = "closed";
+    console.log(`Issue #${issue.number} closed (tagged "${CLOSE_TAG}")`);
   }
 
   if (!sameSet(merged, base) || !/<!--\s*discourse-tags:/.test(issue.body)) {
