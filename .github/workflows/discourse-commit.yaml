@@ -1,0 +1,152 @@
+
+name: Publish commits to Discourse
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Publish code changes to Discourse
+        env:
+          DISCOURSE_URL: ${{ secrets.DISCOURSE_URL }}
+          DISCOURSE_API_KEY: ${{ secrets.DISCOURSE_API_KEY }}
+          DISCOURSE_API_USERNAME: ${{ secrets.DISCOURSE_API_USERNAME }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          COMMITS: ${{ toJSON(github.event.commits) }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_SHA: ${{ github.sha }}
+          TOPIC_ID: ${{ vars.DISCOURSE_COMMITS_TOPIC_ID }}
+        run: |
+          python - <<'PY'
+          import os
+          import json
+          import urllib.request
+          import urllib.error
+          import urllib.parse
+
+          base = os.environ["DISCOURSE_URL"].rstrip("/")
+          repo = os.environ["REPOSITORY"]
+          topic_id = (os.environ.get("TOPIC_ID") or "").strip()
+          if not topic_id:
+              raise SystemExit(
+                  "Set the repo variable DISCOURSE_COMMITS_TOPIC_ID to the "
+                  "ID of the Discourse topic that should receive commit posts."
+              )
+
+          MAX_PATCH = 3000     # per-file diff preview
+          MAX_POST = 30000     # stay under Discourse's post length limit
+
+          discourse_headers = {
+              "Api-Key": os.environ["DISCOURSE_API_KEY"],
+              "Api-Username": os.environ["DISCOURSE_API_USERNAME"],
+              "Accept": "application/json"
+          }
+
+          def get_github_commit(sha):
+              url = f"https://api.github.com/repos/{repo}/commits/{sha}"
+              request = urllib.request.Request(
+                  url,
+                  headers={
+                      "Authorization": f"Bearer {os.environ['GITHUB_TOKEN']}",
+                      "Accept": "application/vnd.github+json",
+                      "X-GitHub-Api-Version": "2022-11-28"
+                  }
+              )
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  return json.load(response)
+
+          def post_discourse(data):
+              request = urllib.request.Request(
+                  base + "/posts.json",
+                  data=urllib.parse.urlencode(data).encode(),
+                  headers=discourse_headers,
+                  method="POST"
+              )
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  return json.load(response)
+
+          commits = json.loads(os.environ.get("COMMITS") or "[]")
+
+          if not commits and os.environ["EVENT_NAME"] == "workflow_dispatch":
+              commits = [{"id": os.environ["EVENT_SHA"]}]
+
+          for item in commits:
+              sha = item.get("id")
+              if not sha:
+                  continue
+
+              details = get_github_commit(sha)
+              commit = details.get("commit", {})
+              message = commit.get("message", "Code update").splitlines()[0]
+              author = (
+                  (details.get("author") or {}).get("login")
+                  or commit.get("author", {}).get("name", "Unknown")
+              )
+              files = details.get("files", [])
+              stats = details.get("stats", {})
+              commit_url = details.get("html_url", "")
+              
+              lines = [
+                  f"### [`{sha[:7]}`]({commit_url}) — {message}",
+                  "",
+                  f"**Author:** {author} · **Files:** {len(files)} · "
+                  f"**+{stats.get('additions', 0)} / -{stats.get('deletions', 0)}**",
+                  ""
+              ]
+
+              for file in files:
+                  filename = file.get("filename", "Unknown file")
+                  status = file.get("status", "changed")
+                  patch = file.get("patch", "")
+                  summary = (
+                      f"`{filename}` ({status}, "
+                      f"+{file.get('additions', 0)} / -{file.get('deletions', 0)})"
+                  )
+
+                  if patch:
+                      shortened = len(patch) > MAX_PATCH
+                      block = [
+                          f'[details="{summary}"]',
+                          "",
+                          "```diff",
+                          patch[:MAX_PATCH],
+                          "```",
+                      ]
+                      if shortened:
+                          block.append("_Diff shortened. See the full commit on GitHub._")
+                      block.extend(["[/details]", ""])
+                  else:
+                      block = [f"- {summary} — no inline diff (binary or too large)", ""]
+
+                  if len("\n".join(lines + block)) > MAX_POST - 300:
+                      lines.append("_More files changed. See the full commit on GitHub._")
+                      break
+                  lines.extend(block)
+
+              raw = "\n".join(lines)
+
+              try:
+                  result = post_discourse({
+                      "topic_id": topic_id,
+                      "raw": raw
+                  })
+                  print(
+                      f"Posted commit {sha[:7]} "
+                      f"to Discourse topic {result.get('topic_id')}"
+                  )
+              except urllib.error.HTTPError as error:
+                  print(f"Discourse returned HTTP {error.code}")
+                  print(error.read().decode()[:1500])
+                  raise
+
+          PY
