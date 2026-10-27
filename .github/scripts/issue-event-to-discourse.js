@@ -41,11 +41,11 @@ if (!card) { console.log(`Nothing to post for ${E.ACTION}`); process.exit(0); }
 
 const [icon, heading, detail] = card;
 const now = new Date().toISOString();
+// Plain markdown (no blockquote) so Discourse doesn't render a grey quote box.
 const raw =
-  `> ### ${icon} ${heading}\n` +
-  `> ${detail.replace(/\n/g, "\n> ")}\n` +
-  `>\n` +
-  `> 🔗 [#${E.ISSUE_NUMBER} ${E.ISSUE_TITLE}](${E.ISSUE_URL}) · 🕒 [date=${now.slice(0, 10)} time=${now.slice(11, 19)} timezone="UTC"]`;
+  `### ${icon} ${heading}\n\n` +
+  `${detail}\n\n` +
+  `🔗 [#${E.ISSUE_NUMBER} ${E.ISSUE_TITLE}](${E.ISSUE_URL}) · 🕒 [date=${now.slice(0, 10)} time=${now.slice(11, 19)} timezone="UTC"]`;
 
 // Instant GitHub label -> Discourse tag (the scheduled sync reconciles any race).
 const norm = (x) =>

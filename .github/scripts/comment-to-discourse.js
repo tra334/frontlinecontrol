@@ -12,13 +12,11 @@ if (/<!--\s*discourse-post-id:/.test(COMMENT_BODY)) { console.log("Comment came 
 
 const isThomas = COMMENTER.toLowerCase() === GITHUB_THOMAS_LOGIN.toLowerCase();
 const now = new Date().toISOString();
-const quoted = COMMENT_BODY.trim().replace(/\n/g, "\n> ");
+// Plain markdown (no blockquote) so Discourse doesn't render a grey quote box.
 const raw =
-  `> ### 💬 New comment on issue by ${COMMENTER}\n` +
-  `>\n` +
-  `> ${quoted}\n` +
-  `>\n` +
-  `> 🔗 [#${ISSUE_NUMBER} ${ISSUE_TITLE}](${COMMENT_URL}) · ` +
+  `### 💬 New comment on issue by ${COMMENTER}\n\n` +
+  `${COMMENT_BODY.trim()}\n\n` +
+  `🔗 [#${ISSUE_NUMBER} ${ISSUE_TITLE}](${COMMENT_URL}) · ` +
   `🕒 [date=${now.slice(0, 10)} time=${now.slice(11, 19)} timezone="UTC"]`;
 
 (async () => {
