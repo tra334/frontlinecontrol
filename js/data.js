@@ -127,7 +127,7 @@ const T=[
 ["p","Hostage situation","“He’s got two staff hostage in the bank and a gun!”",{arv:3,hel:1,sgt:1,cid:2,irv:2},150,5500],
 ["p","Prison disturbance","“Inmates have taken control of a wing!”",{po:2,irv:3,dog:2,"tr:pubord":2,sgt:1},140,4600],
 ["a","Major incident – stadium crush","“There’s been a crush at the gates, people are down everywhere!”",{dca:5,hart:1,mci:1,ao:2,rrv:2,air:1},150,6000],
-["a","Cat 1 – multi-casualty fire","“Hotel fire, lots of people overcome by smoke!”",{dca:3,hart:1,ao:1,rrv:2,mci:1},130,4500],
+["a","Cat 1 – multi-casualty fire","“Hotel fire, lots of people overcome by smoke!”",{dca:3,hart:1,ao:1,rrv:2,mci:1,pump:4,rt:1,alp:1},130,4500],
 ["a","Cat 1 – air ambulance critical","“Hiker in a fall off a cliff, needs a doctor with them!”",{air:1,dca:1,ccc:1},110,3400]
 ];
 const FACT={f:["Crews on scene, building is well alight.","Fire’s contained for now.","Neighbours evacuated to the street."],p:["Officers on scene, area is secure.","Witnesses giving statements.","Suspect has left the area."],a:["Crew with patient, observations ongoing.","Patient conscious and talking.","Family members at the scene."]};
