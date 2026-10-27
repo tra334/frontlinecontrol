@@ -1,0 +1,31 @@
+name: GitHub references to Discourse
+
+# Posts "linked a pull request", "merged a pull request" and "mentioned this issue"
+# activity to the Discourse topic of the referenced (Discourse-linked) issue.
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, edited, closed]
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+jobs:
+  relay:
+    if: ${{ github.event.sender.type != 'Bot' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node .github/scripts/references-to-discourse.js
+        env:
+          DISCOURSE_URL: ${{ secrets.DISCOURSE_URL }}
+          DISCOURSE_API_KEY: ${{ secrets.DISCOURSE_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FRONTLINE_USER: Frontline
