@@ -12,7 +12,8 @@ const POI_TYPES=[
 {id:"water",n:"River / flood risk",e:"🌊",m:"Person in river, flooding",r:/river|Flood/i},
 {id:"high",n:"Tower block / high-rise",e:"🏢",m:"High-rise, cladding, collapse, car park fires",r:/High-rise|Tower block|Building collapse|Multi-storey|from height/},
 {id:"woods",n:"Park / woods",e:"🌲",m:"Missing people, mental health crises",r:/woods|Missing child|Mental health/},
-{id:"bridge",n:"Bridge",e:"🌉",m:"Vulnerable person on bridge",r:/bridge/}];
+{id:"bridge",n:"Bridge",e:"🌉",m:"Vulnerable person on bridge",r:/bridge/},
+{id:"prison",n:"Prison",e:"⛓️",m:"Prison disturbances",r:/Prison disturbance/}];
 const poiT=id=>POI_TYPES.find(t=>t.id===id);
 const poiL=()=>S.poi||(S.poi=[]);
 const poiCnt=id=>poiL().filter(p=>p.t===id).length;
