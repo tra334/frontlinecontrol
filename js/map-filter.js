@@ -3,8 +3,8 @@
    Markers carry data-f="f|p|a|h|pn|poi"; hiding is done with CSS via body[data-hf] (see css/fixes.css). ===== */
 (function(){
 const KEY="mapHide",
-ITEMS=[["f","Fire stations"],["p","Police stations"],["a","Ambulance stations"],["h","Hospitals"],["pn","Prisons"],["poi","Custom POIs"]],
-BG={f:SC.f,p:SC.p,a:SC.a,h:"#0369a1",pn:"#475569",poi:"#7c3aed"},
+ITEMS=[["f","Fire stations"],["p","Police stations"],["a","Ambulance stations"],["aa","Air ambulance stations"],["ph","Police helicopter stations"],["h","Hospitals"],["pn","Prisons"],["poi","Custom POIs"]],
+BG={f:SC.f,p:SC.p,a:SC.a,aa:SC.aa,ph:SC.ph,h:"#0369a1",pn:"#475569",poi:"#7c3aed"},
 hid=()=>{const v=getSet()[KEY];return Array.isArray(v)?v.filter(k=>ITEMS.some(i=>i[0]===k)):[]},
 apply=()=>{document.body.setAttribute("data-hf",hid().join(" "));const b=document.getElementById("mfb");if(b)b.classList.toggle("act",hid().length>0)},
 ico=k=>k==="poi"?lci("map-pin",16):ICO[k][icoIdx()];
