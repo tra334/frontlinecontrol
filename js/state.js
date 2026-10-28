@@ -25,7 +25,7 @@ var pm=null;
 const SET_KEY="ukdispatch_settings";
 function getSet(){try{return Object.assign({radioPop:true,nearHosp:true,dbgInd:true,iconStyle:"emoji",mapStyle:"osm"},JSON.parse(localStorage.getItem(SET_KEY))||{})}catch(e){return{radioPop:true,nearHosp:true,dbgInd:true,iconStyle:"emoji",mapStyle:"osm"}}}
 /* ===== building icons: emoji / letter / custom image (custom images live in this browser only) ===== */
-const IMG_KEY="ukdispatch_bldimg",ICO={f:["🚒","F",lci("flame")],p:["🚓","P",lci("siren")],a:["🚑","A",lci("ambulance")],h:["🏥","H",lci("hospital")],aa:["🚑","AA",lci("ambulance")],ph:["🚁","PH",lci("helicopter")],pn:["⛓️","J",lci("columns-4")]},icoIdx=()=>{const s=getSet().iconStyle;return s==="letter"?1:s==="lucide"?2:0};
+const IMG_KEY="ukdispatch_bldimg",ICO={f:["🚒","F",lci("flame")],p:["🚓","P",lci("siren")],a:["🚑","A",lci("ambulance")],h:["🏥","H",lci("hospital")],aa:["🚁","AA",lci("ambulance")],ph:["🚁","PH",lci("helicopter")],pn:["⛓️","J",lci("columns-4")]},icoIdx=()=>{const s=getSet().iconStyle;return s==="letter"?1:s==="lucide"?2:0};
 let IMGS={};try{IMGS=JSON.parse(localStorage.getItem(IMG_KEY))||{}}catch(e){IMGS={}}
 const imgSave=()=>{try{localStorage.setItem(IMG_KEY,JSON.stringify(IMGS));return true}catch(e){return false}};
 const bKey=(k,id)=>k+id;
