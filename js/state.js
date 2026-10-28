@@ -11,7 +11,7 @@ const land=(la,lo)=>LANDS.some(g=>pip(la,lo,g));const OUTMSG="Frontline Control 
 const km=(a,b)=>{const dy=(a[0]-b[0])*111,dx=(a[1]-b[1])*111*Math.cos(a[0]*Math.PI/180);return Math.hypot(dx,dy)};
 const near=(la,lo)=>CITY.reduce((b,c)=>km([la,lo],[c[1],c[2]])<km([la,lo],[b[1],b[2]])?c:b)[0];
 const rank=()=>{let r=0;RK.forEach((x,i)=>{if(S.done>=x[1])r=i});return r};
-function fresh(){return{cr:1000000,done:0,nid:1,ts:now(),next:now()+rateMs(),lg:[{t:now(),m:"Welcome, controller. You have £1,000,000. Open the Stations tab and build your first station on the map.",r:0}],ms:[],st:[],hs:[],un:[],rate:2,rcl:0,dr:{last:"",day:0}}}
+function fresh(){return{cr:1000000,done:0,nid:1,fb:{aa:0,ph:0},gf:{aa:0,ph:0},ts:now(),next:now()+rateMs(),lg:[{t:now(),m:"Welcome, controller. You have £1,000,000. Open the Stations tab and build your first station on the map.",r:0}],ms:[],st:[],hs:[],un:[],rate:2,rcl:0,dr:{last:"",day:0}}}
 var EXP=new Set(),hi=0,hTab=0;
 const mb=(n,k,xp,w)=>`<div style="margin:6px 0 10px"><button class="g s" onclick="${xp}('${k}')">Show ${n} more${w||""}</button></div>`;
 const lim=(a,k,fn,xp)=>{const ex=EXP.has(k);return (ex?a:a.slice(0,10)).map(fn).join("")+(!ex&&a.length>10?mb(a.length-10,k,xp):"")};
@@ -25,7 +25,7 @@ var pm=null;
 const SET_KEY="ukdispatch_settings";
 function getSet(){try{return Object.assign({radioPop:true,nearHosp:true,dbgInd:true,iconStyle:"emoji",mapStyle:"osm"},JSON.parse(localStorage.getItem(SET_KEY))||{})}catch(e){return{radioPop:true,nearHosp:true,dbgInd:true,iconStyle:"emoji",mapStyle:"osm"}}}
 /* ===== building icons: emoji / letter / custom image (custom images live in this browser only) ===== */
-const IMG_KEY="ukdispatch_bldimg",ICO={f:["🚒","F",lci("flame")],p:["🚓","P",lci("siren")],a:["🚑","A",lci("ambulance")],h:["🏥","H",lci("hospital")],pn:["⛓️","J",lci("columns-4")]},icoIdx=()=>{const s=getSet().iconStyle;return s==="letter"?1:s==="lucide"?2:0};
+const IMG_KEY="ukdispatch_bldimg",ICO={f:["🚒","F",lci("flame")],p:["🚓","P",lci("siren")],a:["🚑","A",lci("ambulance")],h:["🏥","H",lci("hospital")],aa:["🚁","AA",lci("ambulance")],ph:["🚁","PH",lci("helicopter")],pn:["⛓️","J",lci("columns-4")]},icoIdx=()=>{const s=getSet().iconStyle;return s==="letter"?1:s==="lucide"?2:0};
 let IMGS={};try{IMGS=JSON.parse(localStorage.getItem(IMG_KEY))||{}}catch(e){IMGS={}}
 const imgSave=()=>{try{localStorage.setItem(IMG_KEY,JSON.stringify(IMGS));return true}catch(e){return false}};
 const bKey=(k,id)=>k+id;

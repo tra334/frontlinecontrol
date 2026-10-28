@@ -53,7 +53,7 @@ const LI={
   "hospital":'<path d=\"M12 6v4\"/><path d=\"M14 14h-4\"/><path d=\"M14 18h-4\"/><path d=\"M14 8h-4\"/><path d=\"M18 12h2a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2h2\"/><path d=\"M18 22V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v18\"/>',
   "car":'<path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>',
   "construction":'<rect x="2" y="6" width="20" height="8" rx="1"/><path d="M17 14v7"/><path d="M7 14v7"/><path d="M17 3v3"/><path d="M7 3v3"/><path d="M10 14 2.3 6.3"/><path d="m14 6 7.7 7.7"/><path d="m8 6 8 8"/>',
-  "columns-4":'<rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\"/><path d=\"M7.5 3v18\"/><path d=\"M12 3v18\"/><path d=\"M16.5 3v18\"/>'
+  "helicopter":'<path d="M2 5h20"/><path d="M12 5v2"/><path d="M6.5 13.5A5 5 0 0 1 11.5 8.5h1A5 5 0 0 1 17.5 13.5V16H6.5z"/><path d="M17.5 14h3.5"/><path d="M5 19h14"/><path d="M9 16v3"/><path d="M15 16v3"/>',"columns-4":'<rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\"/><path d=\"M7.5 3v18\"/><path d=\"M12 3v18\"/><path d=\"M16.5 3v18\"/>'
 };
 function lci(n,s,c){const p=LI[n];if(!p)return"";const w=s||"1.1em",z=" width=\""+w+"\" height=\""+w+"\"";
 return'<svg class="li"'+z+' viewBox="0 0 24 24" fill="none" stroke="'+(c||"currentColor")+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+"</svg>"}

@@ -82,7 +82,7 @@ body.tm #modal{padding-top:calc(var(--th,0px) + env(safe-area-inset-top,0px) + 1
 .bvb:disabled{background:var(--bd);color:var(--mu);opacity:1}
 
 /* ---- map filter (top right of map): hides markers visually only, game logic untouched ---- */
-body[data-hf~="f"] [data-f="f"],body[data-hf~="p"] [data-f="p"],body[data-hf~="a"] [data-f="a"],body[data-hf~="h"] [data-f="h"],body[data-hf~="pn"] [data-f="pn"],body[data-hf~="poi"] [data-f="poi"]{display:none!important}
+body[data-hf~="f"] [data-f="f"],body[data-hf~="p"] [data-f="p"],body[data-hf~="a"] [data-f="a"],body[data-hf~="h"] [data-f="h"],body[data-hf~="pn"] [data-f="pn"],body[data-hf~="poi"] [data-f="poi"],body[data-hf~="aa"] [data-f="aa"],body[data-hf~="ph"] [data-f="ph"]{display:none!important}
 #mfb{position:absolute;right:8px;top:calc(var(--hh,52px) + 8px);z-index:1160;width:36px;height:36px;padding:0;display:flex;align-items:center;justify-content:center;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.35)}
 #mfb.act{background:var(--ac);color:#fff;border-color:var(--ac)}
 #mfb.act::after{content:"";position:absolute;top:-3px;right:-3px;width:10px;height:10px;border-radius:50%;background:#f59e0b;border:2px solid var(--card)}
