@@ -19,7 +19,7 @@ function xpQ(k){const e=$("#sheet"),t=e.scrollTop;EXP.add(k);drawQ();e.scrollTop
 function xpD(k){const e=$("#sheet"),t=e.scrollTop;EXP.add(k);drawD();e.scrollTop=t}
 function xpS(k){EXP.add(k);$("#v").dataset.n="";paint()}
 function ldg(k,n,e){S.jl=(S.jl||[]).filter(x=>x.t>now()-6048e5).slice(-499);S.jl.push({t:now(),k,n,e,b:S.cr})}
-function log(m,r,mid){const pb=S.lg.length?S.lg[0].b:undefined,e={t:now(),m,r:r?1:0,b:S.cr};if(!r&&((pb!==undefined&&pb!==S.cr)||/^(🚧|🏗|🗑)/.test(m)))e.c=1;S.lg.unshift(e);S.lg=S.lg.slice(0,50);if(r&&mid){const q=S.ms.find(x=>x.id===mid);if(q){(q.rd=q.rd||[]).push({t:e.t,m});if(q.rd.length>40)q.rd.shift()}}dirty=true}
+function log(m,r,mid){const pb=S.lg.length?S.lg[0].b:undefined,e={t:now(),m,r:r?1:0,b:S.cr};if(!r&&((pb!==undefined&&pb!==S.cr)||/^(🚧|🏗|🗑)/.test(m)))e.c=1;if(r&&mid&&/^📻 Control → all units on/.test(m))e.u=S.un.filter(u=>u.mid===mid).map(u=>u.cs);S.lg.unshift(e);S.lg=S.lg.slice(0,200);if(r&&mid){const q=S.ms.find(x=>x.id===mid);if(q){(q.rd=q.rd||[]).push({t:e.t,m});if(q.rd.length>40)q.rd.shift()}}dirty=true}
 function toast(m){const e=$("#toast");delete e.dataset.cm;e.innerHTML=lci("radio")+" "+emi(esc(m));const x=document.createElement("button");x.className="tx";x.setAttribute("aria-label","Dismiss");x.innerHTML=lci("x");x.onclick=ev=>{ev.stopPropagation();clearTimeout(tt);e.hidden=true};e.appendChild(x);e.hidden=false;clearTimeout(tt);tt=setTimeout(()=>e.hidden=true,6000)}
 var pm=null;
 const SET_KEY="ukdispatch_settings";
