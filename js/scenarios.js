@@ -59,8 +59,14 @@ const PP={
 "Missing person – woods":{n:[1,1],off:["foot"],sub:{a:[68,90]},nT:"Just the one — {he}’s got dementia.",desc:"A {man}, about {age}, in a coat and slippers I think.",offT:"I don’t think anyone is with {him}.",vehT:"No, {he}’s on foot — {he} doesn’t drive.",still:"Yes, {he}’s still missing since dawn.",hu:"Not that I know of, but {he}’s vulnerable and it’s cold.",wp:0},
 "Mental health crisis":{n:[1,1],off:["here"],sub:{a:[20,55],s:"m"},nT:"Just him — he’s alone, I think.",desc:"A man, about {age}, in a dark jumper.",offT:"Yes, he’s still here, he hasn’t left.",vehT:"No vehicle, he’s on foot.",still:"Yes, it’s happening right now — please hurry.",hu:"Not yet, but he’s threatening to hurt himself."},
 "Riot":{n:[15,50],off:["here"],hu:"Yes, people are being hurt in the crowd."}};
+/* "Nearest landmark or junction?" answered from real places: the named place the address lookup found (or the nearest named POI on the map) and the real road */
+function lmT(m){const a=m.adr||{},rd=a.fk?"":(a.rd||""),pl=a.nl||lmNear(m.la,m.lo,rd),th=(a.t||"").split(", ")[0],the=p=>/^The /.test(p)?p:"the "+p;
+if(pl&&rd)return "It’s near "+the(pl)+" on "+rd+".";
+if(pl)return "It’s near "+the(pl)+(th?", in "+th:"")+".";
+if(rd)return "It’s on "+rd+(th?", near "+th:"")+".";
+return "I’m not sure of the exact spot"+(th?", but we’re near "+th:"")+".";}
 function scn(m){if(m.sc)return m.sc;const t=T[m.k],sv=t[0],ti=t[1],r=rng(m.id*7919+m.k*131+17),pk=a=>a[Math.floor(r()*a.length)],ri=(a,b)=>a+Math.floor(r()*(b-a+1));
-const c={lm:pk(["Next to the post office.","Opposite the pub on the corner.","Near the roundabout by the Co-op.","By the petrol station.","Just past the primary school."])};
+const c={lm:lmT(m)};
 if(sv==="a"){const p=AP[ti]||{a:[20,70],st:["Awake and breathing, but in pain."],bl:["No visible bleeding."]};
 if(p.mix){const n=ri(15,40);Object.assign(c,{n,nT:"About "+n+" casualties — I can’t count them all.",ageT:"All ages — adults, some children and some elderly.",sexT:"Men, women and children, a real mix.",stT:"Some are awake, some aren’t responding — I can’t check everyone.",blT:"Yes, lots of people are bleeding!",hu:"Yes, loads of people are hurt!",sf:"No, I’m next to the coach — it’s chaos."})}
 else{const x=p.s||(r()<.5?"m":"f"),a=ri(p.a[0],p.a[1]),self=!!p.self,ao=a<=12?[(self?"I’m ":"{He}’s ")+a+" year"+(a>1?"s":"")+" old."]:self?["I’m "+a+".","I’m "+a+" years old."]:["{He}’s "+a+".","About "+Math.round(a/5)*5+", I think.","{He}’s "+a+" years old."];
