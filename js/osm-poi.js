@@ -5,8 +5,8 @@
    ("HMP"). Matching missions then spawn at those places. Your own POIs (js/poi.js) still take priority.
    Data (c) OpenStreetMap contributors, ODbL. Toggle in Settings. */
 const OSM_CHANCE=.85,OSM_RAD={prison:40000,stadium:12000,industrial:10000,farm:12000,home:3000},OSM_CELL=.01,OSM_TTL=7*864e5,OSM_PFX="flc_osm2_",OSM_MAXN=400,OSM_CACHE_CAP=1500000;
-const OSM_VEC={pub:1,restaurant:1,hotel:1,supermarket:1,shop:1,school:1,college:1,stadium:1,rec:1,leisure:1,hospital:1,petrol:1,car_park:1,church:1,station:1,cemetery:1,office:1,airport:1,harbour:1,attraction:1,civic:1,services:1,care_home:1,coast:1,lake:1,woods:1,home:1,high:1,industrial:1,farm:1,road:1,bridge:1,water:1};
-const OSM_NOM={pub:["pub"],restaurant:["takeaway","restaurant"],hotel:["hotel"],supermarket:["supermarket","convenience store"],shop:["shopping centre","department store"],school:["school"],college:["college","university"],stadium:["stadium"],rec:["playing field","recreation ground"],leisure:["leisure centre","gym","swimming pool"],hospital:["hospital"],petrol:["petrol station"],car_park:["car park"],church:["church"],station:["railway station","bus station"],cemetery:["cemetery"],office:["office block","business park"],airport:["airport"],harbour:["harbour","marina"],attraction:["museum","tourist attraction"],civic:["library","town hall"],services:["bank","pharmacy","post office"],care_home:["care home","nursing home"],coast:["beach"],lake:["lake","reservoir"],industrial:["industrial estate","warehouse"],farm:["farm"],woods:["park"],road:["roundabout"],bridge:["bridge"],water:["river"],high:["tower block"],prison:["HMP"],home:[]};
+const OSM_VEC={prison:1,pub:1,restaurant:1,hotel:1,supermarket:1,shop:1,school:1,college:1,stadium:1,rec:1,leisure:1,hospital:1,petrol:1,car_park:1,church:1,station:1,cemetery:1,office:1,airport:1,harbour:1,attraction:1,civic:1,services:1,care_home:1,coast:1,lake:1,woods:1,home:1,high:1,industrial:1,farm:1,road:1,bridge:1,water:1};
+const OSM_NOM={pub:["pub"],restaurant:["takeaway","restaurant"],hotel:["hotel"],supermarket:["supermarket","convenience store"],shop:["shopping centre","department store"],school:["school"],college:["college","university"],stadium:["stadium"],rec:["playing field","recreation ground"],leisure:["leisure centre","gym","swimming pool"],hospital:["hospital"],petrol:["petrol station"],car_park:["car park"],church:["church"],station:["railway station","bus station"],cemetery:["cemetery"],office:["office block","business park"],airport:["airport"],harbour:["harbour","marina"],attraction:["museum","tourist attraction"],civic:["library","town hall"],services:["bank","pharmacy","post office"],care_home:["care home","nursing home"],coast:["beach"],lake:["lake","reservoir"],industrial:["industrial estate","warehouse"],farm:["farm"],woods:["park"],road:["roundabout"],bridge:["bridge"],water:["river"],high:["tower block"],prison:["HMP","prison"],home:[]};
 const OSM_NF={prison:/\b(HMP|HMYOI|HM Prison|Prison|Young Offender)/i,stadium:/stadium|arena|racecourse|speedway|velodrome|raceway|dome\b/i};
 const OSM_WARM={f:["home","industrial","farm"],p:["pub","shop","school","prison"],a:["home","shop"],aa:[],ph:[]};
 /* v2 classifier: drop cached scans made by the old rules (they used the old, wrong place types) */
@@ -52,6 +52,7 @@ else if(/(mall|department_store|clothing|clothes|shoe|hardware|furniture|electro
 else if(/(school|kindergarten)/.test(t))add("school",f,nm);
 else if(/(college|universit)/.test(t))add("college",f,nm);
 else if(/stadium/.test(t)&&OSM_NF.stadium.test(nm))add("stadium",f,nm);
+else if(/\bprison\b/.test(t))add("prison",f,nm);
 else if(/(sports_centre|swimming|fitness|gym|leisure|ice_rink|bowling)/.test(t))add("leisure",f,nm);
 else if(/(pitch|playing_field|recreation_ground|golf|stadium|sports_ground)/.test(t))add("rec",f,nm);
 else if(/hospital/.test(t))add("hospital",f,nm);
@@ -148,6 +149,32 @@ if(!free.length)return null;const p=pick(free);return{la:p[0],lo:p[1],nm:p[2]||"
 (function(){const h0=poiSettingsH,b0=poiBind;
 poiSettingsH=function(){const on=osmOn(),n=Object.keys(osmMem).length;
 const st=on?`<div style="color:var(--mu);font-size:11px;margin-top:4px">${osmSt.busy||osmQ.length?"Loading… ":""}${osmSt.src?"Source: "+osmSt.src+". ":""}Loaded ${osmSt.ok}, failed ${osmSt.fail}, queued ${osmQ.length}.${osmSt.err?" Last error: "+osmSt.err:""} <a href="#" id="set_osmr" style="color:#7c3aed">Retry now</a></div>`:"";
-return h0()+`<div style="padding:12px 0;border-bottom:1px solid var(--bd)"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><div><div style="font-weight:600">🗺️ Realistic POIs (OpenStreetMap)</div><div style="color:var(--mu);font-size:12px;margin-top:2px">Reads the map’s own POI, building, bridge and river layers (address lookup as backup; prisons searched as “HMP”) so missions spawn at real places near your stations. Your own POIs take priority. ${on?n+" area/type sets cached this session.":""}</div>${st}<div style="margin-top:6px;font-size:12px">Scan range: <a href="#" id="set_osmw" style="color:#7c3aed;font-weight:700">${osmWide()?"Wide (~7 km, slower)":"Near (~4 km)"}</a> <span style="color:var(--mu)">tap to switch (reloads POIs)</span></div></div><button id="set_osm" style="flex:none;padding:7px 12px;border:0;border-radius:8px;background:${on?"#16a34a":"var(--bd)"};color:#fff;font:700 12px system-ui;cursor:pointer">${on?"On":"Off"}</button></div></div>`};
+return h0()+`<div style="padding:12px 0;border-bottom:1px solid var(--bd)"><div style="display:flex;align-items:center;justify-content:space-between;gap:12px"><div><div style="font-weight:600">🗺️ Realistic POIs (OpenStreetMap)</div><div style="color:var(--mu);font-size:12px;margin-top:2px">Reads the map’s own POI, building, bridge and river layers (address lookup as backup; prisons searched as “HMP”) so missions spawn at real places near your stations. Prison calls use your own built prisons first, then custom Prison POIs, then real prisons here, then the address lookup. Your own POIs take priority. ${on?n+" area/type sets cached this session.":""}</div>${st}<div style="margin-top:6px;font-size:12px">Scan range: <a href="#" id="set_osmw" style="color:#7c3aed;font-weight:700">${osmWide()?"Wide (~7 km, slower)":"Near (~4 km)"}</a> <span style="color:var(--mu)">tap to switch (reloads POIs)</span></div></div><button id="set_osm" style="flex:none;padding:7px 12px;border:0;border-radius:8px;background:${on?"#16a34a":"var(--bd)"};color:#fff;font:700 12px system-ui;cursor:pointer">${on?"On":"Off"}</button></div></div>`};
 poiBind=function(ov,draw){b0(ov,draw);const b=ov.querySelector("#set_osm");if(b)b.onclick=()=>{setSet("osmPoi",!osmOn());if(osmOn())osmWarm();osmShowSync();draw()};
 const w=ov.querySelector("#set_osmw");if(w)w.onclick=e=>{e.preventDefault();setSet("osmWide",!osmWide());osmClear();osmWarm();draw()};const r=ov.querySelector("#set_osmr");if(r)r.onclick=e=>{e.preventDefault();for(const k in osmFail)delete osmFail[k];osmVecDown=0;osmWarm();draw();setTimeout(draw,4000)}}})();
+
+/* ---------- prison calls: built prison -> custom prison POI -> OSM POI (map layer) -> address lookup -> random spawn ----------
+   Any mission whose POI list includes "prison" (e.g. Prison disturbance) is resolved in this order, never skipping a tier by chance:
+   1. your own built prisons (S.hs, ty "pn")  2. your custom Prison POIs  3. a real prison from the map layer (OpenStreetMap)
+   4. the address lookup (Nominatim, "HMP"/"prison")  5. if all of those fail, the normal random spawn. */
+const PRIS_KM=40;
+const isPrisonT=t=>missPoi(t).indexOf("prison")>=0;
+const prisBusy=(la,lo)=>S.ms.some(m=>km([m.la,m.lo],[la,lo])<POI_BUSY_KM);
+function prisonSync(b){if(!b)return null;
+const near=(la,lo)=>km([b.lat,b.lon],[la,lo])<=PRIS_KM;
+/* 1. built prisons */
+const own=(S.hs||[]).filter(h=>h.ty==="pn"&&near(h.lat,h.lon)&&!prisBusy(h.lat,h.lon));
+if(own.length){const h=pick(own);return{la:h.lat,lo:h.lon,nm:h.name,own:1}}
+/* 2. custom Prison POIs */
+const cu=poiL().filter(p=>p.t==="prison"&&near(p.la,p.lo)&&!prisBusy(p.la,p.lo));
+if(cu.length){const p=pick(cu);return{la:p.la,lo:p.lo,nm:"",cpoi:1}}
+return null}
+/* 3 + 4. OSM map layer first, then the address lookup (osmFetch does both in that order) */
+async function prisonLookup(b){if(!b||!osmOn())return null;
+let d=osmGet("prison",b.lat,b.lon);
+if(!d){const k=osmKey("prison",b.lat,b.lon);if(osmFail[k]>Date.now())return null;
+try{d=await Promise.race([osmFetch("prison",b.lat,b.lon),osmWait(30000).then(()=>null)])}catch(e){d=null}
+if(d&&d.length)osmPut(k,d);else{osmFail[k]=Date.now()+12e4;return null}}
+const free=d.filter(p=>{const r=km([b.lat,b.lon],[p[0],p[1]]);return r<=PRIS_KM&&!prisBusy(p[0],p[1])});
+if(!free.length)return null;const p=pick(free);return{la:p[0],lo:p[1],nm:p[2]||"",osm:1}}
+(function(){const p0=poiPick;poiPick=function(t,b){if(isPrisonT(t)){const o=prisonSync(b);if(o)return o}return p0(t,b)}})();
