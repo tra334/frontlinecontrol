@@ -1,24 +1,47 @@
 /* ===== user Points of Interest (POIs): placed in Settings, always boost matching mission spawns. Hiding them on the map is done from the map filter (js/map-filter.js) and never affects spawning. ===== */
 const POI_MAX=50,POI_CHANCE=.6,POI_BUSY_KM=.06;
 const POI_TYPES=[
-{id:"pub",n:"Pub / bar",e:"🍺",m:"Pub brawl, drink driver",r:/Pub brawl|Drink driver/},
-{id:"shop",n:"Shop / retail",e:"🛒",m:"Shoplifting, shop theft, robbery",r:/Shoplifting|Shop theft|Armed robbery|Criminal damage/},
-{id:"home",n:"Home / residential",e:"🏠",m:"House & flat fires, burglary, domestics, medical calls",r:/House fire|Flat fire|Chimney|Shed fire|Burglary|Domestic|Welfare|Noise nuisance|Cannabis|Drugs supply|Kidnap|Suspicious death|Tree on house|childbirth|cardiac arrest|chest pain|stroke|choking|asthma|allergic|abdominal|diabetic|seizure|overdose|nosebleed|fall, elderly|minor injury/},
-{id:"school",n:"School / youth area",e:"🏫",m:"School alarms, anti-social behaviour",r:/school|Anti-social/},
-{id:"stadium",n:"Stadium / crowds",e:"🏟️",m:"Football disorder, riots, protests, crushes",r:/Football disorder|stadium|Riot|Protest/},
-{id:"road",n:"Road / junction",e:"🚗",m:"Collisions, car fires, pursuits, road rage",r:/RTC|collision|Car fire|Hit and run|Road rage|street race|Traffic hazard|Stolen vehicle|Tanker|cyclist|coach crash/i},
-{id:"industrial",n:"Industrial site",e:"🏭",m:"Warehouse & chemical incidents, entrapments",r:/Warehouse|Chemical|Industrial|Quarry|Tunnel|derailment|crush injury/},
-{id:"farm",n:"Farm / countryside",e:"🚜",m:"Barn fires, tractors, livestock, moorland fires",r:/Barn|Tractor|Animal rescue|farm|Hill fire|Moorland|Wildfire|remote rescue/i},
-{id:"water",n:"River / flood risk",e:"🌊",m:"Person in river, flooding",r:/river|Flood/i},
-{id:"high",n:"Tower block / high-rise",e:"🏢",m:"High-rise, cladding, collapse, car park fires",r:/High-rise|Tower block|Building collapse|Multi-storey|from height/},
-{id:"woods",n:"Park / woods",e:"🌲",m:"Missing people, mental health crises",r:/woods|Missing child|Mental health/},
-{id:"bridge",n:"Bridge",e:"🌉",m:"Vulnerable person on bridge",r:/bridge/},
-{id:"prison",n:"Prison",e:"⛓️",m:"Prison disturbances",r:/Prison disturbance/}];
+{id:"pub",n:"Pub / bar",e:"🍺",m:"Pub brawls, drink driving, nightlife incidents"},
+{id:"restaurant",n:"Restaurant / takeaway",e:"🍔",m:"Choking, allergic reactions, abdominal pain, bin fires, seizures"},
+{id:"hotel",n:"Hotel / guesthouse",e:"🏨",m:"Hotel fires, multi-casualty incidents, lift entrapments, nosebleeds"},
+{id:"supermarket",n:"Supermarket / convenience",e:"🛒",m:"Armed robbery, shoplifting, falls, minor injuries"},
+{id:"shop",n:"Shop / retail",e:"🛍️",m:"Shop theft, criminal damage, bin fires, riots"},
+{id:"services",n:"Bank / pharmacy / post office",e:"🏦",m:"Robberies, hostage situations, shoplifting, stabbings"},
+{id:"home",n:"Home / residential",e:"🏠",m:"House & flat fires, burglary, domestics, medical calls, welfare checks"},
+{id:"care_home",n:"Care home",e:"🏡",m:"Falls, strokes, diabetic emergencies, welfare checks, suspicious deaths"},
+{id:"high",n:"Tower block / high-rise",e:"🏢",m:"High-rise rescues, cladding fires, lift and balcony incidents"},
+{id:"school",n:"School",e:"🏫",m:"School fire alarms, anti-social behaviour, asthma attacks"},
+{id:"college",n:"College / university",e:"🎓",m:"Campus protests, stabbings, mental health crises, fire alarms"},
+{id:"civic",n:"Library / town hall / court",e:"🏛️",m:"Protests, suspicious packages, fire alarms, riots"},
+{id:"attraction",n:"Attraction / museum",e:"🎡",m:"Missing children, suspicious packages, crowds, chest pain"},
+{id:"stadium",n:"Stadium / arena",e:"🏟️",m:"Football disorder, crowd crushes, riots, protests (named venues only)"},
+{id:"rec",n:"Playing field / rec ground",e:"⚽",m:"Anti-social behaviour, pitch disorder, minor injuries, missing children"},
+{id:"leisure",n:"Leisure centre / gym",e:"🏋️",m:"Cardiac arrests, falls, sports injuries"},
+{id:"hospital",n:"Hospital site",e:"🏥",m:"Childbirth, incidents in hospital grounds and car parks"},
+{id:"church",n:"Church / place of worship",e:"⛪",m:"Falls, strokes, suspicious deaths, missing persons"},
+{id:"station",n:"Railway / bus station",e:"🚉",m:"Missing children, derailments, mental health crises, stabbings"},
+{id:"road",n:"Road / junction",e:"🚗",m:"Collisions, pursuits, road rage, debris, cyclists"},
+{id:"car_park",n:"Car park",e:"🅿️",m:"Car fires, stolen vehicles, hit and runs, multi-storey car park fires"},
+{id:"petrol",n:"Petrol station",e:"⛽",m:"Forecourt robberies, fuel spills, car fires, road rage"},
+{id:"office",n:"Office / business park",e:"💼",m:"Office fire alarms, suspicious packages, hostage situations, nosebleeds"},
+{id:"airport",n:"Airport",e:"✈️",m:"Kidnaps, suspicious packages, marauding attacks"},
+{id:"industrial",n:"Industrial site",e:"🏭",m:"Warehouse & chemical incidents, entrapments, quarry rescues"},
+{id:"farm",n:"Farm / countryside",e:"🚜",m:"Barn fires, tractors, livestock, moorland fires"},
+{id:"water",n:"River / flood risk",e:"🌊",m:"Person in river, flooding, flash floods"},
+{id:"lake",n:"Lake / reservoir",e:"🏞️",m:"Person in water, remote rescues, flash floods"},
+{id:"harbour",n:"Harbour / marina",e:"⚓",m:"Person in water, flooding, missing persons"},
+{id:"coast",n:"Beach / coast",e:"🏖️",m:"Cliff and coast rescues, missing persons, air ambulance calls"},
+{id:"woods",n:"Park / woods",e:"🌲",m:"Missing people, mental health, cyclists, remote rescues, wildfires"},
+{id:"cemetery",n:"Cemetery",e:"🪦",m:"Suspicious deaths, missing people"},
+{id:"bridge",n:"Bridge",e:"🌉",m:"Vulnerable people on bridges, collisions, train derailments"},
+{id:"prison",n:"Prison",e:"⛓️",m:"Prison disturbances"}];
+/* the POI types a mission can spawn at are set per mission (7th field in js/data.js, see missPoi) */
+const missPoi=t=>Array.isArray(t[6])?t[6]:[];
 const poiT=id=>POI_TYPES.find(t=>t.id===id);
 const poiL=()=>S.poi||(S.poi=[]);
 const poiCnt=id=>poiL().filter(p=>p.t===id).length;
 /* pick a POI for a mission template: higher chance only, never forced; skips POIs with an active mission there */
-function poiPick(t){const nm=t[1],ids=POI_TYPES.filter(x=>x.r.test(nm)).map(x=>x.id);if(!ids.length)return null;
+function poiPick(t){const ids=missPoi(t);if(!ids.length)return null;
 const pool=poiL().filter(p=>ids.includes(p.t));if(!pool.length||Math.random()>POI_CHANCE)return null;
 const free=pool.filter(p=>!S.ms.some(m=>km([m.la,m.lo],[p.la,p.lo])<POI_BUSY_KM));return free.length?pick(free):null}
 /* ---- map markers ---- */

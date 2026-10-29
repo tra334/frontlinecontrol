@@ -4,11 +4,13 @@
    industrial land, farmland, bridges and rivers. The address lookup (Nominatim) is the backup, and is used for prisons
    ("HMP"). Matching missions then spawn at those places. Your own POIs (js/poi.js) still take priority.
    Data (c) OpenStreetMap contributors, ODbL. Toggle in Settings. */
-const OSM_CHANCE=.85,OSM_RAD={prison:40000,stadium:12000,industrial:10000,farm:12000,home:3000},OSM_CELL=.01,OSM_TTL=7*864e5,OSM_PFX="flc_osm_",OSM_MAXN=400,OSM_CACHE_CAP=1500000;
-const OSM_VEC={pub:1,shop:1,school:1,stadium:1,woods:1,home:1,high:1,industrial:1,farm:1,bridge:1,water:1};
-const OSM_NOM={pub:["pub"],shop:["supermarket","convenience store"],school:["school"],stadium:["stadium"],industrial:["industrial estate","warehouse"],farm:["farm"],woods:["park"],bridge:["bridge"],water:["river"],road:["roundabout"],high:["tower block"],prison:["HMP"],home:[]};
-const OSM_NF={prison:/\b(HMP|HMYOI|HM Prison|Prison|Young Offender)/i};
+const OSM_CHANCE=.85,OSM_RAD={prison:40000,stadium:12000,industrial:10000,farm:12000,home:3000},OSM_CELL=.01,OSM_TTL=7*864e5,OSM_PFX="flc_osm2_",OSM_MAXN=400,OSM_CACHE_CAP=1500000;
+const OSM_VEC={pub:1,restaurant:1,hotel:1,supermarket:1,shop:1,school:1,college:1,stadium:1,rec:1,leisure:1,hospital:1,petrol:1,car_park:1,church:1,station:1,cemetery:1,office:1,airport:1,harbour:1,attraction:1,civic:1,services:1,care_home:1,coast:1,lake:1,woods:1,home:1,high:1,industrial:1,farm:1,road:1,bridge:1,water:1};
+const OSM_NOM={pub:["pub"],restaurant:["takeaway","restaurant"],hotel:["hotel"],supermarket:["supermarket","convenience store"],shop:["shopping centre","department store"],school:["school"],college:["college","university"],stadium:["stadium"],rec:["playing field","recreation ground"],leisure:["leisure centre","gym","swimming pool"],hospital:["hospital"],petrol:["petrol station"],car_park:["car park"],church:["church"],station:["railway station","bus station"],cemetery:["cemetery"],office:["office block","business park"],airport:["airport"],harbour:["harbour","marina"],attraction:["museum","tourist attraction"],civic:["library","town hall"],services:["bank","pharmacy","post office"],care_home:["care home","nursing home"],coast:["beach"],lake:["lake","reservoir"],industrial:["industrial estate","warehouse"],farm:["farm"],woods:["park"],road:["roundabout"],bridge:["bridge"],water:["river"],high:["tower block"],prison:["HMP"],home:[]};
+const OSM_NF={prison:/\b(HMP|HMYOI|HM Prison|Prison|Young Offender)/i,stadium:/stadium|arena|racecourse|speedway|velodrome|raceway|dome\b/i};
 const OSM_WARM={f:["home","industrial","farm"],p:["pub","shop","school","prison"],a:["home","shop"],aa:[],ph:[]};
+/* v2 classifier: drop cached scans made by the old rules (they used the old, wrong place types) */
+try{Object.keys(localStorage).filter(x=>x.indexOf("flc_osm_")===0).forEach(x=>localStorage.removeItem(x))}catch(e){}
 const osmOn=()=>getSet().osmPoi!==false;
 const osmWide=()=>getSet().osmWide===true,osmRad=id=>OSM_RAD[id]||(osmWide()?7300:4400),osmMem={},osmQ=[],osmFail={},osmScans={},osmSt={ok:0,fail:0,err:"",busy:0,src:""};let osmBusy=0,osmVecDown=0;
 const osmCell=v=>Math.round(v/OSM_CELL)*OSM_CELL,osmWait=ms=>new Promise(r=>setTimeout(r,ms));
@@ -30,19 +32,58 @@ const gl=new maplibregl.Map({container:d,style:"https://tiles.openfreemap.org/st
 await new Promise((ok,no)=>{const t=setTimeout(()=>no(new Error("map layer timed out")),25000);gl.once("load",()=>{clearTimeout(t);ok()});gl.on("error",e=>{if(e&&!e.tile&&!e.sourceId){clearTimeout(t);no(new Error("map style failed"))}})});
 return osmGl=gl})().catch(e=>{osmGlP=null;try{document.querySelectorAll("div[style*='-3000px']").forEach(x=>x.remove())}catch(_){}throw e})}
 function osmMapDrop(){if(!osmGl)return;try{const d=osmGl._d;osmGl.remove();d&&d.remove()}catch(e){}osmGl=null;osmGlP=null}
+const osmRing=g=>{if(!g)return null;if(g.type==="Polygon")return g.coordinates[0]||null;if(g.type!=="MultiPolygon")return null;let b=null,ba=-1;g.coordinates.forEach(p=>{const r=p[0];if(!r||!r.length)return;const a=osmBox(r);const ar=(a[2]-a[0])*(a[3]-a[1]);if(ar>ba){ba=ar;b=r}});return b};
+const osmBox=r=>{let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;r.forEach(q=>{x0=Math.min(x0,q[0]);x1=Math.max(x1,q[0]);y0=Math.min(y0,q[1]);y1=Math.max(y1,q[1])});return[x0,y0,x1,y1]};
+/* footprint of a building in metres (width, height) */
+const osmFoot=g=>{const r=osmRing(g);if(!r||r.length<3)return null;const b=osmBox(r),m=111320*Math.cos((b[1]+b[3])/2*Math.PI/180);return[(b[2]-b[0])*m,(b[3]-b[1])*111320]};
+const osmIn=(r,x,y)=>{let f=false;for(let i=0,j=r.length-1;i<r.length;j=i++){const a=r[i],b=r[j];if((a[1]>y)!==(b[1]>y)&&x<(b[0]-a[0])*(y-a[1])/(b[1]-a[1])+a[0])f=!f}return f};
+/* a point that is always inside the shape: the average vertex if it is inside, otherwise the middle of the widest stretch of the shape at that latitude (fixes parks/woods whose average falls outside) */
 const osmCtr=g=>{if(!g)return null;const t=g.type,c=g.coordinates;if(t==="Point")return c;if(t==="LineString")return c[c.length>>1];if(t==="MultiLineString")return c[0][c[0].length>>1];
-const r=t==="Polygon"?c[0]:t==="MultiPolygon"?c[0][0]:null;if(!r||!r.length)return null;let x=0,y=0;r.forEach(p=>{x+=p[0];y+=p[1]});return[x/r.length,y/r.length]};
+const r=osmRing(g);if(!r||r.length<3)return null;let x=0,y=0;r.forEach(p=>{x+=p[0];y+=p[1]});x/=r.length;y/=r.length;
+if(osmIn(r,x,y))return[x,y];const xs=[];for(let i=0,j=r.length-1;i<r.length;j=i++){const a=r[i],b=r[j];if((a[1]>y)!==(b[1]>y))xs.push(a[0]+(y-a[1])*(b[0]-a[0])/(b[1]-a[1]))}
+xs.sort((p,q)=>p-q);let best=null,bw=-1;for(let i=0;i+1<xs.length;i+=2){const w=xs[i+1]-xs[i];if(w>bw){bw=w;best=[(xs[i]+xs[i+1])/2,y]}}return best||[x,y]};
 function osmCollect(gl,acc,seen){const q=sl=>{try{return gl.querySourceFeatures("openmaptiles",{sourceLayer:sl})}catch(e){return[]}};
 const add=(id,f,nm,cap)=>{const c=osmCtr(f.geometry);if(!c||!isFinite(c[0])||!isFinite(c[1]))return;const k=id+c[1].toFixed(4)+c[0].toFixed(4);if(seen[k])return;const a=acc[id]||(acc[id]=[]);if(a.length>=(cap||1500))return;seen[k]=1;a.push([+c[1].toFixed(5),+c[0].toFixed(5),(nm||"").slice(0,40)])};
+/* first match wins, so the more specific types are tested first */
 q("poi").forEach(f=>{const p=f.properties||{},t=((p.class||"")+" "+(p.subclass||"")).toLowerCase(),nm=p.name||p["name:latin"]||"";
-if(/\b(pub|bar|nightclub)\b/.test(t))add("pub",f,nm);else if(/(supermarket|convenience|mall|department_store|grocery|clothing_store)/.test(t))add("shop",f,nm);
-else if(/(school|college|kindergarten)/.test(t))add("school",f,nm);else if(/(stadium|sports_centre)/.test(t))add("stadium",f,nm);
-else if(/(park|nature_reserve)/.test(t))add("woods",f,nm);else if(/farm/.test(t))add("farm",f,nm)});
+if(/\b(pub|bar|nightclub|biergarten)\b/.test(t))add("pub",f,nm);
+else if(/(supermarket|convenience|grocery)/.test(t))add("supermarket",f,nm);
+else if(/(mall|department_store|clothing|clothes|shoe|hardware|furniture|electronics|jewel|shop)/.test(t))add("shop",f,nm);
+else if(/(school|kindergarten)/.test(t))add("school",f,nm);
+else if(/(college|universit)/.test(t))add("college",f,nm);
+else if(/stadium/.test(t)&&OSM_NF.stadium.test(nm))add("stadium",f,nm);
+else if(/(sports_centre|swimming|fitness|gym|leisure|ice_rink|bowling)/.test(t))add("leisure",f,nm);
+else if(/(pitch|playing_field|recreation_ground|golf|stadium|sports_ground)/.test(t))add("rec",f,nm);
+else if(/hospital/.test(t))add("hospital",f,nm);
+else if(/(fuel|petrol|gas_station)/.test(t))add("petrol",f,nm);
+else if(/(parking|car_park)/.test(t))add("car_park",f,nm);
+else if(/(restaurant|fast_food|cafe|takeaway)/.test(t))add("restaurant",f,nm);
+else if(/(hotel|motel|lodging|guest_house|hostel)/.test(t))add("hotel",f,nm);
+else if(/(place_of_worship|church|chapel|mosque|temple|synagogue)/.test(t))add("church",f,nm);
+else if(/(railway|subway|tram_stop|bus_station|bus_stop)/.test(t))add("station",f,nm);
+else if(/(cemetery|grave_yard)/.test(t))add("cemetery",f,nm);
+else if(/(office|business)/.test(t))add("office",f,nm);
+else if(/(airport|aerodrome)/.test(t))add("airport",f,nm);
+else if(/(harbou?r|ferry|marina|boatyard|\bport\b)/.test(t))add("harbour",f,nm);
+else if(/(attraction|museum|zoo|theme_park|viewpoint|castle|monument)/.test(t))add("attraction",f,nm);
+else if(/(library|town_hall|courthouse|public_building|government)/.test(t))add("civic",f,nm);
+else if(/(bank|post_office|pharmacy)/.test(t))add("services",f,nm);
+else if(/(nursing_home|social_facility|retirement|care_home)/.test(t))add("care_home",f,nm);
+else if(/beach/.test(t))add("coast",f,nm);
+else if(/\b(park|nature_reserve|playground)\b/.test(t))add("woods",f,nm);
+else if(/farm/.test(t))add("farm",f,nm)});
 q("housenumber").forEach(f=>add("home",f,""));
-q("building").forEach(f=>{const h=+((f.properties||{}).render_height);if(h>=30)add("high",f,"")});
-q("landuse").forEach(f=>{if(((f.properties||{}).class)==="industrial")add("industrial",f,(f.properties||{}).name)});
-q("landcover").forEach(f=>{if(((f.properties||{}).class)==="farmland")add("farm",f,"",60)});
-q("transportation").forEach(f=>{const p=f.properties||{};if(p.brunnel==="bridge"&&/^(motorway|trunk|primary|secondary|tertiary|minor)$/.test(p.class||""))add("bridge",f,"")});
+/* tower blocks: tall AND a narrow footprint AND a residential/commercial class (or no class). Landmarks such as the London Eye are wide, so they are excluded. */
+q("building").forEach(f=>{const p=f.properties||{},h=+p.render_height,c=(p.class||"").toLowerCase(),fp=osmFoot(f.geometry);
+if(h>=30&&(!c||/^(residential|apartments|commercial|office|retail|yes|dormitory)$/.test(c))&&fp&&Math.max(fp[0],fp[1])<=45)add("high",f,"");
+else if(/hotel/.test(c))add("hotel",f,"");else if(/hospital/.test(c))add("hospital",f,"");else if(/church|chapel|cathedral|mosque|temple/.test(c))add("church",f,"")});
+q("landuse").forEach(f=>{const p=f.properties||{},c=p.class||"",nm=p.name;
+if(c==="industrial")add("industrial",f,nm);else if(c==="cemetery")add("cemetery",f,nm);else if(c==="hospital")add("hospital",f,nm);else if(c==="school")add("school",f,nm);else if(c==="college"||c==="university")add("college",f,nm);else if(c==="commercial"||c==="retail")add("office",f,nm);else if(c==="pitch"||c==="recreation_ground")add("rec",f,nm);else if(c==="park"||c==="nature_reserve")add("woods",f,nm)});
+q("landcover").forEach(f=>{const c=((f.properties||{}).class)||"";if(c==="farmland")add("farm",f,"",60);else if(c==="wood")add("woods",f,"",600);else if(c==="sand")add("coast",f,"",60)});
+q("water").forEach(f=>{const c=((f.properties||{}).class)||"";if(/^(lake|reservoir)$/.test(c))add("lake",f,(f.properties||{}).name)});
+q("transportation").forEach(f=>{const p=f.properties||{},c=p.class||"";
+if(p.brunnel==="bridge"&&/^(motorway|trunk|primary|secondary|tertiary|minor)$/.test(c))add("bridge",f,"");
+else if(/^(motorway|trunk|primary)$/.test(c)&&p.brunnel!=="tunnel")add("road",f,"")});
 q("waterway").forEach(f=>{const p=f.properties||{};if(/^(river|canal)$/.test(p.class||""))add("water",f,p.name)})}
 /* 3x3 grid of views (about 3 km each) centred on the station, so everything within ~4.4 km is read at full detail */
 async function osmScan(la,lo){const gl=await osmMapInit(),acc={},seen={},dl=k=>k/111.32,dn=k=>k/(111.32*Math.cos(la*Math.PI/180));
@@ -98,7 +139,7 @@ function osmSetShow(v){setSet("osmShow",!!v);if(v){osmShowAll()}osmShowSync()}
 setInterval(osmShowSync,15000);setTimeout(osmShowSync,5000);
 /* ---------- pick a real place for mission template t near station b; null = normal random spawn ---------- */
 function osmPick(t,b){if(!osmOn()||Math.random()>OSM_CHANCE)return null;if(!b){const o=(S.st||[]).filter(x=>x.sv===t[0]);if(!o.length)return null;b=pick(o)}
-const ids=POI_TYPES.filter(x=>x.r.test(t[1])&&(x.id in OSM_NOM)).map(x=>x.id);if(!ids.length)return null;
+const ids=missPoi(t).filter(id=>id in OSM_NOM);if(!ids.length)return null;
 const id=pick(ids),d=osmGet(id,b.lat,b.lon);if(!d){osmEnq(id,b.lat,b.lon,1);return null}
 const mx=Math.min(id==="prison"?40:8,osmRad(id)/1000),free=d.filter(p=>{const r=km([b.lat,b.lon],[p[0],p[1]]);return r>=.2&&r<=mx&&!S.ms.some(m=>km([m.la,m.lo],[p[0],p[1]])<POI_BUSY_KM)});
 if(!free.length)return null;const p=pick(free);return{la:p[0],lo:p[1],nm:p[2]||"",osm:1}}

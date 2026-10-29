@@ -10,8 +10,10 @@ const snap=async(la,lo)=>{const j=await J("https://router.project-osrm.org/neare
 const PCA={London:"E",Manchester:"M",Birmingham:"B",Leeds:"LS",Glasgow:"G",Edinburgh:"EH",Cardiff:"CF",Bristol:"BS",Liverpool:"L",Newcastle:"NE",Belfast:"BT",Aberdeen:"AB",Inverness:"IV",Norwich:"NR",Plymouth:"PL",Southampton:"SO",Sheffield:"S",Nottingham:"NG",Exeter:"EX",Swansea:"SA",Carlisle:"CA",Cambridge:"CB",Douglas:"IM",["Isle of Wight"]:"PO","St Helier":"JE","St Peter Port":"GY",Kirkwall:"KW",Lerwick:"ZE"},PCN={Kirkwall:[15,17],Lerwick:[1,3],"St Helier":[1,4],"St Peter Port":[1,9]};const EIR={Dublin:"D",Cork:"T12",Galway:"H91",Limerick:"V94"};
 const fpc=(la,lo)=>{const L="ABDEFGHJLNPQRSTUWXYZ",r=()=>L[Math.floor(Math.random()*L.length)],c=near(la,lo);if(EIR[c])return(c==="Dublin"?"D"+String(Math.ceil(R(1,24))).padStart(2,"0"):EIR[c])+" "+r()+Math.floor(R(100,999));return PCA[c]+(PCN[c]?Math.round(R(PCN[c][0],PCN[c][1])):Math.ceil(R(1,20)))+" "+Math.ceil(R(1,9))+r()+r()};
 const NM=["James","Sarah","Mohammed","Emma","Oliver","Priya","Callum","Aoife","Gareth","Chloe"],NS=["Smith","Jones","Patel","Taylor","Williams","Brown","Murphy","Khan","Davies","Wilson"];
-async function addr(la,lo,road){const j=await J("https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&addressdetails=1&lat="+la+"&lon="+lo),a=(j&&j.address)||{},t=a.town||a.village||a.city||a.suburb||a.hamlet||near(la,lo),c=a.county||a.state_district||"";
-return{s:(a.house_number||Math.ceil(R(1,98)))+" "+(a.road||road||pick(ROADS)),t:t+(c&&c!==t?", "+c:""),pc:a.postcode||fpc(la,lo)}}
+/* nearest named place to a point: a named POI from the map cache within 300 m (not the road itself) */
+function lmNear(la,lo,rd){let best=null,bd=.3;try{if(typeof osmOn==="function"&&osmOn())for(const k in osmMem){const d=osmMem[k];if(!Array.isArray(d))continue;for(const p of d){if(!p[2]||p[2]===rd)continue;const r=km([la,lo],[p[0],p[1]]);if(r<bd){bd=r;best=p[2]}}}}catch(e){}return best}
+async function addr(la,lo,road){const j=await J("https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&addressdetails=1&lat="+la+"&lon="+lo),a=(j&&j.address)||{},t=a.town||a.village||a.city||a.suburb||a.hamlet||near(la,lo),c=a.county||a.state_district||"",rd=a.road||road||"",cl=(j&&(j.category||j.class))||"",nl=j&&j.name&&j.name!==rd&&!/^(highway|boundary|place)$/.test(cl)?j.name:null;
+return{s:(a.house_number||Math.ceil(R(1,98)))+" "+(rd||pick(ROADS)),t:t+(c&&c!==t?", "+c:""),pc:a.postcode||fpc(la,lo),rd,nl,fk:!rd}}
 const met=m=>Object.entries(full(m)).every(([k,n])=>onS(m,k)>=n),wk=m=>!!m.end&&m.pz==null&&met(m);
 let spb=0;
 // mission distance from its station: 1-8 km, 2-6 km most likely
@@ -22,7 +24,7 @@ try{const svs=new Set(S.st.map(s=>s.sv)),rk=rank();
 const pool=T.filter(t=>Object.entries(t[3]).every(([k,n])=>kr(k)<=rk&&svs.has(ks(k,t))&&(!k.startsWith("tr:")||S.un.filter(u=>has(u,k)).length>=n)));if(fk===undefined&&!pool.length)return;
 const t=fk===undefined?pick(pool):T[fk],k=T.indexOf(t),own=S.st.filter(x=>x.sv===t[0]),b=fk===undefined||!own.length?pick(S.st):pick(own);let la,lo,loc=null;{const po=typeof poiPick==="function"?poiPick(t,b):null;if(po){la=po.la;lo=po.lo;loc=await addr(la,lo);if(po.nm)loc.s=po.nm+", "+loc.s}}
 for(let i=0;i<5&&!loc&&1;i++){[la,lo]=offKm(b);const sn=await snap(la,lo);if(sn&&sn.name&&sn.d<400){la=sn.la;lo=sn.lo;loc=await addr(la,lo,sn.name)}}
-if(!loc){const bl=land(b.lat,b.lon);for(let i=0;i<12;i++){[la,lo]=offKm(b);if(!bl||land(la,lo))break}if(bl&&!land(la,lo)){la=b.lat;lo=b.lon}loc={s:Math.ceil(R(1,98))+" "+pick(ROADS),t:near(la,lo),pc:fpc(la,lo)}}
+if(!loc){const bl=land(b.lat,b.lon);for(let i=0;i<12;i++){[la,lo]=offKm(b);if(!bl||land(la,lo))break}if(bl&&!land(la,lo)){la=b.lat;lo=b.lon}loc={s:Math.ceil(R(1,98))+" "+pick(ROADS),t:near(la,lo),pc:fpc(la,lo),rd:"",fk:1}}
 const kd=t[0]==="a"||Math.random()<.5?"h":"w";let hn=kd==="h"||t[0]==="a"?(t[0]==="a"?{rrv:1}:{dca:1}):t[0]==="p"?{arv:1}:{icu:1};
 if(!Object.keys(hn).every(x=>U[x][3]<=rk))hn=null;if(t[1]==="Welfare check")hn=null;
 S.ms.push({id:S.nid++,k,la,lo,loc:loc.s+", "+loc.t+", "+loc.pc,adr:loc,adc:0,cn:pick(NM)+" "+pick(NS),ph:newPh(),cad:cadGen(),born:now(),ans:0,end:0,qa:[],hid:hn?{k:kd,n:hn}:null,rev:0});
