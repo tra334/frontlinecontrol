@@ -33,7 +33,39 @@ function bpSet(la,lo,z){bll=[la,lo];if(bpin)bpin.setLatLng(bll);if(z)map.setView
 function bpBanner(){return `<div style="font-weight:700">${lci("map-pin")} Place <b>${bn(bm)}</b> · ${prc(bm)}</div><div class="mu" style="margin:2px 0 8px;font-size:12px">Drag the pin or tap the map to set the spot.<span id="bpn"></span></div><div style="display:flex;gap:8px"><button class="s g" style="flex:1" onclick="bm=null;paint()">Cancel</button><button id="bpok" class="s" style="flex:2;background:#2c5fc7" onclick="bpConfirm()">Confirm and build</button></div>`}
 function mvBanner(){const b=movB();return `<div style="font-weight:700">${lci("map-pin")} Move <b>${b?b.name:"building"}</b> · £${fmt(MOVECOST)}</div><div class="mu" style="margin:2px 0 8px;font-size:12px">Drag the pin or tap the map to set the new spot.<span id="bpn"></span></div><div style="display:flex;gap:8px"><button class="s g" style="flex:1" onclick="mv=null;paint()">Cancel</button><button id="mvok" class="s" style="flex:2;background:#2c5fc7" onclick="mvConfirm()">Confirm move</button></div>`}
 function mvConfirm(){if(!mv||!bll)return;const b=$("#mvok");if(b)b.disabled=true;doMove(bll[0],bll[1]).finally(()=>{const e=$("#mvok");if(e)e.disabled=false})}
-function bpConfirm(){if(!bm||!bll)return;const b=$("#bpok");if(b){b.disabled=true;b.textContent="Building…"}place(bll[0],bll[1]).finally(()=>{const e=$("#bpok");if(e&&bm){e.disabled=false;e.textContent="Confirm and build"}})}
+/* optional custom name typed in the placement banner: cleaned like renS/renH; "" means use the default name */
+/* profanity filter for custom building names: names containing offensive words (incl. simple plurals / -ing / -ed / -er forms) are refused */
+const CENS_RE=new RegExp("\\b(?:"+["fuck","shit","bitch","cunt","nigger","nigga","faggot","fag","retard","wanker","twat","bollocks","asshole","dickhead","pussy","bastard","slut","whore","rapist"].join("|")+")(?:s|ed|ing|er)?\\b","i");
+function bnClean(s){return (s||"").replace(/[<>&"]/g,"").trim().slice(0,30).trim()}
+/* two steps after "Confirm and build": (1) optional name, (2) "are you sure?" then build. Blank name = default name. */
+function bpConfirm(){
+if(!bm||!bll)return;
+const sv=bm,la=bll[0],lo=bll[1],hosp=!!HN[sv],lb=hosp?HN[sv]:SN[sv],list=hosp?S.hs:S.st,price=prc(sv);
+let cn="",dflt=null,near=null;
+const dfn=n=>{let d=n+" "+lb;if(list.some(x=>x.name===d))d+=" #"+S.nid;return d};
+const ov=document.createElement("div");ov.id="nameov";ov.style.cssText="position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:16px";
+const box=document.createElement("div");box.style.cssText="width:100%;max-width:400px;max-height:92dvh;overflow:auto;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:14px;padding:18px";
+ov.appendChild(box);document.body.appendChild(ov);
+const close=()=>ov.remove();
+/* cancelling anywhere in the build flow ends the build altogether: close the dialog and leave placement mode */
+const cancelAll=()=>{close();bm=null;paint()};
+ov.onclick=e=>{if(e.target===ov)cancelAll()};
+nearPlace(la,lo).then(n=>{near=n;dflt=dfn(n);const i=$("#nm_in");if(i)i.placeholder=dflt}).catch(()=>{dflt=lb});
+const step1=()=>{
+box.innerHTML=`<div style="font-size:18px;font-weight:700">Name your ${lb.toLowerCase()}</div><div class="mu" style="font-size:13px;margin:4px 0 12px">Optional. Leave blank to use the default name.</div><input id="nm_in" type="text" maxlength="30" autocomplete="off" value="${esc(cn)}" placeholder="${dflt?esc(dflt):"Finding name…"}" style="box-sizing:border-box;width:100%;padding:10px;border-radius:8px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);font:600 15px system-ui"><div id="nm_err" style="color:#dc2626;font-size:13px;min-height:18px;margin-top:6px"></div><div style="display:flex;gap:8px;margin-top:8px"><button id="nm_x" class="s g" style="flex:1">Cancel</button><button id="nm_next" class="s" style="flex:2;background:#2c5fc7">Next</button></div>`;
+const inp=$("#nm_in");inp.focus();
+$("#nm_x").onclick=cancelAll;
+$("#nm_next").onclick=()=>{const v=bnClean(inp.value);cn=v;if(v&&CENS_RE.test(v)){$("#nm_err").textContent="That name contains offensive language. Please choose another.";return}if(v&&list.some(x=>x.name.toLowerCase()===v.toLowerCase())){$("#nm_err").textContent=hosp?"Another hospital or prison already has that name.":"Another station already has that name.";return}step2()};
+};
+const step2=()=>{
+const nm=cn||dflt||"…";
+box.innerHTML=`<div style="font-size:18px;font-weight:700">Are you sure you want to build?</div><div style="margin:12px 0 6px;font-size:16px;font-weight:700">${esc(nm)}</div><div class="mu" style="font-size:13px;line-height:1.5">${lb} · ${price}${near?" · near "+esc(near):""}</div><div class="mu" style="font-size:13px;margin-top:10px">The cost is taken from your balance and this cannot be undone.</div><div style="display:flex;gap:8px;margin-top:16px"><button id="cf_back" class="s g" style="flex:1">Back</button><button id="cf_x" class="s" style="flex:1;background:#b42318">Cancel</button><button id="cf_go" class="s" style="flex:2;background:#2c5fc7">Build now</button></div>`;
+$("#cf_back").onclick=step1;
+$("#cf_x").onclick=cancelAll;
+$("#cf_go").onclick=()=>{close();if(bm!==sv)return;if(S.cr<cst(sv)){toast("Not enough credits to build this.");return}place(la,lo,cn)};
+};
+step1();
+}
 document.addEventListener("click",e=>{const m=$("#fabm");if(m&&!m.hidden&&!e.target.closest("#fabw"))m.hidden=true});
 const pzUp=()=>{const b=$("#ac_pz");if(!b)return;b.innerHTML=S.pz?lci("play")+" Resume calls":lci("pause")+" Pause calls";b.style.background=S.pz?"#b45309":"var(--bd)";b.style.color=S.pz?"#fff":"var(--tx)"};
 function togglePause(){S.pz=S.pz?0:1;if(!S.pz)S.next=now()+4000;log(S.pz?"⏸ New 999 calls paused":"▶ New 999 calls resumed");pzUp();persist()}
