@@ -106,3 +106,27 @@ body[data-hf~="f"] [data-f="f"],body[data-hf~="p"] [data-f="p"],body[data-hf~="a
 /* search bar always sits just clear of the placement banner (height set by js/map-filter.js as --bmh) */
 @media(min-width:1000px){#bsr{top:calc(12px + var(--bmh,98px) + 8px)}}
 @media(max-width:999px){#bsr{bottom:calc(var(--nh,48px) + 10px + var(--bmh,100px) + 8px)}}
+
+/* ---- open calls list: CAD number sits on the incident title line ---- */
+.cad{font:600 11px/1.2 ui-monospace,Menlo,Consolas,monospace;color:var(--mu);white-space:nowrap;letter-spacing:.02em;margin-left:4px}
+
+/* ---- mobile radio tab: the sticky Radio/Events bar sits at the very top, so feed rows no longer show in the gap above it ---- */
+@media(max-width:999px){
+main:has(.rfw){padding-top:0}
+.rfw{padding-top:6px}
+}
+
+/* ---- desktop: radio panel resize handle (drag top edge up/down) ---- */
+@media(min-width:1000px){
+#rl{position:relative}
+.rlz{position:absolute;top:-6px;left:0;right:0;height:12px;cursor:ns-resize;z-index:5;touch-action:none}
+.rlz::after{content:"";position:absolute;left:50%;top:4px;width:44px;height:4px;margin-left:-22px;border-radius:2px;background:var(--bd);transition:background .15s}
+.rlz:hover::after,body.rlz-drag .rlz::after{background:#1f6feb}
+body.rlz-drag{cursor:ns-resize;user-select:none}
+}
+
+/* ---- call messages: hidden once every required unit is on scene ---- */
+.clog-off{display:none}
+
+/* ---- call messages: once a call passes 6 messages, the log scrolls on mobile only ---- */
+@media(max-width:999px){.clog-long{max-height:min(46vh,340px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding-right:4px}}
