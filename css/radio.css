@@ -1,0 +1,46 @@
+/* Radio feed + Events tab */
+.rfw{position:sticky;top:0;z-index:2;background:var(--bg);border-bottom:1px solid var(--bd)}
+.rfl{display:flex;gap:6px;overflow-x:auto;padding:8px 10px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.rfl::-webkit-scrollbar{display:none}
+.rfb{flex:none;background:none;color:var(--mu);border:1px solid var(--bd);border-radius:999px;padding:5px 12px;font-size:12.5px;font-weight:500}
+.rfb.on{background:#4f6df5;border-color:#4f6df5;color:#fff}
+.rx{display:flex;gap:10px;padding:8px 12px;border-bottom:1px solid var(--bd)}
+.rxt{flex:none;width:56px;white-space:nowrap;font-variant-numeric:tabular-nums}.rxt b{display:inline;font-size:11.5px;font-weight:700;line-height:1.1;letter-spacing:-.01em}.rxt small{color:var(--mu);font-size:9px}
+.rxb{flex:1;min-width:0}
+.rxh{display:flex;align-items:center;flex-wrap:wrap;gap:5px 6px}
+.rxc{font:700 12.5px/1 system-ui;padding:4px 7px;border-radius:6px;letter-spacing:.01em}
+.rxc.ulk{text-decoration:none}
+.rxtx{font:800 10px/1 system-ui;padding:3px 5px;border-radius:5px;color:#fff;letter-spacing:.06em}
+.rxar{color:var(--mu);font-size:13px}.rxh>.rc-ctl.rxc{color:var(--tx);background:none;padding:4px 0}.rxh>.rxar+.rc-ctl.rxc{font-weight:800;letter-spacing:.06em}
+.rxh>.rxc.rc-ctl:first-child{padding-right:0}
+.rxg{margin-left:auto;font:700 10.5px/1 system-ui;letter-spacing:.1em}
+.rxm{margin-top:4px;font-size:13.5px;line-height:1.35;overflow-wrap:anywhere}
+/* service colours */
+.rc-f.rxc{background:rgba(240,89,75,.16);color:#ff8a7e}.rc-f.rxtx{background:#e5483a}
+.rc-p.rxc{background:rgba(79,109,245,.18);color:#6f8bff}.rc-p.rxtx{background:#4f6df5}
+.rc-a.rxc{background:rgba(47,208,114,.15);color:#3fdc83}.rc-a.rxtx{background:#2fd072;color:#06210f}
+.rc-aa.rxc{background:rgba(20,184,166,.16);color:#2dd4bf}.rc-aa.rxtx{background:#14b8a6;color:#04201d}
+.rc-ph.rxc{background:rgba(129,140,248,.18);color:#a5b4fc}.rc-ph.rxtx{background:#6366f1}
+.rc-x.rxc{background:var(--bd);color:var(--tx)}.rc-x.rxtx,.rc-ctl.rxtx{background:#64748b}
+/* status tags + message colours */
+.tg-AVL{color:#3fdc83}.tg-HND,.tg-ARR{color:#f0643a}.tg-CNV{color:#c084fc}.tg-ACK{color:#6f8bff}.tg-ETA{color:#7dd3fc}.tg-CAN{color:#f87171}.tg-TSK{color:#fbbf24}.tg-UPD{color:#fbbf24}.tg-MSG{color:var(--mu)}
+.tm-HND,.tm-ARR{color:#e5603b}.tm-CAN{color:#f87171}
+/* events interleaved in the radio feed: same row layout, muted text */
+.rxe .rxm{margin-top:0;color:var(--mu)}.rxe .rxt b{color:var(--mu);font-weight:600}
+@media(prefers-color-scheme:light){:root:not([data-theme="dark"]) .rc-f.rxc{color:#b42318}:root:not([data-theme="dark"]) .rc-p.rxc{color:#1d4ed8}:root:not([data-theme="dark"]) .rc-a.rxc{color:#15803d}:root:not([data-theme="dark"]) .rc-aa.rxc{color:#0f766e}:root:not([data-theme="dark"]) .rc-ph.rxc{color:#4338ca}}
+/* desktop: extra-compact radio panel (bottom-left) */
+@media(min-width:1000px){
+#rlb .rfl{padding:5px 8px;gap:4px}#rlb .rfb{padding:3px 8px;font-size:10.5px}
+#rlb .rx{gap:8px;padding:5px 8px}#rlb .rxt{width:45px}#rlb .rxt b{font-size:9.5px}#rlb .rxt small{font-size:8px}
+#rlb .rxh{gap:4px}#rlb .rxc{font-size:10.5px;padding:3px 5px;border-radius:5px}#rlb .rxtx{font-size:8.5px;padding:2px 4px}#rlb .rxar{font-size:11px}#rlb .rxg{font-size:9.5px}
+#rlb .rxm{margin-top:3px;font-size:11.5px;line-height:1.3}
+main .rx{padding:7px 10px}main .rxt b{font-size:11px}main .rxm{font-size:12.5px}main .rxc{font-size:11.5px;padding:3px 6px}
+}
+
+/* Radio button with service-filter arrow */
+.rfg{flex:none;display:inline-flex}
+.rfg .rfb:first-child{border-radius:999px 0 0 999px;border-right:0}
+.rfg .rfa{border-radius:0 999px 999px 0;padding:5px 9px 5px 7px}
+.rfg.on .rfb{background:#4f6df5;border-color:#4f6df5;color:#fff}
+.rfs{padding-top:0}
+@media(min-width:1000px){#rlb .rfg .rfa{padding:3px 6px}#rlb .rfl{padding:5px 8px}}
