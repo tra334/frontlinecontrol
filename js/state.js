@@ -62,7 +62,7 @@ const c0=S.cr;simAway(Math.max(last,t-AWAY_SIM));const g1=S.cr-c0;let cut=0;if(g
 /* 2) a few simulated extra jobs, slow rate, reduced pay, capped */
 let jobs=0,g2=0;
 if(S.st.length&&S.un.length){const rk=rank(),svs=new Set(S.st.map(s=>s.sv));
-const pool=T.filter(tp=>Object.entries(tp[3]).every(([k,n])=>kr(k)<=rk&&svs.has(ks(k,tp))&&S.un.filter(u=>has(u,k)).length>=n));
+const pool=T.filter(tp=>Object.entries(tp[3]).every(([k,n])=>kr(k)<=rk&&svs.has(ks(k,tp))&&S.un.filter(u=>has(u,k)&&!u.oos).length>=n));
 if(pool.length){jobs=Math.min(AWAY_MAXJOBS,Math.floor(away/AWAY_EVERY));
 for(let i=0;i<jobs;i++){const tp=pick(pool),e=Math.floor(tp[5]*AWAY_PAY);g2+=e;S.done++;S.jl=(S.jl||[]).filter(x=>x.t>t-6048e5).slice(-499);S.jl.push({t:t,k:"j",n:tp[1],e:e,b:S.cr+g2})}
 S.cr+=g2}}

@@ -42,14 +42,14 @@ const r=(a,b)=>`<div class="u"><span>${a}</span><b style="text-align:right">${b}
 const edu=(u.tr&&u.tr.length)?lci("graduation-cap")+" "+u.tr.map(k=>TR[k][0]).join(", "):"No special training";
 ov.innerHTML=`<div style="width:100%;max-width:400px;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:14px;padding:18px"><div class="row"><span class="t" style="font-size:18px">${u.cs}</span><button class="cx" aria-label="Close" onclick="closeUI()">${lci("x",16)}</button></div><div class="mu" style="margin-bottom:6px">${U[u.ty][1]} · ${SV[sv]}</div>`
 +r("Home station",sn?`<span class="ulk" onclick="closeUI();openS(${sn.id})">${sn.name}</span>`:"—")
-+r("Status",`<span class="st ${u.st}">${SLU(u)}</span>`)
++r("Status",`<span class="st ${stc(u)}">${SLU(u)}</span>`)
 +(resp?r("Current mission",`<span class="ulk" onclick="closeUI();openQ(${m.id})">${T[m.k][1]}</span>`)+(m.loc?r("Mission location",m.loc):""):r("Current mission","None"))
 +r("Jobs dispatched to (lifetime)",Math.max(u.dsp||0,u.jobs||0))
 +(sv==="a"?r("Patients conveyed to hospital (lifetime)",u.pc||0):"")
 +r("Crew",crewTag(u,1)+" (min "+minC(u)+")")+r("Education",edu)
 +r("Approx. miles driven (lifetime)","~"+Math.round(mi).toLocaleString())
 +`<button class="s g" style="margin-top:10px;width:100%" onclick="closeUI();goU('${u.cs.replace(/'/g,"\\'")}')">${lci("map-pin")} Show on map</button><button class="s g" style="margin-top:8px;width:100%" onclick="closeUI();openT(${u.id})">${lci("hard-hat")} Crew &amp; training</button>`
-+(u.st==="idle"?`<div style="display:flex;gap:8px;margin-top:8px"><button class="s" style="flex:1;background:#0f766e" onclick="mvU(${u.id})">${lci("map-pin")} Move</button><button class="s" style="flex:1;background:#b42318" onclick="delUC(${u.id})">${lci("trash-2")} Delete</button></div>`:`<div class="mu" style="margin-top:8px;font-size:12px">A vehicle must be back at its station and available before it can be moved or deleted.</div>`)
++(u.st==="idle"?`<button class="s" style="margin-top:8px;width:100%;background:${u.oos?"#16a34a":"#1f2937"};color:#fff;border:1px solid ${u.oos?"#16a34a":"#ef4444"}" onclick="setOOS(${u.id},${u.oos?0:1})">${u.oos?lci("circle-check")+" Set available":lci("ban")+" Set out of service"}</button>`:"")+(u.st==="idle"?`<div style="display:flex;gap:8px;margin-top:8px"><button class="s" style="flex:1;background:#0f766e" onclick="mvU(${u.id})">${lci("map-pin")} Move</button><button class="s" style="flex:1;background:#b42318" onclick="delUC(${u.id})">${lci("trash-2")} Delete</button></div>`:`<div class="mu" style="margin-top:8px;font-size:12px">A vehicle must be back at its station and available before it can be moved or deleted.</div>`)
 +`</div>`}
 setInterval(()=>{if(uiId)drawUI()},1000);
 /* ===== move / delete a vehicle ===== */
