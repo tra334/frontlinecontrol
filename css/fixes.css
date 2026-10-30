@@ -175,3 +175,13 @@ body[data-hf~="ally"] [data-f="ally"],body[data-hf~="allyv"] [data-f="allyv"],bo
   .rmg-r #rm_chat_in{padding:12px 14px;font-size:14px}
   .rmg-r #rm_chat_send{padding:12px 20px}
 }
+
+/* ---- mobile: no gap above the bottom bar, no room code in the header ---- */
+@media(max-width:999px){
+/* the panel runs to the very bottom of the screen and sits under the (opaque) nav, so a stale --nh or
+   Safari toolbar change can never expose the map through a gap; content is padded clear of the nav instead */
+main{bottom:0;padding-bottom:calc(var(--nh,48px) + 10px)}
+nav{background:var(--card)}
+/* Rooms lives in the bottom bar on mobile; the room-code badge is desktop only */
+#room_badge{display:none!important}
+}
