@@ -3,11 +3,11 @@
    Markers carry data-f="f|p|a|h|pn|poi"; hiding is done with CSS via body[data-hf] (see css/fixes.css). ===== */
 (function(){
 const KEY="mapHide",
-ITEMS=[["f","Fire stations"],["p","Police stations"],["a","Ambulance stations"],["aa","Air ambulance stations"],["ph","Police helicopter stations"],["h","Hospitals"],["pn","Prisons"],["poi","Custom POIs"],["osm","Realistic POIs (OSM)"]],
-BG={f:SC.f,p:SC.p,a:SC.a,aa:SC.aa,ph:SC.ph,h:"#0369a1",pn:"#475569",poi:"#7c3aed",osm:"#0d9488"},
+ITEMS=[["f","Fire stations"],["p","Police stations"],["a","Ambulance stations"],["aa","Air ambulance stations"],["ph","Police helicopter stations"],["h","Hospitals"],["pn","Prisons"],["poi","Custom POIs"],["osm","Realistic POIs (OSM)"],["ally","Ally stations (room)"],["allyv","Ally vehicles (room)"],["allym","Shared missions (room)"]],
+BG={f:SC.f,p:SC.p,a:SC.a,aa:SC.aa,ph:SC.ph,h:"#0369a1",pn:"#475569",poi:"#7c3aed",osm:"#0d9488",ally:"#6366f1",allyv:"#818cf8",allym:"#4f46e5"},
 hid=()=>{const v=getSet()[KEY];return Array.isArray(v)?v.filter(k=>ITEMS.some(i=>i[0]===k)):[]},
 apply=()=>{document.body.setAttribute("data-hf",hid().join(" "));const b=document.getElementById("mfb");if(b)b.classList.toggle("act",hid().length>0)},
-ico=k=>k==="poi"||k==="osm"?lci("map-pin",16):ICO[k][icoIdx()];
+ico=k=>k==="poi"||k==="osm"||k==="ally"||k==="allyv"||k==="allym"?lci("map-pin",16):ICO[k][icoIdx()];
 const w=document.getElementById("mapw");if(!w)return;
 const btn=document.createElement("button");btn.id="mfb";btn.type="button";btn.title="Map filter";btn.setAttribute("aria-label","Map filter");btn.setAttribute("aria-expanded","false");btn.innerHTML=lci("funnel",18);if(L.shim)btn.classList.add("shim");
 const pan=document.createElement("div");pan.id="mfp";pan.hidden=true;if(L.shim)pan.classList.add("shim");

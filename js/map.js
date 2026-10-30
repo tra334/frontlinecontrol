@@ -83,4 +83,4 @@ if(upop===u.id){const sn=stn(u.sid);up("p",u.id,p,`<div class="upw"><div class="
 if(u.rt&&u.st!=="scene"&&getSet().routeLines!==false){seen.r[u.id]=1;let o=MK.r[u.id];if(!o||o._k!==u.t0){if(o)map.removeLayer(o);o=MK.r[u.id]=L.polyline(u.rt.p,{color:SC[U[u.ty][0]],weight:3,opacity:.55,interactive:false}).addTo(map);o._k=u.t0}}});
 for(const g in MK)for(const id in MK[g])if(!seen[g][id]){map.removeLayer(MK[g][id]);delete MK[g][id]}}
 map.on("click",e=>{if(mv||bm||pm)bpSet(e.latlng.lat,e.latlng.lng,0)});
-document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>setTab(b.dataset.t===tab&&tab!=="m"?"m":b.dataset.t));
+document.querySelectorAll("nav button[data-t]").forEach(b=>b.onclick=()=>setTab(b.dataset.t===tab&&tab!=="m"?"m":b.dataset.t));
