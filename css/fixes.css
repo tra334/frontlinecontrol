@@ -130,3 +130,48 @@ body.rlz-drag{cursor:ns-resize;user-select:none}
 
 /* ---- call messages: once a call passes 6 messages, the log scrolls on mobile only ---- */
 @media(max-width:999px){.clog-long{max-height:min(46vh,340px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding-right:4px}}
+
+
+/* ---- Rooms: ally markers on map (match native .sm / .vi / .im) ---- */
+.vi.ally{animation:none!important;border-width:2px}
+.sm.ally{opacity:.95}
+.im.ally{opacity:.95}
+body[data-hf~="ally"] [data-f="ally"],body[data-hf~="allyv"] [data-f="allyv"],body[data-hf~="allym"] [data-f="allym"]{display:none!important}
+
+/* ---- Rooms entry point: bottom bar on mobile, header on desktop ---- */
+.rmb{position:relative}
+.rmb .rmn{position:absolute;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#ef4444;color:#fff;font:700 10px/16px system-ui;text-align:center;font-style:normal;box-sizing:border-box}
+.rmb .rmn[hidden]{display:none}
+.rmb.in svg{color:#a5b4fc}
+@media(max-width:999px){
+  #hd_rm{display:none}
+  nav button{white-space:nowrap;padding-left:2px;padding-right:2px;font-size:12px;min-width:0}
+  nav button .li{vertical-align:-2px}
+  nav #nav_rm .rmn{top:3px;right:2px}
+}
+@media(min-width:1000px){
+  nav #nav_rm{display:none}
+  #hd_rm{display:inline-flex;align-items:center;gap:6px;flex:none;padding:6px 12px;border:1px solid #3b3f9e;border-radius:6px;background:#312e81;color:#c7d2fe;font:700 12px system-ui;letter-spacing:.04em;cursor:pointer}
+  #hd_rm:hover{background:#3d3a9a}
+  #hd_rm .rmn{top:-6px;right:-6px}
+}
+
+/* ---- Rooms: full-screen panel on mobile ---- */
+@media(max-width:999px){
+  #room_ov{padding:0!important;align-items:stretch!important;justify-content:stretch!important;background:var(--bg,#0b1220)!important}
+  #room_ov>div{width:100%!important;max-width:none!important;height:100%!important;max-height:none!important;border:0!important;border-radius:0!important;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+}
+
+/* ---- Rooms: large two-column panel on desktop (details left, chat right) ---- */
+.rm-chatlist{max-height:160px}
+@media(min-width:1000px){
+  #room_ov.rm-in>div{width:min(1120px,94vw)!important;max-width:none!important;height:min(780px,90vh)!important;max-height:none!important}
+  #room_ov.rm-in #room_panel_body{overflow:hidden;padding:0 20px 16px}
+  #room_ov.rm-in .rmg{display:grid;grid-template-columns:minmax(300px,380px) 1fr;grid-template-rows:minmax(0,1fr) auto;grid-template-areas:"l r" "f r";column-gap:24px;height:100%;box-sizing:border-box;padding:12px 0 0!important}
+  .rmg-l{grid-area:l;overflow-y:auto;min-height:0;padding-right:6px}
+  .rmg-r{grid-area:r;display:flex;flex-direction:column;min-height:0;border-left:1px solid var(--bd);padding-left:24px}
+  .rmg-f{grid-area:f}
+  .rmg-r .rm-chatlist{max-height:none;flex:1;min-height:0;font-size:14px;line-height:1.45}
+  .rmg-r #rm_chat_in{padding:12px 14px;font-size:14px}
+  .rmg-r #rm_chat_send{padding:12px 20px}
+}
