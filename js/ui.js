@@ -1,6 +1,6 @@
 function reqChips(m){return Object.entries(shown(m)).map(([k,n])=>{const g=onS(m,k),a=asg(m,k),rs=a-g,left=Math.max(0,n-a);let st="";if(g>=n)st="background:var(--a);color:#fff;border-color:var(--a)";else if(rs>0)st="background:#facc15;color:#422006;border-color:#eab308";else st="background:#dc2626;color:#fff;border-color:#dc2626";return `<span class="chip" style="${st}">${nm(k)} ${g}/${n}${rs>0?" ("+rs+" responding)":""}</span>`+(left>0&&rs>0?`<span class="chip" style="background:#dc2626;color:#fff;border-color:#dc2626">${left} still needed</span>`:"")}).join("")}
 function chips(m){return Object.entries(shown(m)).map(([k,n])=>{const g=onS(m,k),a=asg(m,k);return `<span class="chip ${g>=n?"ok":a>g?"rsp":""}">${nm(k)} ${g}/${n}${a>g?" (+"+(a-g)+")":""}</span>`}).join("")}
-const balH=l=>l.c&&l.b!==undefined?` <span style="white-space:nowrap;font-size:12px;color:var(--mu)">· Balance <b style="color:var(--a)">£${fmt(l.b)}</b></span>`:"",logFix=m=>String(m).replace(/^(?:🏗|🏥|⛓️|⛓|🔒) Opened /,"🚧 Constructed: ").replace(/^🚒 New unit: /,"🚗✅ Unit purchased: ").replace(/🏥/g,"🏨").replace(/⛓️?/g,"🔲"),logH=l=>linkH(emi(esc(logFix(l.m))));
+const balH=l=>l.c&&l.b!==undefined?` <span style="white-space:nowrap;font-size:12px;color:var(--mu)">· Balance <b style="color:var(--a)">£${fmt(l.b)}</b></span>`:"",logFix=m=>String(m).replace(/^✅ (?=.* is back in service)/,"🟢 ").replace(/^(?:🏗|🏥|⛓️|⛓|🔒) Opened /,"🚧 Constructed: ").replace(/^🚒 New unit: /,"🚗✅ Unit purchased: ").replace(/🏥/g,"🏨").replace(/⛓️?/g,"🔲"),logH=l=>linkH(emi(esc(logFix(l.m))));
 function goU(cs){const u=S.un.find(x=>x.cs===cs);if(!u)return;const m=u.mid&&mm(u.mid);if(m){selI=m.id;if(desk()){map.setView([m.la,m.lo],12);deskPaint()}else{setTab("m");map.setView([m.la,m.lo],12)}}else{if(!desk())setTab("m");map.setView(upos(u),12)}}
 const allOn=m=>!!m.ans&&(wk(m)||Object.entries(shown(m)).every(([k,n])=>onS(m,k)>=n)),resp=m=>!!m.ans&&S.un.some(u=>u.mid===m.id)&&!allOn(m),moreU=m=>resp(m)&&!wk(m)&&Object.entries(shown(m)).some(([k,n])=>n>asg(m,k));
 const reqH=m=>{if(!m.ans||wk(m))return"";const r=Object.entries(shown(m)).map(([k,n])=>[k,n-asg(m,k)]).filter(x=>x[1]>0);return r.length?`<div class="req">${lci("triangle-alert",0,"#f59e0b")} Still required: ${r.map(([k,n])=>nm(k)+" ×"+n).join(", ")}</div>`:""};
@@ -105,7 +105,7 @@ const free=u=>(u.st==="idle"||u.st==="back")&&crewed(u)&&!u.oos;
 const stc=u=>u.oos&&u.st==="idle"?"oos":u.st;
 function setOOS(id,v){const u=S.un.find(x=>x.id===id);if(!u)return;if(u.st!=="idle"){toast(u.cs+" must be back at its station before its service status can be changed.");return}
 v=v?1:0;if((u.oos?1:0)===v)return;u.oos=v;const sn=stn(u.sid);
-log(v?"⚫ "+u.cs+" "+U[u.ty][1]+" is now out of service"+(sn?" at "+sn.name:"")+" and cannot be tasked.":"✅ "+u.cs+" "+U[u.ty][1]+" is back in service, available for tasking.");
+log(v?"⚫ "+u.cs+" "+U[u.ty][1]+" is now out of service"+(sn?" at "+sn.name:"")+" and cannot be tasked.":"🟢 "+u.cs+" "+U[u.ty][1]+" is back in service, available for tasking.");
 toast(u.cs+(v?" set out of service.":" is available again."));
 persist();$("#v").dataset.n="";paint();if(si)redrawP();if(uiId)drawUI();sync()}
 const qk=m=>S.un.filter(u=>u.mid===m.id).map(u=>u.cs+u.st).join()+"|"+(m.rd||[]).length+"|"+EXP.size+"|"+(m.td||"")+"|"+S.hs.length+"."+S.st.filter(x=>x.cl).length+"|"+(wk(m)?1:0)+(m._h?1:0);

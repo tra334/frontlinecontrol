@@ -5,6 +5,9 @@
    deliberately NOT mapped: they are the building icons and stay as emoji.
    (Lucide versions - flame, ambulance, siren, hospital, columns-4 - are available as the optional "Lucide" building icon style, see ICO in state.js.) */
 const LI={
+  "user-group":'<path d="M17 21v-1a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v1"/><path d="M19 10h1a2 2 0 0 1 2 2v1"/><path d="M5 10H4a2 2 0 0 0-2 2v1"/><circle cx="12" cy="11" r="3"/><circle cx="18" cy="4" r="2"/><circle cx="6" cy="4" r="2"/>',
+  "truck":'<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/>',
+  "siren-off":'<path d="M12 12v6"/><path d="M12 2v1"/><path d="M12.707 7.05a5 5 0 0 1 4.243 4.243"/><path d="M17 17v1H7a2 2 0 0 0-2 2v1a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2"/><path d="M18.5 4.5 18 5"/><path d="M2 12h1"/><path d="m2 2 20 20"/><path d="M21 12h1"/><path d="M7 18v-6a5 5 0 0 1 1.464-3.536"/>',
   "ban":'<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
   "radio":'<path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.1 19.1 19"/>',
   "phone":'<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
@@ -58,8 +61,10 @@ const LI={
 };
 function lci(n,s,c){const p=LI[n];if(!p)return"";const w=s||"1.1em",z=" width=\""+w+"\" height=\""+w+"\"";
 return'<svg class="li"'+z+' viewBox="0 0 24 24" fill="none" stroke="'+(c||"currentColor")+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+"</svg>"}
-const EMO={"📻":"radio","📞":"phone","☎":"phone","📍":"map-pin","🔒":"lock","☁":"cloud","🗑":"trash-2","✏":"pencil","🎓":"graduation-cap","✕":"x","⚠":"triangle-alert","🛠":"wrench","❌":"circle-x","＋":"plus","✅":"circle-check","🎁":"gift","🏗":"hard-hat","⏸":"pause","▶":"play","🎖":"medal","🚨":"siren","🚔":"car-front","🏢":"building-2","🗺":"map","⚙":"settings","🖼":"image","💸":"banknote","📋":"clipboard-list","📡":"satellite-dish","❓":"circle-help","🚦":"traffic-cone","⏱":"timer","↩":"undo-2","⏳":"hourglass","👤":"user","⭐":"star","⏭":"skip-forward","🎲":"dices","🚗":"car","🚧":"construction","🏨":"hospital","🔲":"columns-4"};
+const EMO={"📻":"radio","📞":"phone","☎":"phone","📍":"map-pin","🔒":"lock","☁":"cloud","🗑":"trash-2","✏":"pencil","🎓":"graduation-cap","✕":"x","⚠":"triangle-alert","🛠":"wrench","❌":"circle-x","＋":"plus","✅":"circle-check","🎁":"gift","🏗":"hard-hat","⏸":"pause","▶":"play","🎖":"medal","🚨":"siren","🚔":"car-front","🏢":"building-2","🗺":"map","⚙":"settings","🖼":"image","💸":"banknote","📋":"clipboard-list","📡":"satellite-dish","❓":"circle-help","🚦":"traffic-cone","⏱":"timer","↩":"undo-2","⏳":"hourglass","👤":"user","⭐":"star","⏭":"skip-forward","🎲":"dices","🚗":"car","🚧":"construction","🏨":"hospital","🔲":"columns-4","👥":"user-group","🚚":"truck","⚫":"siren-off","🟢":"siren"};
+/* per-emoji colour overrides: out of service = red siren-off, back in service = green siren (plain 🚨 stays default colour) */
+const EMCE={"⚫":"#dc2626","🟢":"#16a34a"};
 const EMC={"circle-check":"#16a34a","circle-x":"#dc2626","triangle-alert":"#f59e0b","star":"#f59e0b"};
 /* 🔒 directly before " Opened" is the prison building icon in the event log, so it stays as emoji */
-const EMRE=/()(🚗|🚧|🏨|🔲|📻|📞|☎|📍|🔒|☁|🗑|✏|🎓|✕|⚠|🛠|❌|＋|✅|🎁|🏗|⏸|▶|🎖|🚨|🚔|🏢|🗺|⚙|🖼|💸|📋|📡|❓|🚦|⏱|↩|⏳|👤|⭐|⏭|🎲)\uFE0F?/g;
-function emi(h){return String(h).replace(EMRE,(m,k,e)=>{if(k)return k;const n=EMO[e];return lci(n,0,EMC[n])})}
+const EMRE=/()(🚗|🚧|🏨|🔲|📻|📞|☎|📍|🔒|☁|🗑|✏|🎓|✕|⚠|🛠|❌|＋|✅|🎁|🏗|⏸|▶|🎖|🚨|🚔|🏢|🗺|⚙|🖼|💸|📋|📡|❓|🚦|⏱|↩|⏳|👤|⭐|⏭|🎲|👥|🚚|⚫|🟢)\uFE0F?/g;
+function emi(h){return String(h).replace(EMRE,(m,k,e)=>{if(k)return k;const n=EMO[e];return lci(n,0,EMCE[e]||EMC[n])})}
