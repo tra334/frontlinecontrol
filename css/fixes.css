@@ -91,6 +91,7 @@ body[data-hf~="f"] [data-f="f"],body[data-hf~="p"] [data-f="p"],body[data-hf~="a
 #mfp.shim{margin-top:70px}
 #mfp[hidden]{display:none!important}
 #mfp .mfh{font:700 12px system-ui;letter-spacing:.06em;text-transform:uppercase;color:var(--mu);padding:4px 6px 6px}
+#mfp .mfh:not(:first-child){margin-top:8px;padding-top:10px;border-top:1px solid var(--bd)}
 #mfp .mfr{display:flex;align-items:center;gap:10px;width:100%;padding:7px 6px;border-radius:8px;background:none;color:var(--tx);font:600 14px system-ui;text-align:left}
 #mfp .mfr:hover{background:var(--bd)}
 #mfp .mfi{flex:none;width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font:700 14px/1 system-ui}
@@ -134,7 +135,7 @@ body.rlz-drag{cursor:ns-resize;user-select:none}
 
 /* ---- Rooms: ally markers on map (match native .sm / .vi / .im) ---- */
 .vi.ally{animation:none!important;border-width:2px}
-.sm.ally{opacity:.95}
+.sm.ally{opacity:.95;filter:grayscale(1)}
 .im.ally{opacity:.95}
 body[data-hf~="ally"] [data-f="ally"],body[data-hf~="allyv"] [data-f="allyv"],body[data-hf~="allym"] [data-f="allym"]{display:none!important}
 
