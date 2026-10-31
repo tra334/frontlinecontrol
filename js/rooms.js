@@ -481,7 +481,8 @@
 
   function snapshotStations() {
     return (S.st || []).map(s => ({
-      id: s.id, name: s.name, sv: s.sv, lat: s.lat, lon: s.lon, lv: s.lv || 0
+      id: s.id, name: s.name, sv: s.sv, lat: s.lat, lon: s.lon, lv: s.lv || 0,
+      pv: 1 // this client also publishes parked vehicles (older clients don't)
     }));
   }
   /* Route compaction. Allies replay this polyline to place an offline vehicle, so
@@ -504,9 +505,15 @@
   }
 
   /* routePts: max route vertices per moving unit (0/undefined = send them all) */
-  function snapshotUnits(routePts) {
+  function snapshotUnits(routePts, noIdle) {
     const sm = (typeof spd === "function") ? (spd() || 1) : 1;
-    return (S.un || []).filter(u => u.st && u.st !== "idle").map(u => {
+    return (S.un || []).filter(u => u.st && (u.st !== "idle" || !noIdle)).map(u => {
+      // Parked at base: just enough for allies' read-only station view (no position/route needed)
+      if (u.st === "idle") {
+        let nc = false;
+        try { nc = typeof crewed === "function" ? !crewed(u) : false; } catch (e) {}
+        return { id: u.id, ty: u.ty, cs: u.cs || "", st: "idle", sid: u.sid, oos: !!u.oos, nc: nc, la: null, lo: null };
+      }
       let p = [0, 0];
       try { p = typeof upos === "function" ? upos(u) : (u.b || u.a || [0, 0]); } catch (e) {}
       const moving = u.st === "out" || u.st === "back" || u.st === "hosp";
@@ -537,7 +544,7 @@
       if (u.st === "hand") o.ht = +u.ht || 0; // hand-over finishes at
       if (moving && u.rt) o.rt = compactRt(u.rt, routePts);
       return o;
-    }).filter(u => u.la && u.lo);
+    }).filter(u => u.st === "idle" || (u.la && u.lo));
   }
 
   let _presErrAt = 0;
@@ -590,6 +597,10 @@
       for (const pts of [60, 30, 16, 8, 4]) {
         if (JSON.stringify(body).length <= FINAL_BODY_MAX) break;
         units = snapshotUnits(pts);
+        body = { room_id: room.id, user_id: myId(), units, updated_at: stale };
+      }
+      if (JSON.stringify(body).length > FINAL_BODY_MAX) { // last resort: drop parked vehicles, keep the moving ones
+        units = snapshotUnits(4, true);
         body = { room_id: room.id, user_id: myId(), units, updated_at: stale };
       }
     }
@@ -971,6 +982,7 @@
             if (!mk) {
               mk = allyLayers.s[key] = L.marker([+s.lat, +s.lon], { icon: allyIcon(html), zIndexOffset: 50 }).addTo(map);
               mk.bindTooltip(tip, { direction: "top", opacity: 0.95 });
+              mk.on("click", () => { try { openAllyStations(uid, s.id); } catch (e) { console.error(e); } });
             } else {
               mk.setLatLng([+s.lat, +s.lon]);
               if (mk._h !== html) { mk._h = html; mk.setIcon(allyIcon(html)); mk.bindTooltip(tip, { direction: "top", opacity: 0.95 }); }
@@ -1078,6 +1090,7 @@
 
   /* ---------- UI ---------- */
   function bumpRoomUi() {
+    try { refreshAllyPanel(); } catch (e) {}
     const el = document.getElementById("room_panel_body");
     if (el) {
       // A background poll can land mid-keystroke — keep whatever the player
@@ -1280,6 +1293,94 @@
     renderChat();
   }
 
+  /* ---------- Ally stations (read-only) ----------
+     Built purely from what the ally published: stations + every vehicle (parked ones included).
+     Live status for an online ally; for an offline one the same road-route estimate the map uses
+     (a vehicle that has estimated its way home shows as Available). No controls, view only. */
+  let allyPanel = null; // { uid, sid }  (the ally station currently shown in the sheet)
+  function agoTxt(ms) {
+    const m = Math.max(0, Math.round(ms / 60000));
+    if (m < 1) return "just now";
+    if (m < 60) return m + " min ago";
+    const h = Math.floor(m / 60);
+    return h < 24 ? h + " h ago" : Math.floor(h / 24) + " d ago";
+  }
+  function allyVehicleRows(uid) {
+    const p = presence[uid];
+    if (!p) return [];
+    const live = allyUnitLive[uid] || {};
+    const rows = [];
+    (p.units || []).forEach(u => {
+      if (!u || u.id == null || !U[u.ty]) return;
+      let st = "idle", label = "", cls = "idle", mins = 0;
+      if (u.st === "idle") {
+        label = u.oos ? "Out of service" : u.nc ? "Needs crew" : ((typeof SL !== "undefined" && SL.idle) || "Available");
+        cls = u.oos ? "oos" : "idle";
+      } else {
+        const l = live[u.id];
+        if (!l) { label = (typeof SL !== "undefined" && SL.idle) || "Available"; cls = "idle"; } // estimated back at base
+        else {
+          st = l.st; cls = l.st; label = (typeof SL !== "undefined" && SL[l.st]) || l.st;
+          if (l.st === "out") { try { mins = etaMins(l); } catch (e) {} }
+        }
+      }
+      rows.push({ id: u.id, ty: u.ty, cs: u.cs || "", sid: u.sid, st, cls, label, mins, est: p.online === false && u.st !== "idle" });
+    });
+    return rows;
+  }
+  /* Opens in the game's own bottom sheet (#modal/#sheet), laid out like your own station sheet, but
+     view only: no rename / move / delete / buy / upgrade controls. */
+  const allySheetKey = () => allyPanel ? "ally:" + allyPanel.uid + ":" + allyPanel.sid : "";
+  function drawAllySheet() {
+    const sh = document.getElementById("sheet");
+    const ap = allyPanel;
+    const p = ap && presence[ap.uid];
+    const st = p && (p.stations || []).find(x => x && x.id === ap.sid);
+    if (!sh || !st) { if (typeof closeM === "function") closeM(); allyPanel = null; return; }
+    const rows = allyVehicleRows(ap.uid).filter(r => r.sid === st.id);
+    const availL = (typeof SL !== "undefined" && SL.idle) || "Available";
+    const avail = rows.filter(r => r.cls === "idle" && r.label === availL).length;
+    const dep = rows.filter(r => r.cls !== "idle" && r.cls !== "oos").length;
+    const oo = rows.filter(r => r.cls === "oos").length;
+    const nc = rows.filter(r => r.label === "Needs crew").length;
+    const fresh = p.updated_at ? agoTxt(Date.now() - Date.parse(p.updated_at)) : "";
+    const col = (typeof SC !== "undefined" && SC[st.sv]) || "#6366f1";
+    let badge = `<span style="width:30px;height:30px;border-radius:50%;background:${col};flex:none"></span>`;
+    try { if (typeof bIco === "function") badge = `<span class="sm" style="position:static;background:${col};width:30px;height:30px;flex:none;display:inline-flex;align-items:center;justify-content:center">${bIco("s", { id: st.id, sv: st.sv, name: st.name })}</span>`; } catch (e) {}
+    const sr = (a, b2) => `<div class="sr"><span>${a}</span><b>${b2}</b></div>`;
+    const top = sh.scrollTop;
+    sh.dataset.k = allySheetKey();
+    sh.dataset.qk = "";
+    sh.innerHTML = `<div class="ph2"><div class="pt">${badge}<span class="pn">${esc(st.name || "Station")}</span></div></div>
+      <div class="mu" style="margin:0 0 6px">${esc(p.display_name || "Ally")}'s ${esc((typeof SN !== "undefined" && SN[st.sv]) || "station")} · view only · ${p.online
+        ? '<span style="color:#22c55e">● Live</span>'
+        : '<span style="color:#94a3b8">● Offline, updated ' + esc(fresh) + " (positions estimated)</span>"}</div>
+      <div class="stt">${sr("Owner", esc(p.display_name || "Ally"))}${sr("Level", (+st.lv || 0) + 1)}${st.pv ? sr("Vehicles", rows.length) + sr("Available / deployed", avail + " / " + dep) : sr("Deployed", dep)}${oo ? sr("Out of service", oo) : ""}${nc ? sr("Needs crew", nc) : ""}</div>
+      ${st.pv ? "" : `<div class="mu" style="margin:8px 0;padding:8px 10px;border:1px solid var(--bd);border-radius:8px">This player hasn't updated yet, so only vehicles currently deployed are shown. Parked vehicles will appear once they load the latest version.</div>`}
+      <div class="vl">${st.pv ? "Vehicles" : "Deployed vehicles"}</div>${rows.length
+        ? rows.map(r => `<div class="u"><span><b>${esc(r.cs || "?")}</b> ${esc(U[r.ty][1])}</span><span class="st ${esc(r.cls)}">${esc(r.label)}${r.mins ? " · ~" + r.mins + " min" : ""}</span></div>`).join("")
+        : '<div class="mu">' + (st.pv ? "No vehicles at this station." : "No vehicles deployed right now.") + '</div>'}`;
+    sh.scrollTop = top;
+  }
+  function refreshAllyPanel() {
+    if (!allyPanel) return;
+    const sh = document.getElementById("sheet"), md = document.getElementById("modal");
+    // Stop if the sheet was closed, or the game has put something else in it
+    if (!sh || !md || md.hidden || sh.dataset.k !== allySheetKey()) { allyPanel = null; return; }
+    drawAllySheet();
+  }
+  function openAllyStations(uid, sid) {
+    if (!presence[uid]) { if (typeof toast === "function") toast("No station data from this player yet."); return; }
+    if (typeof closeM === "function") { try { closeM(); } catch (e) {} }
+    allyPanel = { uid: uid, sid: sid };
+    const md = document.getElementById("modal");
+    if (!md) return;
+    md.hidden = false;
+    const sh = document.getElementById("sheet");
+    if (sh) sh.scrollTop = 0;
+    drawAllySheet();
+  }
+
   function openRooms() {
     let ov = document.getElementById("room_ov");
     if (ov) ov.remove();
@@ -1438,6 +1539,7 @@
   // Public API
   window.Rooms = {
     open: openRooms,
+    viewAlly: openAllyStations,
     create: createRoom,
     join: joinRoom,
     leave: leaveRoom,
