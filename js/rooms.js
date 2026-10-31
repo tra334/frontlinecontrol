@@ -32,6 +32,8 @@
   let showAllyBuildings = true;
   let showAllyVehicles = true;
   let showAllyMissions = true;
+  let publicRooms = null;   // open rooms for the browse list (null = not loaded yet)
+  let joinRequests = [];    // host only: pending join requests for the current room
   let doneAtById = {};  // shared call id -> ms epoch it finished (so offline vehicles can be shown standing down then)
   let claimedLocal = new Set(); // mission ids already paid locally this session
   let lastUi = "";
@@ -69,9 +71,10 @@
   }
 
   /* ---------- Room lifecycle ---------- */
-  async function createRoom(name) {
+  async function createRoom(name, isPublic) {
     if (!myId()) throw { message: "Sign in to create a room." };
-    const r = await rpc("create_room", { p_name: (name || "Room").slice(0, 40) });
+    if (inRoom()) throw { message: "You're already in a room. Leave it before joining or creating another." };
+    const r = await rpc("create_room", { p_name: (name || "Room").slice(0, 40), p_public: !!isPublic });
     room = Array.isArray(r) ? r[0] : r;
     if (!room || !room.id) throw { message: "Could not create room." };
     saveRoomLocal();
@@ -83,9 +86,10 @@
 
   async function joinRoom(code) {
     if (!myId()) throw { message: "Sign in to join a room." };
+    if (inRoom()) throw { message: "You're already in a room. Leave it before joining or creating another." };
     const c = String(code || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
     if (c.length < 4) throw { message: "Enter a valid room code." };
-    const rows = await rest("rooms?code=eq." + encodeURIComponent(c) + "&select=id,code,name,host_id");
+    const rows = await rest("rooms?code=eq." + encodeURIComponent(c) + "&deleted_at=is.null&select=id,code,name,host_id");
     const r = rows && rows[0];
     if (!r) throw { message: "No room found with that code." };
     await rest("room_members?on_conflict=room_id,user_id", {
@@ -101,6 +105,96 @@
     return room;
   }
 
+  /* ---------- Open rooms: browse + request to join ---------- */
+  async function loadPublicRooms() {
+    if (!myId() || inRoom()) return;
+    try {
+      const rows = await rpc("list_open_rooms");
+      publicRooms = Array.isArray(rows) ? rows : [];
+    } catch (e) {
+      publicRooms = publicRooms || [];
+    }
+    renderOpenList();
+  }
+
+  function openListHtml() {
+    if (publicRooms === null) return `<div class="rm-empty"><span>Loading open rooms…</span></div>`;
+    if (!publicRooms.length) return `<div class="rm-empty"><b>No open rooms right now</b><span>Create one and tick “List as open room” so others can request to join.</span></div>`;
+    return `<div class="rm-card">${publicRooms.map(r => {
+      const n = r.member_count || 0;
+      const meta = `${n} member${n === 1 ? "" : "s"} · Host: ${esc(r.host_name || "Controller")}`;
+      let btn;
+      if (r.my_status === "member") btn = `<button type="button" class="rm-btn blue" data-rm-enter="${esc(r.id)}">Enter</button>`;
+      else if (r.my_status === "pending") btn = `<button type="button" class="rm-btn rm-btn-off" disabled>Requested</button>`;
+      else btn = `<button type="button" class="rm-btn indigo" data-rm-req="${esc(r.id)}">${r.my_status === "declined" ? "Request again" : "Request to join"}</button>`;
+      return `<div class="rm-per rm-room"><span class="rm-nm"><b>${esc(r.name || "Room")}</b><small>${meta}</small></span>${btn}</div>`;
+    }).join("")}</div>`;
+  }
+
+  function renderOpenList() {
+    const el = document.getElementById("rm_open_list");
+    if (el) el.innerHTML = openListHtml();
+  }
+
+  async function requestJoin(roomId) {
+    if (!myId()) throw { message: "Sign in to request to join." };
+    if (inRoom()) throw { message: "You're already in a room. Leave it before joining or creating another." };
+    await rpc("request_join_room", { p_room_id: roomId, p_display_name: myName() });
+    toast("Request sent to the room host");
+    await loadPublicRooms();
+  }
+
+  // Used once the host has accepted a request: the caller is now a member, so the code can be read.
+  async function enterRoom(roomId) {
+    if (inRoom() && room.id !== roomId) throw { message: "You're already in a room. Leave it before joining or creating another." };
+    const rows = await rest("rooms?id=eq." + encodeURIComponent(roomId) + "&select=id,code,name,host_id");
+    const r = rows && rows[0];
+    if (!r) throw { message: "Your request hasn't been accepted yet." };
+    room = r;
+    saveRoomLocal();
+    await refreshAll();
+    startLoops();
+    toast("Joined room " + room.code);
+  }
+
+  async function fetchJoinRequests() {
+    if (!inRoom() || room.host_id !== myId()) { joinRequests = []; return; }
+    try {
+      const rows = await rpc("list_join_requests", { p_room_id: room.id });
+      joinRequests = Array.isArray(rows) ? rows : [];
+    } catch (e) {
+      joinRequests = [];
+    }
+  }
+
+  async function respondRequest(requestId, accept) {
+    await rpc("respond_join_request", { p_request_id: requestId, p_accept: !!accept });
+    toast(accept ? "Request accepted" : "Request declined");
+    await fetchJoinRequests();
+    await fetchMembers();
+  }
+
+  // One delegated handler for the whole panel body, so re-rendered buttons keep working.
+  async function onPanelClick(e) {
+    const t = e.target.closest && e.target.closest("[data-rm-req],[data-rm-enter],[data-rm-accept],[data-rm-decline]");
+    if (!t) return;
+    t.disabled = true;
+    try {
+      if (t.hasAttribute("data-rm-req")) await requestJoin(t.getAttribute("data-rm-req"));
+      else if (t.hasAttribute("data-rm-enter")) await enterRoom(t.getAttribute("data-rm-enter"));
+      else if (t.hasAttribute("data-rm-accept")) await respondRequest(t.getAttribute("data-rm-accept"), true);
+      else await respondRequest(t.getAttribute("data-rm-decline"), false);
+    } catch (err) {
+      toast((err && err.message) || "Something went wrong");
+    }
+    rerenderPanel();
+  }
+
+  function rerenderPanel() {
+    const el = document.getElementById("room_panel_body");
+    if (el) { el.innerHTML = roomPanelInner(); bindRoomPanel(); }
+  }
+
   async function leaveRoom() {
     if (!room || !myId()) { room = null; saveRoomLocal(); stopLoops(); clearAllyMarkers(); return; }
     const rid = room.id;
@@ -112,9 +206,8 @@
     // Optional: freeze presence updated_at so units stop showing as live
     try {
       await rest("room_presence?room_id=eq." + rid + "&user_id=eq." + myId(), {
-        method: "PATCH",
-        headers: { Prefer: "return=minimal" },
-        body: { units: [], updated_at: new Date(0).toISOString() }
+        method: "DELETE",
+        headers: { Prefer: "return=minimal" }
       });
     } catch (e) {}
     // If host leaves and no members, room can stay; host transfer is out of scope for v1
@@ -142,7 +235,7 @@
       try {
         const mm = await rest("room_members?user_id=eq." + myId() + "&select=room_id&order=last_seen.desc&limit=1");
         if (mm && mm[0] && mm[0].room_id) {
-          const rr = await rest("rooms?id=eq." + mm[0].room_id + "&select=id,code,name,host_id");
+          const rr = await rest("rooms?id=eq." + mm[0].room_id + "&deleted_at=is.null&select=id,code,name,host_id");
           if (rr && rr[0]) { room = rr[0]; saveRoomLocal(); }
         }
       } catch (e) {}
@@ -151,12 +244,11 @@
     try {
       const rows = await rest("room_members?room_id=eq." + room.id + "&user_id=eq." + myId() + "&select=room_id");
       if (!rows || !rows.length) {
-        // re-join membership
-        await rest("room_members?on_conflict=room_id,user_id", {
-          method: "POST",
-          headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
-          body: { room_id: room.id, user_id: myId(), display_name: myName(), last_seen: new Date().toISOString() }
-        });
+        // Not a member any more (left, kicked, or room deleted): forget the saved room.
+        // Never re-add membership automatically, or a stale browser can re-join a room.
+        room = null;
+        saveRoomLocal();
+        return;
       }
       await refreshAll();
       startLoops();
@@ -189,7 +281,7 @@
 
   async function refreshAll() {
     if (!inRoom()) return;
-    await Promise.all([fetchMembers(), fetchPresence(), fetchMissions(), fetchChat()]);
+    await Promise.all([fetchMembers(), fetchPresence(), fetchMissions(), fetchChat(), fetchJoinRequests()]);
     applySharedMissions();
     syncAllyMarkers();
     tickAllyUnits();
@@ -1189,8 +1281,10 @@
       return `<div style="padding:12px 4px">
         <div style="font-size:13px;opacity:.85;margin-bottom:12px;line-height:1.45">Create a room and share the code so friends can join. You'll see each other's stations and vehicles on the map, and can share missions to work together. Everyone who has a unit on scene when a shared mission completes gets <b>100% of the reward</b>.</div>
         <label style="font:600 12px system-ui;opacity:.7">Room name</label>
-        <input id="rm_name" maxlength="40" placeholder="My control room" style="width:100%;margin:4px 0 10px;padding:10px;border-radius:8px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font:600 14px system-ui;box-sizing:border-box">
+        <input id="rm_name" maxlength="40" placeholder="My control room" style="width:100%;margin:4px 0 8px;padding:10px;border-radius:8px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font:600 14px system-ui;box-sizing:border-box">
         <button id="rm_create" class="s" style="width:100%;padding:11px;background:#4f46e5">Create room</button>
+        <div class="rm-hd" style="margin:20px 0 8px"><span>OPEN ROOMS</span><span><button type="button" id="rm_refresh_open" class="rm-link">Refresh</button></span></div>
+        <div id="rm_open_list">${openListHtml()}</div>
         <div style="margin:16px 0 8px;text-align:center;opacity:.5;font:600 12px system-ui">or join with a code</div>
         <input id="rm_code" maxlength="8" placeholder="CODE" style="width:100%;margin:4px 0 10px;padding:10px;border-radius:8px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font:700 16px system-ui;letter-spacing:.12em;text-transform:uppercase;text-align:center;box-sizing:border-box">
         <button id="rm_join" class="s" style="width:100%;padding:11px">Join room</button>
@@ -1222,6 +1316,14 @@
         }).join("")
       : `<div class="rm-empty"><b>No shared missions yet</b><span>Open an incident and tap Share to room. Everyone in the room can then dispatch units to it from the Calls panel.</span></div>`;
 
+    const reqH = room.host_id !== myId() ? "" : joinRequests.length
+      ? `<div class="rm-hd"><span>JOIN REQUESTS</span><span>${joinRequests.length} pending</span></div>
+         <div class="rm-card">${joinRequests.map(q => `<div class="rm-per rm-req">
+           <span class="rm-av">${esc((q.display_name || "C").trim().charAt(0).toUpperCase() || "C")}</span>
+           <span class="rm-nm">${esc(q.display_name || "Controller")}</span>
+           <span class="rm-req-b"><button type="button" class="rm-btn indigo" data-rm-accept="${esc(q.id)}">Accept</button><button type="button" class="rm-btn rm-btn-dim" data-rm-decline="${esc(q.id)}">Decline</button></span>
+         </div>`).join("")}</div>`
+      : "";
     const ICO = d => `<svg class="li" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
     const I_LEAVE = '<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>';
     const I_COPY = '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/>';
@@ -1243,10 +1345,12 @@
             </div>
             <button type="button" id="rm_copy" class="rm-btn indigo">${ICO(I_COPY)} Copy code</button>
           </div>
+          ${reqH}
           <div class="rm-hd"><span>PEOPLE</span><span><i class="rm-dot"></i>${online.length} online · ${members.length} member${members.length === 1 ? "" : "s"}</span></div>
           <div class="rm-card">${memH}</div>
           <div class="rm-hd"><span>SHARED MISSIONS</span><span>${roomMissions.length} shared</span></div>
           ${smH}
+          ${room.host_id === myId() ? '<button type="button" id="rm_delete" class="rm-btn red wide">Delete room</button>' : ""}
           <button type="button" id="rm_calls" class="rm-btn blue wide">${typeof lci === "function" ? lci("phone", 18) : ""} Open Calls panel</button>
         </section>
         <section class="rm-sec" data-sec="map">
@@ -1282,6 +1386,11 @@
      previously only the very first render was bound, so buttons and the
      chat box would go dead after the next 4s poll. */
   function bindRoomPanel() {
+    const pb = document.getElementById("room_panel_body");
+    if (pb) pb.onclick = onPanelClick;
+    const rf = document.getElementById("rm_refresh_open");
+    if (rf) rf.onclick = () => { publicRooms = null; renderOpenList(); loadPublicRooms(); };
+    if (!inRoom() && AU) loadPublicRooms();
     const x = document.getElementById("rm_x");
     if (x) x.onclick = closeRoomPanel;
     const cr = document.getElementById("rm_create");
@@ -1319,6 +1428,22 @@
       const el = document.getElementById("room_panel_body");
       if (el) el.innerHTML = roomPanelInner();
       bindRoomPanel();
+    };
+    const dl = document.getElementById("rm_delete");
+    if (dl) dl.onclick = async () => {
+      if (!confirm("Delete this room for everyone? Members will be removed. Rewards already earned are kept.")) return;
+      dl.disabled = true;
+      try {
+        await rpc("delete_room", { p_room_id: room.id });
+        await leaveRoom();
+        toast("Room deleted");
+      } catch (e) {
+        toast((e && e.message) || "Could not delete room");
+        dl.disabled = false;
+        return;
+      }
+      rmTab = "ov";
+      rerenderPanel();
     };
     const lv = document.getElementById("rm_leave");
     if (lv) lv.onclick = doLeave;
@@ -1659,6 +1784,7 @@
       try { return !!localStorage.getItem(ROOM_KEY); } catch (e) { return false; }
     },
     code: () => (room && room.code) || null,
+    listOpen: loadPublicRooms,
     shareBtnHtml,
     roomUnits,
     sceneRows,

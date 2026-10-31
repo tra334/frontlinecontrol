@@ -2,16 +2,16 @@
 <html lang="en-GB"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>Frontline Control</title>
-<link rel="stylesheet" href="css/base.css?v=1.2.9.11">
+<link rel="stylesheet" href="css/base.css?v=1.2.9.12">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-<link rel="stylesheet" href="css/leaflet-core.css?v=1.2.9.11">
-<link rel="stylesheet" href="css/app.css?v=1.2.9.11">
-<link rel="stylesheet" href="css/layout-mobile.css?v=1.2.9.11">
-<link rel="stylesheet" href="css/layout-desktop.css?v=1.2.9.11">
-<link rel="stylesheet" href="css/fixes.css?v=1.2.9.11">
-<link rel="stylesheet" href="css/radio.css?v=1.2.9.11">
+<link rel="stylesheet" href="css/leaflet-core.css?v=1.2.9.12">
+<link rel="stylesheet" href="css/app.css?v=1.2.9.12">
+<link rel="stylesheet" href="css/layout-mobile.css?v=1.2.9.12">
+<link rel="stylesheet" href="css/layout-desktop.css?v=1.2.9.12">
+<link rel="stylesheet" href="css/fixes.css?v=1.2.9.12">
+<link rel="stylesheet" href="css/radio.css?v=1.2.9.12">
 </head><body>
-<header><div><b>Frontline Control</b><small id="sync">Loading…</small></div><div class="dx"><div><span id="clk"></span><small>UK TIME</small></div><div><span id="k1">0</span><small>CALLS WAITING</small></div><div><span id="k2">0</span><small>OPEN INCIDENTS</small></div><div><span id="k3">0</span><small>UNITS AVAILABLE</small></div><div><span id="k4">0</span><small>DEPLOYED</small></div><span id="hs"></span></div><button id="hd_rm" type="button" class="rmb" title="Rooms" aria-label="Rooms"><svg class="li" width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Rooms</span><i class="rmn" hidden></i></button><div class="cr"><span id="cr"></span><span id="testing" style="padding:1px 5px;border:1px solid #eab308;border-radius:3px;color:#eab308;font:700 9px system-ui;letter-spacing:.08em">D 1.2.9.11</span><small id="rk"></small></div></header>
+<header><div><b>Frontline Control</b><small id="sync">Loading…</small></div><div class="dx"><div><span id="clk"></span><small>UK TIME</small></div><div><span id="k1">0</span><small>CALLS WAITING</small></div><div><span id="k2">0</span><small>OPEN INCIDENTS</small></div><div><span id="k3">0</span><small>UNITS AVAILABLE</small></div><div><span id="k4">0</span><small>DEPLOYED</small></div><span id="hs"></span></div><button id="hd_rm" type="button" class="rmb" title="Rooms" aria-label="Rooms"><svg class="li" width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Rooms</span><i class="rmn" hidden></i></button><div class="cr"><span id="cr"></span><span id="testing" style="padding:1px 5px;border:1px solid #eab308;border-radius:3px;color:#eab308;font:700 9px system-ui;letter-spacing:.08em">D 1.2.9.12</span><small id="rk"></small></div></header>
 <div id="mapw"><div id="map"></div><button id="rpt" type="button" aria-label="Hide side panel" title="Hide side panel"><svg class="li" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button><div id="bm"></div><div id="bsr"><form id="bsf"><input id="bsi" type="search" placeholder="Search address, city or postcode" autocomplete="off" enterkeyhint="search"><button class="s" type="submit">Search</button></form><div id="bsl"></div></div><div id="fabw"><div id="fabr"><button id="fab" type="button" aria-label="Build a station"><svg class="li" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg></button><span id="dbg">DEBUG: Time until new call --:--</span></div><div id="fabm" hidden></div></div></div><div id="ctl" hidden></div>
 <main id="v" hidden></main>
 <aside id="pl"><div class="ph"><span>INCIDENT QUEUE</span><span id="plc"></span></div><div id="plb"></div></aside>
@@ -25,27 +25,27 @@
 <script>window.L||document.write('<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>')</script>
 
 <!-- load order matters: later files use names defined in earlier ones -->
-<script src="js/icons.js?v=1.2.9.11"></script>
-<script src="js/map-shim.js?v=1.2.9.11"></script>
-<script src="js/data.js?v=1.2.9.11"></script>
-<script src="js/state.js?v=1.2.9.11"></script>
-<script src="js/sim.js?v=1.2.9.11"></script>
-<script src="js/ui.js?v=1.2.9.11"></script>
-<script src="js/radio.js?v=1.2.9.11"></script>
-<script src="js/rl-resize.js?v=1.2.9.11"></script>
-<script src="js/scenarios.js?v=1.2.9.11"></script>
-<script src="js/panels.js?v=1.2.9.11"></script>
-<script src="js/map.js?v=1.2.9.11"></script>
-<script src="js/menus.js?v=1.2.9.11"></script>
-<script src="js/cloud.js?v=1.2.9.11"></script>
-<script src="js/auth-ui.js?v=1.2.9.11"></script>
-<script src="js/backup.js?v=1.2.9.11"></script>
-<script src="js/poi.js?v=1.2.9.11"></script>
-<script src="js/osm-poi.js?v=1.2.9.11"></script>
-<script src="js/map-filter.js?v=1.2.9.11"></script>
-<script src="js/staff.js?v=1.2.9.11"></script>
-<script src="js/boot.js?v=1.2.9.11"></script>
-<script src="js/bonus.js?v=1.2.9.11"></script>
-<script src="js/rooms.js?v=1.2.9.11"></script>
-<script src="js/rp-toggle.js?v=1.2.9.11"></script>
+<script src="js/icons.js?v=1.2.9.12"></script>
+<script src="js/map-shim.js?v=1.2.9.12"></script>
+<script src="js/data.js?v=1.2.9.12"></script>
+<script src="js/state.js?v=1.2.9.12"></script>
+<script src="js/sim.js?v=1.2.9.12"></script>
+<script src="js/ui.js?v=1.2.9.12"></script>
+<script src="js/radio.js?v=1.2.9.12"></script>
+<script src="js/rl-resize.js?v=1.2.9.12"></script>
+<script src="js/scenarios.js?v=1.2.9.12"></script>
+<script src="js/panels.js?v=1.2.9.12"></script>
+<script src="js/map.js?v=1.2.9.12"></script>
+<script src="js/menus.js?v=1.2.9.12"></script>
+<script src="js/cloud.js?v=1.2.9.12"></script>
+<script src="js/auth-ui.js?v=1.2.9.12"></script>
+<script src="js/backup.js?v=1.2.9.12"></script>
+<script src="js/poi.js?v=1.2.9.12"></script>
+<script src="js/osm-poi.js?v=1.2.9.12"></script>
+<script src="js/map-filter.js?v=1.2.9.12"></script>
+<script src="js/staff.js?v=1.2.9.12"></script>
+<script src="js/boot.js?v=1.2.9.12"></script>
+<script src="js/bonus.js?v=1.2.9.12"></script>
+<script src="js/rooms.js?v=1.2.9.12"></script>
+<script src="js/rp-toggle.js?v=1.2.9.12"></script>
 </body></html>
