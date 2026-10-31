@@ -34,6 +34,8 @@
   let doneAtById = {};  // shared call id -> ms epoch it finished (so offline vehicles can be shown standing down then)
   let claimedLocal = new Set(); // mission ids already paid locally this session
   let lastUi = "";
+  let roomLoaded = false;  // true once the room (ally units, finished calls) has been fetched and settled since this page loaded
+  let bootAt = 0;          // when the game became ready (0 = not yet)
 
   const myId = () => (AU && AU.user && AU.user.id) || null;
   const myName = () => {
@@ -189,7 +191,9 @@
     await Promise.all([fetchMembers(), fetchPresence(), fetchMissions(), fetchChat()]);
     applySharedMissions();
     syncAllyMarkers();
-    tryClaimRewards();
+    tickAllyUnits();
+    try { await tryClaimRewards(); } catch (e) {}
+    if (gameReady()) roomLoaded = true;
     bumpRoomUi();
     maybeWarnNoAllyStations();
     try {
@@ -347,7 +351,7 @@
     return [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
   }
 
-  const FINAL_BODY_MAX = 8000;  // keepalive requests share a ~64KB quota with the game's own save, so keep the exit snapshot small
+  const FINAL_BODY_MAX = 16000; // keepalive requests share a ~64KB quota with the game's own save, so keep the exit snapshot modest
   const HAND_MS = 30000;        // sim.js hands a patient over for 20-40s; use the middle when the owner's game hadn't chosen yet
 
   /* ---------- Offline ally estimate ----------
@@ -488,15 +492,44 @@
   /* Route compaction. Allies replay this polyline to place an offline vehicle, so
      keep the real vertices (and their cumulative distances) – only thin them out
      when the payload budget needs it. */
+  /* Pick the K most significant vertices of a polyline (Douglas-Peucker order: always the point that
+     bends the line most). Thinning a long road route by "every Nth point" cuts corners and, when the
+     budget is small, turns the route into a near-straight line for allies. This keeps the real turns. */
+  function pickKeep(p, K) {
+    const n = p.length;
+    const all = []; for (let i = 0; i < n; i++) all.push(i);
+    if (K >= n) return all;
+    const cl = Math.cos((+p[0][0]) * Math.PI / 180);
+    const X = i => (+p[i][1]) * cl, Y = i => +p[i][0];
+    const dist = (i, a, b) => {
+      const ax = X(a), ay = Y(a), bx = X(b), by = Y(b), px = X(i), py = Y(i), dx = bx - ax, dy = by - ay, l = dx * dx + dy * dy;
+      let t = l ? ((px - ax) * dx + (py - ay) * dy) / l : 0; t = Math.max(0, Math.min(1, t));
+      return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+    };
+    const mk = (a, b) => {
+      if (b - a < 2) return null;
+      let bi = -1, bd = -1;
+      for (let i = a + 1; i < b; i++) { const d = dist(i, a, b); if (d > bd) { bd = d; bi = i; } }
+      return { a, b, i: bi, d: bd };
+    };
+    const keep = new Set([0, n - 1]);
+    const list = []; const first = mk(0, n - 1); if (first) list.push(first);
+    while (keep.size < K && list.length) {
+      let mi = 0; for (let j = 1; j < list.length; j++) if (list[j].d > list[mi].d) mi = j;
+      const seg = list.splice(mi, 1)[0];
+      keep.add(seg.i);
+      const l = mk(seg.a, seg.i), r = mk(seg.i, seg.b);
+      if (l) list.push(l); if (r) list.push(r);
+    }
+    return Array.from(keep).sort((x, y) => x - y);
+  }
+  /* Route compaction. Allies replay this polyline to place an offline vehicle, so
+     keep the real vertices (and their cumulative distances) – only thin them out
+     when the payload budget needs it, and then keep the vertices that matter most. */
   function compactRt(rt, maxPts) {
     if (!rt || !rt.p || rt.p.length < 2 || !rt.d) return null;
     const n = rt.p.length;
-    let idx = [];
-    if (!maxPts || n <= maxPts) { for (let i = 0; i < n; i++) idx.push(i); }
-    else {
-      for (let i = 0; i < maxPts; i++) idx.push(Math.round(i * (n - 1) / (maxPts - 1)));
-      idx = idx.filter((v, i) => i === 0 || v !== idx[i - 1]);
-    }
+    const idx = (!maxPts || n <= maxPts) ? Array.from({ length: n }, (_, i) => i) : pickKeep(rt.p, Math.max(2, maxPts));
     return {
       p: idx.map(i => [+(+rt.p[i][0]).toFixed(5), +(+rt.p[i][1]).toFixed(5)]),
       d: idx.map(i => +(+rt.d[i]).toFixed(3)),
@@ -594,13 +627,13 @@
     let units = snapshotUnits(0);
     let body = { room_id: room.id, user_id: myId(), units, updated_at: stale };
     if (ka) { // keepalive requests are size-limited: thin the routes until it fits
-      for (const pts of [60, 30, 16, 8, 4]) {
+      for (const pts of [160, 100, 70, 48, 32, 20, 12, 6]) {
         if (JSON.stringify(body).length <= FINAL_BODY_MAX) break;
         units = snapshotUnits(pts);
         body = { room_id: room.id, user_id: myId(), units, updated_at: stale };
       }
       if (JSON.stringify(body).length > FINAL_BODY_MAX) { // last resort: drop parked vehicles, keep the moving ones
-        units = snapshotUnits(4, true);
+        units = snapshotUnits(12, true);
         body = { room_id: room.id, user_id: myId(), units, updated_at: stale };
       }
     }
@@ -852,10 +885,16 @@
       if (S.rcs) Object.keys(S.rcs).forEach(id => { if (S.rcs[id].t < now() - 6048e5) delete S.rcs[id]; });
       const ids = new Set(Object.keys(S.rcs || {}));
       (S.ms || []).forEach(m => { if (m.roomId) ids.add(m.roomId); });
-      const SEL = "&select=id,k,status,reward,xb,contributors,owner_id,updated_at";
+      const SEL = "&select=id,k,status,reward,xb,contributors,owner_id,updated_at,local_mid,la,lo";
       const rows = new Map();
       const recent = await rest("room_missions?room_id=eq." + room.id + "&status=eq.done" + SEL + "&order=updated_at.desc&limit=20");
       (recent || []).forEach(r => { rows.set(r.id, r); const d = Date.parse(r.updated_at); if (d) doneAtById[r.id] = d; });
+      /* my own shared calls that lost their link to the room row (e.g. an older save was loaded): look the
+         finished ones up by owner so they can be re-linked and settled below */
+      if ((S.ms || []).some(m => !m.roomId && !m.roomOwner && m.ans)) {
+        const mine = await rest("room_missions?room_id=eq." + room.id + "&owner_id=eq." + myId() + "&status=in.(done,cancelled)" + SEL + "&order=updated_at.desc&limit=20");
+        (mine || []).forEach(r => { rows.set(r.id, r); if (r.status === "done") { const d = Date.parse(r.updated_at); if (d) doneAtById[r.id] = d; } });
+      }
       const ask = Array.from(ids).filter(id => /^[0-9a-f-]{36}$/i.test(String(id)));
       if (ask.length) {
         const got = await rest("room_missions?id=in.(" + ask.join(",") + ")" + SEL);
@@ -871,8 +910,14 @@
         }
       }
       for (const rm of rows.values()) {
-        const local = (S.ms || []).find(x => x.roomId === rm.id);
         const isOwner = rm.owner_id === myId();
+        let local = (S.ms || []).find(x => x.roomId === rm.id);
+        if (!local && isOwner && rm.local_mid != null && (rm.status === "done" || rm.status === "cancelled")) {
+          // re-link my own call whose roomId was lost (same id, type and place)
+          local = (S.ms || []).find(x => !x.roomId && !x.roomOwner && x.id === rm.local_mid && x.k === rm.k &&
+            Math.abs((+x.la) - (+rm.la)) < 1e-5 && Math.abs((+x.lo) - (+rm.lo)) < 1e-5);
+          if (local) { local.roomId = rm.id; local.shared = 1; dirty = true; }
+        }
         if (rm.status === "cancelled") {
           if (local && local.roomOwner && typeof recall === "function") { try { recall(local, 1); } catch (e) {} }
           if (S.rcs) delete S.rcs[rm.id];
@@ -1547,6 +1592,13 @@
     // Awaited by signOut(): sends the final position before the session is destroyed
     flush: async () => { try { await publishFinal({ keepalive: false }); } finally { stopLoops(); } },
     inRoom: () => inRoom(),
+    /* true while a saved room is still loading after a (re)login: sim.js leaves shared calls alone until then,
+       so it can't "pause" or judge them without knowing who is really on scene */
+    pending: () => {
+      if (roomLoaded) return false;
+      if (bootAt && Date.now() - bootAt > 60000) return false;
+      try { return !!localStorage.getItem(ROOM_KEY); } catch (e) { return false; }
+    },
     code: () => (room && room.code) || null,
     shareBtnHtml,
     roomUnits,
@@ -1565,6 +1617,7 @@
 
   // Boot after game starts
   function onGameReady() {
+    if (!bootAt) bootAt = Date.now();
     ensureBadge();
     ["nav_rm", "hd_rm"].forEach(id => {
       const b = document.getElementById(id);
