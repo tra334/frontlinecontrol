@@ -186,3 +186,112 @@ nav{background:var(--card)}
 /* Rooms lives in the bottom bar on mobile; the room-code badge is desktop only */
 #room_badge{display:none!important}
 }
+
+/* ======================================================================
+   Rooms: "Command Deck" look + tabbed layout (Overview / Chat / Map on mobile)
+   The Rooms panel always uses its own dark palette, whatever the app theme.
+   ====================================================================== */
+#room_ov{--bg:#0f1520;--card:#172033;--tx:#e8edf7;--mu:#9aa7bd;--bd:#26324a;--rm-ac:#a5acff;--rm-red:#c62d3a;--rm-blue:#3563e9;--rm-ind:#3b3f9e}
+#room_ov>div.rm-pn{background:#0f1520!important;color:#e8edf7!important;border-color:#26324a!important;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+#room_ov .rm-hdr{flex:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px 10px 18px;border-bottom:1px solid var(--bd)}
+#room_ov .rm-ttl{font-size:22px;font-weight:700;letter-spacing:-.3px;display:flex;align-items:center;gap:8px}
+#room_ov .rm-hbtns{display:flex;align-items:center;gap:8px}
+#room_ov .rm-hdr .cx{width:40px;height:40px;background:#172033!important;border:1px solid #2f3c58!important;color:#e8edf7!important}
+#room_ov .rm-hdr .cx:hover{background:#1f2b44!important}
+#room_ov .rm-hl{display:none;align-items:center;gap:7px;height:40px;padding:0 15px;border:0;border-radius:20px;background:var(--rm-red);color:#fff;font:700 14px system-ui;cursor:pointer}
+#room_ov.rm-in .rm-hl{display:inline-flex}
+#room_ov .rm-hl:hover{background:#a82430}
+
+/* tabs */
+#room_ov .rm-tabs{flex:none;display:flex;padding:0 12px;border-bottom:1px solid var(--bd)}
+#room_ov .rm-tabs button{flex:1;height:48px;padding:0;border:0;border-bottom:3px solid transparent;border-radius:0;background:none;color:var(--mu);font:500 15px system-ui}
+#room_ov .rm-tabs button[aria-selected=true]{color:var(--tx);font-weight:600;border-bottom-color:var(--rm-ac)}
+
+/* welcome / code / people / missions */
+#room_ov .rm-sec{display:flex;flex-direction:column;gap:14px}
+#room_ov .rmg-l .rm-sec+.rm-sec{margin-top:14px}
+#room_ov .rm-wel{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:16px;background:#1c2347;border:1px solid var(--rm-ind)}
+#room_ov .rm-wel-i{flex:none;width:40px;height:40px;border-radius:50%;background:var(--rm-ind);color:#fff;display:flex;align-items:center;justify-content:center}
+#room_ov .rm-wel-i svg{display:block;width:22px;height:22px;margin:0}
+#room_ov .rm-wel b{display:block;font-size:16px;font-weight:700}
+#room_ov .rm-wel div span{display:block;font-size:14px;line-height:1.4;color:#c9d1e3;margin-top:2px}
+#room_ov .rm-code{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 14px 14px 16px;border-radius:16px;background:var(--card);border:1px solid var(--bd)}
+#room_ov .rm-code small{display:block;font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--mu);font-weight:600;overflow-wrap:anywhere}
+#room_ov .rm-cd{font-size:32px;font-weight:700;letter-spacing:6px;color:var(--rm-ac);line-height:1.15}
+#room_ov .rm-hd{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 -6px;font-size:11px;letter-spacing:1.4px;color:var(--mu);font-weight:600}
+#room_ov .rm-hd span+span{font-size:13px;letter-spacing:0;font-weight:500}
+#room_ov .rm-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#4ade80;margin-right:6px}
+#room_ov .rm-card{border-radius:16px;background:var(--card);border:1px solid var(--bd);overflow:hidden}
+#room_ov .rm-per{display:flex;align-items:center;gap:12px;min-height:60px;padding:0 16px;border-bottom:1px solid var(--bd)}
+#room_ov .rm-per:last-child{border-bottom:0}
+#room_ov .rm-av{position:relative;flex:none;width:36px;height:36px;border-radius:50%;background:#2f3c58;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#e8edf7}
+#room_ov .rm-av.on{background:var(--rm-ind)}
+#room_ov .rm-av i{position:absolute;right:-1px;bottom:-1px;width:11px;height:11px;border-radius:50%;background:#8592ab;border:2px solid var(--card)}
+#room_ov .rm-av.on i{background:#4ade80}
+#room_ov .rm-nm{flex:1;min-width:0;font-size:15px;font-weight:600;overflow-wrap:anywhere}
+#room_ov .rm-tag{display:inline-block;margin-left:4px;font-size:10px;font-weight:700;letter-spacing:.6px;padding:3px 6px;border-radius:6px;background:#26324a;color:#c9d1e3;vertical-align:1px}
+#room_ov .rm-tag.h{background:#3a2e12;color:#fcd34d}
+#room_ov .rm-ps{flex:none;font-size:13px;color:var(--mu)}
+#room_ov .rm-ps.on{color:#4ade80}
+#room_ov .rm-empty{display:flex;flex-direction:column;gap:4px;padding:18px 16px;border-radius:16px;border:1px dashed #36456a;text-align:center}
+#room_ov .rm-empty b{font-size:15px;font-weight:600}
+#room_ov .rm-empty span{font-size:13px;line-height:1.45;color:var(--mu)}
+#room_ov .rm-mis{display:flex;flex-direction:column;gap:4px;padding:14px 16px;border-radius:16px;background:var(--card);border:1px solid var(--bd)}
+#room_ov .rm-mis-t{font-size:15px;font-weight:600}
+#room_ov .rm-mis-d{font-size:13px;color:var(--mu);overflow-wrap:anywhere}
+#room_ov .rm-mis .rm-btn{margin-top:8px;align-self:flex-start}
+
+/* buttons */
+#room_ov .rm-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border:0;border-radius:12px;color:#fff;font:600 14px system-ui;cursor:pointer}
+#room_ov .rm-btn.wide{width:100%}
+#room_ov .rm-btn.indigo{background:var(--rm-ind)}
+#room_ov .rm-btn.blue{background:#1b2f63;border:1px solid #4c7dff}
+#room_ov .rm-btn.red{min-height:52px;border-radius:14px;background:var(--rm-red);font-size:16px;font-weight:700;gap:10px}
+#room_ov .rm-btn.red:hover{background:#a82430}
+#room_ov .rm-btn svg{flex:none}
+
+/* map overlay switches */
+#room_ov .rm-sw{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:60px;padding:0 16px;border-bottom:1px solid var(--bd);font-size:16px;font-weight:600;cursor:pointer}
+#room_ov .rm-sw:last-child{border-bottom:0}
+#room_ov .rm-sw input{-webkit-appearance:none;appearance:none;flex:none;position:relative;width:50px;height:30px;margin:0;border-radius:15px;background:#2f3c58;cursor:pointer;transition:background .15s}
+#room_ov .rm-sw input::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .15s}
+#room_ov .rm-sw input:checked{background:var(--rm-blue)}
+#room_ov .rm-sw input:checked::after{transform:translateX(20px)}
+#room_ov .rm-sw input:focus-visible{outline:2px solid var(--rm-ac);outline-offset:2px}
+
+/* chat */
+#room_ov .rm-hd-chat{display:none}
+#room_ov .rm-chatlist{max-height:none;flex:1;min-height:0;overflow-y:auto;padding:8px 0;border:0;border-radius:0;background:#0a0f18;border-top:1px solid var(--bd)}
+#room_ov .rm-row{display:flex;gap:12px;padding:10px 16px}
+#room_ov .rm-row.me{background:var(--card)}
+#room_ov .rm-ra{flex:none;width:36px;height:36px;border-radius:50%;background:#2f3c58;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600}
+#room_ov .rm-row.me .rm-ra{background:var(--rm-ind)}
+#room_ov .rm-rb{min-width:0}
+#room_ov .rm-rn{display:flex;align-items:baseline;gap:8px}
+#room_ov .rm-rn b{font-size:15px;font-weight:700}
+#room_ov .rm-rn em{font-style:normal;font-size:12px;font-weight:600;color:var(--rm-ac)}
+#room_ov .rm-rn small{font-size:12px;color:var(--mu)}
+#room_ov .rm-rt{font-size:16px;line-height:1.4;margin-top:2px;overflow-wrap:anywhere}
+#room_ov .rm-comp{flex:none;display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--bd);background:#0f1520}
+#room_ov #rm_chat_in{flex:1;min-width:0;height:46px;padding:0 16px;border-radius:23px;border:1px solid #2f3c58;background:var(--card);color:var(--tx);font:400 16px system-ui}
+#room_ov #rm_chat_send{flex:none;height:46px;padding:0 22px;border-radius:23px;border:0;background:var(--rm-blue);color:#fff;font:600 15px system-ui}
+
+@media(max-width:999px){
+  #room_ov.rm-in #room_panel_body{padding:0;overflow:hidden;display:flex;flex-direction:column}
+  #room_ov.rm-in .rmg{flex:1;min-height:0;display:flex;flex-direction:column;padding:0!important}
+  #room_ov.rm-in .rmg-l{flex:1;min-height:0;overflow-y:auto;padding:16px}
+  #room_ov.rm-in .rmg-r{flex:1;min-height:0;display:flex;flex-direction:column}
+  #room_ov.rm-in .rmg-f{flex:none;padding:8px 16px calc(14px + env(safe-area-inset-bottom,0px))}
+  #room_ov .rm-comp{padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+  #room_ov .rmg-l .rm-sec+.rm-sec{margin-top:0}
+  /* one tab at a time */
+  #room_ov .rmg.rm-t-ov [data-sec="map"],#room_ov .rmg.rm-t-ov .rmg-r{display:none}
+  #room_ov .rmg.rm-t-map [data-sec="ov"],#room_ov .rmg.rm-t-map .rmg-r{display:none}
+  #room_ov .rmg.rm-t-chat .rmg-l,#room_ov .rmg.rm-t-chat .rmg-f{display:none}
+}
+@media(min-width:1000px){
+  #room_ov .rm-tabs,#room_ov #rm_calls,#room_ov .rm-hl{display:none!important}
+  #room_ov .rm-hd-chat{display:flex;margin:0 0 8px}
+  #room_ov .rmg-r .rm-chatlist{border:1px solid var(--bd);border-radius:12px}
+  #room_ov .rmg-f{padding-top:12px}
+}
