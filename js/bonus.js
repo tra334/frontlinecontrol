@@ -3,6 +3,7 @@
   const POLL_MS = 60000;      // re-check for new bonuses every minute
   let offers = [];            // unclaimed, active bonuses
   let busy = false;
+  let dbg = true;
 
   const ready = () => typeof AU !== "undefined" && AU && AU.user && AU.user.id && gameOn && S;
 
@@ -18,11 +19,13 @@
       const got = new Set((cs || []).map(c => c.bonus_id));
       const prev = new Set(offers.map(o => o.id));
       offers = (bs || []).filter(b => !got.has(b.id));
+      if (dbg) { dbg = false; try { toast("Bonus check: " + (bs || []).length + " active, " + got.size + " claimed, " + offers.length + " to claim"); } catch (e) {} }
       if (offers.some(o => !prev.has(o.id))) {
         try { toast("A bonus is waiting for you – open Ranks to claim it"); } catch (e) {}
       }
     } catch (e) {
       console.error("Bonus check failed", e);
+      if (dbg) { dbg = false; try { toast("Bonus check failed: " + ((e && (e.status ? e.status + " " : "") + e.message) || "unknown")); } catch (x) {} }
     }
     busy = false;
     try { paint(); } catch (e) {}
