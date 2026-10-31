@@ -24,6 +24,7 @@
   let chatSeenAt = 0;       // ms epoch of the newest message the player has viewed
   let chatUnread = 0;       // messages received since chatSeenAt
   let chatOpen = false;     // true while the Rooms panel is on screen (any tab)
+  let rmTab = "ov";         // active tab in the mobile Rooms panel: "ov" (Overview) | "chat" | "map"
   let chatInitDone = false; // false until the first fetchChat() after joining/reconnecting
   let pollTimer = 0;
   let presenceTimer = 0;
@@ -321,13 +322,14 @@
     box.innerHTML = roomChat.length
       ? roomChat.map(m => {
           const mine = m.user_id === myId();
+          const nm = m.display_name || "Controller";
           const t = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
-          return `<div style="margin-bottom:8px">
-            <div style="font:600 11px system-ui;opacity:.6">${esc(m.display_name || "Controller")}${mine ? " (you)" : ""} · ${t}</div>
-            <div style="font:500 13px/1.4 system-ui;background:${mine ? "#312e81" : "var(--card)"};border:1px solid var(--bd);border-radius:8px;padding:6px 10px;margin-top:2px;word-break:break-word">${esc(m.body)}</div>
+          return `<div class="rm-row${mine ? " me" : ""}">
+            <span class="rm-ra">${esc(nm.trim().charAt(0).toUpperCase() || "C")}</span>
+            <div class="rm-rb"><div class="rm-rn"><b>${esc(nm)}</b>${mine ? '<em>you</em>' : ""}<small>${t}</small></div><div class="rm-rt">${esc(m.body)}</div></div>
           </div>`;
         }).join("")
-      : `<div class="mu" style="padding:8px 0">No messages yet – say hello.</div>`;
+      : `<div class="rm-empty" style="margin:16px"><b>No messages yet</b><span>Say hello.</span></div>`;
     box.scrollTop = box.scrollHeight;
   }
 
@@ -1143,8 +1145,12 @@
       const ci0 = document.getElementById("rm_chat_in");
       const draft = ci0 ? ci0.value : "";
       const hadFocus = !!ci0 && document.activeElement === ci0;
+      const sl0 = el.querySelector(".rmg-l");
+      const st0 = sl0 ? sl0.scrollTop : 0;
       el.innerHTML = roomPanelInner();
       bindRoomPanel();
+      const sl1 = el.querySelector(".rmg-l");
+      if (sl1 && st0) sl1.scrollTop = st0; // a background poll shouldn't throw the player back to the top
       if (draft) {
         const ci1 = document.getElementById("rm_chat_in");
         if (ci1) {
@@ -1197,53 +1203,69 @@
     const memH = members.map(m => {
       const on = m.last_seen && Date.parse(m.last_seen) > Date.now() - STALE_MEMBER_MS;
       const host = room.host_id === m.user_id;
-      return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--bd)">
-        <span style="width:8px;height:8px;border-radius:50%;background:${on ? "#22c55e" : "#64748b"};flex:none"></span>
-        <span style="flex:1;font:600 13px system-ui">${esc(m.display_name || "Controller")}${host ? ' <span style="opacity:.55;font-size:11px">host</span>' : ""}${m.user_id === myId() ? ' <span style="opacity:.55;font-size:11px">you</span>' : ""}</span>
+      const nm = m.display_name || "Controller";
+      return `<div class="rm-per">
+        <span class="rm-av${on ? " on" : ""}">${esc(nm.trim().charAt(0).toUpperCase() || "C")}<i></i></span>
+        <span class="rm-nm">${esc(nm)}${host ? ' <b class="rm-tag h">HOST</b>' : ""}${m.user_id === myId() ? ' <b class="rm-tag">YOU</b>' : ""}</span>
+        <span class="rm-ps${on ? " on" : ""}">${on ? "Online" : "Offline"}</span>
       </div>`;
     }).join("");
     const smH = roomMissions.length
       ? roomMissions.map(rm => {
           const tp = T[rm.k];
           const title = tp ? tp[1] : "Incident";
-          return `<div style="padding:8px 0;border-bottom:1px solid var(--bd)">
-            <div style="font:600 13px system-ui">${esc(title)}</div>
-            <div class="mu" style="font-size:12px">${esc(rm.owner_name || "Ally")} · ${esc(rm.loc || "")} · £${fmt(rm.k != null && T[rm.k] ? roomPay(rm.k, rm.owner_id === myId() ? (typeof rank === "function" ? rank() : 0) : rankFor(rm.id), rm.xb) : (rm.reward || 0))}</div>
+          return `<div class="rm-mis">
+            <div class="rm-mis-t">${esc(title)}</div>
+            <div class="rm-mis-d">${esc(rm.owner_name || "Ally")} · ${esc(rm.loc || "")} · £${fmt(rm.k != null && T[rm.k] ? roomPay(rm.k, rm.owner_id === myId() ? (typeof rank === "function" ? rank() : 0) : rankFor(rm.id), rm.xb) : (rm.reward || 0))}</div>
+            <button type="button" class="rm-btn blue" data-rm-disp="${esc(String(rm.id))}">${typeof lci === "function" ? lci("phone", 16) : ""} Dispatch units</button>
           </div>`;
         }).join("")
-      : `<div class="mu" style="padding:8px 0">No shared missions yet. Open an incident and tap Share to room.</div>`;
+      : `<div class="rm-empty"><b>No shared missions yet</b><span>Open an incident and tap Share to room. Everyone in the room can then dispatch units to it from the Calls panel.</span></div>`;
 
-    return `<div class="rmg" style="padding:8px 4px 12px"><div class="rmg-l">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px">
-        <div>
-          <div style="font:700 16px system-ui">${esc(room.name || "Room")}</div>
-          <div style="font:700 20px system-ui;letter-spacing:.14em;color:#a5b4fc">${esc(room.code)}</div>
-        </div>
-        <button id="rm_copy" class="s" style="padding:8px 12px;background:#312e81">Copy code</button>
-      </div>
-      <div class="mu" style="font-size:12px;margin-bottom:10px">${online.length} online · ${members.length} member${members.length === 1 ? "" : "s"}</div>
-      <div style="margin-bottom:12px">${memH}</div>
-      <div style="font:700 13px system-ui;margin:8px 0 4px">Map overlays</div>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;font:600 13px system-ui">
-        <input type="checkbox" id="rm_fb" ${showAllyBuildings ? "checked" : ""}> Ally stations
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;font:600 13px system-ui">
-        <input type="checkbox" id="rm_fv" ${showAllyVehicles ? "checked" : ""}> Ally vehicles
-      </label>
-      <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer;font:600 13px system-ui">
-        <input type="checkbox" id="rm_fm" ${showAllyMissions ? "checked" : ""}> Shared mission pins
-      </label>
-      <div style="font:700 13px system-ui;margin:14px 0 4px">Shared missions</div>
-      ${smH}
+    const ICO = d => `<svg class="li" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+    const I_LEAVE = '<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>';
+    const I_COPY = '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/>';
+    const I_SPARK = '<path d="M12 3l2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2z"/>';
+    const mkTab = (id, label) => `<button type="button" role="tab" data-rm-tab="${id}" aria-selected="${rmTab === id}">${label}</button>`;
+    const sw = (id, label, on) => `<label class="rm-sw" for="${id}"><span>${label}</span><input type="checkbox" id="${id}" ${on ? "checked" : ""}></label>`;
+    return `<div class="rmg rm-t-${rmTab}">
+      <div class="rm-tabs" role="tablist">${mkTab("ov", "Overview")}${mkTab("chat", "Chat")}${mkTab("map", "Map")}</div>
+      <div class="rmg-l">
+        <section class="rm-sec" data-sec="ov">
+          <div class="rm-wel">
+            <span class="rm-wel-i">${ICO(I_SPARK)}</span>
+            <div><b>Welcome to the room</b><span>Work together, share missions, earn more!</span></div>
+          </div>
+          <div class="rm-code">
+            <div>
+              <small>${esc(room.name || "Room")}</small>
+              <div class="rm-cd">${esc(room.code)}</div>
+            </div>
+            <button type="button" id="rm_copy" class="rm-btn indigo">${ICO(I_COPY)} Copy code</button>
+          </div>
+          <div class="rm-hd"><span>PEOPLE</span><span><i class="rm-dot"></i>${online.length} online · ${members.length} member${members.length === 1 ? "" : "s"}</span></div>
+          <div class="rm-card">${memH}</div>
+          <div class="rm-hd"><span>SHARED MISSIONS</span><span>${roomMissions.length} shared</span></div>
+          ${smH}
+          <button type="button" id="rm_calls" class="rm-btn blue wide">${typeof lci === "function" ? lci("phone", 18) : ""} Open Calls panel</button>
+        </section>
+        <section class="rm-sec" data-sec="map">
+          <div class="rm-hd"><span>MAP OVERLAYS</span></div>
+          <div class="rm-card">
+            ${sw("rm_fb", "Ally stations", showAllyBuildings)}
+            ${sw("rm_fv", "Ally vehicles", showAllyVehicles)}
+            ${sw("rm_fm", "Shared mission pins", showAllyMissions)}
+          </div>
+        </section>
       </div><div class="rmg-r">
-      <div style="font:700 13px system-ui;margin:14px 0 4px">Room chat</div>
-      <div id="rm_chat_list" class="rm-chatlist" style="overflow-y:auto;border:1px solid var(--bd);border-radius:8px;padding:8px;background:var(--bg)"></div>
-      <div style="display:flex;gap:6px;margin-top:6px">
-        <input id="rm_chat_in" maxlength="240" placeholder="Message the room…" style="flex:1;min-width:0;padding:9px 10px;border-radius:8px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font:500 13px system-ui;box-sizing:border-box">
-        <button id="rm_chat_send" class="s" style="padding:9px 14px">Send</button>
-      </div>
+        <div class="rm-hd rm-hd-chat"><span>ROOM CHAT</span></div>
+        <div id="rm_chat_list" class="rm-chatlist"></div>
+        <div class="rm-comp">
+          <input id="rm_chat_in" maxlength="240" placeholder="Message the room…" aria-label="Message the room" enterkeyhint="send">
+          <button type="button" id="rm_chat_send">Send</button>
+        </div>
       </div><div class="rmg-f">
-      <button id="rm_leave" class="s" style="width:100%;margin-top:14px;padding:11px;background:#7f1d1d">Leave room</button>
+        <button type="button" id="rm_leave" class="rm-btn red wide">${ICO(I_LEAVE)} Leave room</button>
       </div>
     </div>`;
   }
@@ -1290,13 +1312,47 @@
         jn.disabled = false;
       }
     };
-    const lv = document.getElementById("rm_leave");
-    if (lv) lv.onclick = async () => {
+    const doLeave = async () => {
+      if (!confirm("Leave this room?")) return;
       await leaveRoom();
+      rmTab = "ov";
       const el = document.getElementById("room_panel_body");
       if (el) el.innerHTML = roomPanelInner();
       bindRoomPanel();
     };
+    const lv = document.getElementById("rm_leave");
+    if (lv) lv.onclick = doLeave;
+    const hl = document.getElementById("rm_hd_leave");
+    if (hl) hl.onclick = doLeave;
+
+    // Tabs (Overview / Chat / Map) – mobile layout; switching only toggles classes, no re-render
+    document.querySelectorAll("#room_ov [data-rm-tab]").forEach(b => {
+      b.onclick = () => {
+        rmTab = b.dataset.rmTab;
+        const g = document.querySelector("#room_ov .rmg");
+        if (g) g.className = "rmg rm-t-" + rmTab;
+        document.querySelectorAll("#room_ov [data-rm-tab]").forEach(x => x.setAttribute("aria-selected", String(x === b)));
+        if (rmTab === "chat") {
+          chatUnread = 0; chatSeenAt = Date.now();
+          renderChat();
+        }
+      };
+    });
+
+    // Shared missions -> Calls panel
+    const toCalls = id => {
+      closeRoomPanel();
+      try { if (typeof desk === "function" ? !desk() : true) setTab("c"); } catch (e) {}
+      if (id != null) {
+        const m = (S.ms || []).find(x => String(x.roomId) === String(id));
+        if (m) { try { openD(m.id); } catch (e) {} }
+      }
+    };
+    const cc = document.getElementById("rm_calls");
+    if (cc) cc.onclick = () => toCalls(null);
+    document.querySelectorAll("#room_ov [data-rm-disp]").forEach(b => {
+      b.onclick = () => toCalls(b.dataset.rmDisp);
+    });
     const cp = document.getElementById("rm_copy");
     if (cp) cp.onclick = () => {
       if (!room) return;
@@ -1432,10 +1488,13 @@
     ov = document.createElement("div");
     ov.id = "room_ov";
     ov.style.cssText = "position:fixed;inset:0;z-index:100050;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:16px";
-    ov.innerHTML = `<div style="width:100%;max-width:400px;max-height:calc(100dvh - 32px);display:flex;flex-direction:column;background:var(--card,#0b1220);color:var(--tx,#eef1f8);border:1px solid var(--bd,#1e293b);border-radius:14px;overflow:hidden">
-      <div style="flex:none;display:flex;align-items:center;justify-content:space-between;padding:14px 14px 12px 18px;border-bottom:1px solid var(--bd,#1e293b)">
-        <div style="font-size:18px;font-weight:700">${typeof lci === "function" ? lci("users") : ""} Rooms</div>
-        <button id="rm_x" class="cx" aria-label="Close">${typeof lci === "function" ? lci("x", 18) : "×"}</button>
+    ov.innerHTML = `<div class="rm-pn" style="width:100%;max-width:400px;max-height:calc(100dvh - 32px);display:flex;flex-direction:column;background:var(--card,#0b1220);color:var(--tx,#eef1f8);border:1px solid var(--bd,#1e293b);border-radius:14px;overflow:hidden">
+      <div class="rm-hdr">
+        <div class="rm-ttl">${typeof lci === "function" ? lci("user-group") : ""} Rooms</div>
+        <div class="rm-hbtns">
+          <button type="button" id="rm_hd_leave" class="rm-hl" aria-label="Leave room"><svg class="li" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>Leave</button>
+          <button id="rm_x" class="cx" aria-label="Close">${typeof lci === "function" ? lci("x", 18) : "×"}</button>
+        </div>
       </div>
       <div id="room_panel_body" style="flex:1;min-height:0;overflow-y:auto;padding:0 14px 8px">${roomPanelInner()}</div>
     </div>`;
