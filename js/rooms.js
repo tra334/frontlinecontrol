@@ -968,15 +968,15 @@
             if (s == null || s.lat == null || s.lon == null) return;
             const key = uid + "_s_" + (s.id != null ? s.id : (s.lat + "_" + s.lon));
             seenS[key] = 1;
-            const bg = (typeof SC !== "undefined" && SC[s.sv]) ? SC[s.sv] : "#6366f1";
+            const bg = "#6b7280"; /* allied stations are always grey */
             let inner = (s.sv || "?").toUpperCase().slice(0, 1);
             try {
               if (typeof bIco === "function") inner = bIco("s", { id: s.id, sv: s.sv, name: s.name });
             } catch (e) {}
             const offline = p.online === false;
-            const ring = offline ? "#64748b" : "#a5b4fc";
+            const ring = offline ? "#9ca3af" : "#d1d5db";
             const op = offline ? "0.75" : "0.95";
-            const html = `<div class="sm ally" data-f="ally" style="background:${bg};opacity:${op};box-shadow:0 0 0 3px ${ring},0 3px 10px rgba(0,0,0,.4)">${inner}</div>`;
+            const html = `<div class="sm ally${typeof pinOn === "function" && pinOn() ? " pin" : ""}" data-f="ally" style="background:${bg};opacity:${op};--ring:${ring};box-shadow:0 0 0 3px ${ring},0 3px 10px rgba(0,0,0,.4)">${typeof pw === "function" ? pw(inner) : inner}</div>`;
             let mk = allyLayers.s[key];
             const tip = (p.display_name || "Ally") + " · " + (s.name || "Station") + (offline ? " (offline)" : "");
             if (!mk) {
@@ -1344,9 +1344,9 @@
     const oo = rows.filter(r => r.cls === "oos").length;
     const nc = rows.filter(r => r.label === "Needs crew").length;
     const fresh = p.updated_at ? agoTxt(Date.now() - Date.parse(p.updated_at)) : "";
-    const col = (typeof SC !== "undefined" && SC[st.sv]) || "#6366f1";
+    const col = "#6b7280"; /* allied stations are always grey */
     let badge = `<span style="width:30px;height:30px;border-radius:50%;background:${col};flex:none"></span>`;
-    try { if (typeof bIco === "function") badge = `<span class="sm" style="position:static;background:${col};width:30px;height:30px;flex:none;display:inline-flex;align-items:center;justify-content:center">${bIco("s", { id: st.id, sv: st.sv, name: st.name })}</span>`; } catch (e) {}
+    try { if (typeof bIco === "function") badge = `<span class="sm" style="position:static;filter:grayscale(1);background:${col};width:30px;height:30px;flex:none;display:inline-flex;align-items:center;justify-content:center">${bIco("s", { id: st.id, sv: st.sv, name: st.name })}</span>`; } catch (e) {}
     const sr = (a, b2) => `<div class="sr"><span>${a}</span><b>${b2}</b></div>`;
     const top = sh.scrollTop;
     sh.dataset.k = allySheetKey();
