@@ -19,7 +19,7 @@ const l=$("#bsl");l.textContent="";j.forEach(r=>{const d=document.createElement(
 $("#bsf").onsubmit=e=>{e.preventDefault();bsrGo($("#bsi").value)};
 ['click','dblclick','mousedown','touchstart','wheel'].forEach(ev=>$("#bsr").addEventListener(ev,e=>e.stopPropagation()));
 function ask(i){const m=mm(curM);if(m.roomOwner){toast("Only "+m.roomOwner+", who shared this call, can question the caller.");return}m.qa.push([QS[i][0],QS[i][1](m)]);if(!m.adc&&m.qa.some(x=>x[0]===QS[0][0])){m.adc=1;log("📍 Address taken: "+m.loc)}dirty=true;drawQ()}
-function openD(id){const m0=mm(id);if(!m0)return;if(!m0.adc){toast("Ask for the address of the emergency before dispatching.");openQ(id);return}si=0;curM=id;sel=new Set();$("#modal").hidden=false;if(!m0.ans)m0.ans=1;hideCT(id);drawD()}
+function openD(id){const m0=mm(id);if(!m0)return;if(!m0.adc){toast("Ask for the address of the emergency before dispatching.");openQ(id);return}si=0;curM=id;sel=new Set();$("#modal").hidden=false;if(!m0.ans)m0.ans=1;hideCT(id);drawD();$("#sheet").scrollTop=0}
 function drawD(){const m=mm(curM);if(!m){closeM();return}const tp=T[m.k],nd=shown(m);$("#sheet").dataset.qk="";
 const us=S.un.filter(free).sort((a,b)=>need(nd,b)-need(nd,a)||eta(a,m)-eta(b,m));
 $("#sheet").innerHTML=`<div class="t" style="font-size:17px">${gch(gr(m.k))} ${tp[1]}</div><div class="mu">${locT(m)}</div><div>${chips(m)}</div><div class="row" style="margin-top:10px"><button class="g" onclick="openQ(${m.id})">Back</button><button class="g" onclick="auto()">Auto</button><button onclick="go()" ${sel.size?"":"disabled"}>Send ${sel.size}</button></div><div class="mu" style="margin:10px 0 4px">Available &amp; returning units (${us.length}). ★ = needed.</div>`+
