@@ -628,7 +628,7 @@
       hid: m.hid || null,
       xn: m.xn || null,
       status: "open",
-      reward: (tp[5] || 0) + (m.xb || 0),
+      reward: roomPay(m.k, typeof rank === "function" ? rank() : 0, m.xb),
       contributors: []
     };
     const ins = await rest("room_missions", {
@@ -721,6 +721,11 @@
   /* Did this player send any unit to this shared call? (en route or on scene) */
   const sentUnits = m => (S.un || []).filter(u => u.mid === m.id && (u.st === "out" || u.st === "scene"));
 
+  /* Pay on a room call follows the rank of whoever worked it: the rank this player had when
+     they first sent a unit (saved in S.rcs), otherwise their current rank. */
+  const rankFor = id => (S.rcs && S.rcs[id] && S.rcs[id].r != null) ? S.rcs[id].r : (typeof rank === "function" ? rank() : 0);
+  const roomPay = (k, r, xb) => (typeof payOf === "function" ? payOf(k, r) : ((T[k] && T[k][5]) || 0)) + (xb || 0);
+
   /* Remember (in the save) that we sent units to a shared call someone else owns, so the
      reward can still be claimed after the local copy of the call is gone. */
   function markSent(m) {
@@ -728,7 +733,7 @@
     if (!sentUnits(m).length) return;
     S.rcs = S.rcs || {};
     if (!S.rcs[m.roomId]) {
-      S.rcs[m.roomId] = { k: m.k, t: now() };
+      S.rcs[m.roomId] = { k: m.k, t: now(), r: typeof rank === "function" ? rank() : 0 };
       dirty = true;
     }
   }
@@ -836,7 +841,7 @@
       if (S.rcs) Object.keys(S.rcs).forEach(id => { if (S.rcs[id].t < now() - 6048e5) delete S.rcs[id]; });
       const ids = new Set(Object.keys(S.rcs || {}));
       (S.ms || []).forEach(m => { if (m.roomId) ids.add(m.roomId); });
-      const SEL = "&select=id,k,status,reward,contributors,owner_id,updated_at";
+      const SEL = "&select=id,k,status,reward,xb,contributors,owner_id,updated_at";
       const rows = new Map();
       const recent = await rest("room_missions?room_id=eq." + room.id + "&status=eq.done" + SEL + "&order=updated_at.desc&limit=20");
       (recent || []).forEach(r => { rows.set(r.id, r); const d = Date.parse(r.updated_at); if (d) doneAtById[r.id] = d; });
@@ -885,7 +890,9 @@
           try { recall(local); } catch (e) {}
         }
         if (!eligible || claimedLocal.has(rm.id)) continue;
-        await claimReward(rm.id, rm.reward || 0, rm.k || (S.rcs && S.rcs[rm.id] && S.rcs[rm.id].k), true);
+        const kk = rm.k != null ? rm.k : (S.rcs && S.rcs[rm.id] && S.rcs[rm.id].k);
+        const myAmt = (kk != null && T[kk]) ? roomPay(kk, isOwner ? (typeof rank === "function" ? rank() : 0) : rankFor(rm.id), rm.xb) : (rm.reward || 0);
+        await claimReward(rm.id, myAmt, kk, true);
       }
     } catch (e) {
     } finally {
@@ -1143,7 +1150,7 @@
           const title = tp ? tp[1] : "Incident";
           return `<div style="padding:8px 0;border-bottom:1px solid var(--bd)">
             <div style="font:600 13px system-ui">${esc(title)}</div>
-            <div class="mu" style="font-size:12px">${esc(rm.owner_name || "Ally")} · ${esc(rm.loc || "")} · £${fmt(rm.reward || 0)}</div>
+            <div class="mu" style="font-size:12px">${esc(rm.owner_name || "Ally")} · ${esc(rm.loc || "")} · £${fmt(rm.k != null && T[rm.k] ? roomPay(rm.k, rm.owner_id === myId() ? (typeof rank === "function" ? rank() : 0) : rankFor(rm.id), rm.xb) : (rm.reward || 0))}</div>
           </div>`;
         }).join("")
       : `<div class="mu" style="padding:8px 0">No shared missions yet. Open an incident and tap Share to room.</div>`;
@@ -1359,7 +1366,7 @@
     window.recall = function (m, ab) {
       if (m && m.roomId && !ab && !m._rmDone) {
         const tp = T[m.k];
-        const amount = (tp ? tp[5] : 0) + (m.xb || 0) + (m.roomOwner ? 0 : (S.hbp || 0));
+        const amount = (tp ? roomPay(m.k, m.roomOwner ? rankFor(m.roomId) : (typeof rank === "function" ? rank() : 0), m.xb) : 0) + (m.roomOwner ? 0 : (S.hbp || 0));
         // snapshot who was on the call NOW: recall() sends the units home straight away
         const sent = sentUnits(m);
         const snap = { sent: sent.length > 0 || !!(S.rcs && S.rcs[m.roomId]), scene: sent.some(u => u.st === "scene") };
