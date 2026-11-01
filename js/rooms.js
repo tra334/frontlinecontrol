@@ -671,7 +671,7 @@
       if (u.st === "hand") o.ht = +u.ht || 0; // hand-over finishes at
       if (moving && u.rt) o.rt = compactRt(u.rt, routePts);
       return o;
-    }).filter(u => u.st === "idle" || (u.la && u.lo));
+    }).filter(u => (u.st === "idle" || (u.la && u.lo)) && (u.st === "idle" || u.rm));
   }
 
   let _presErrAt = 0;
@@ -1145,6 +1145,7 @@
         list.forEach(u => { try {
           if (u.la == null || u.lo == null) return;
           if (u.st === "idle" || u.st === "scene") return; // on scene: they're at the incident pin, no separate vehicle marker
+          if (!u.rm) return; // only ally vehicles on a shared room mission
           const key = uid + "_u_" + u.id;
           seenU[key] = 1;
           // Grey line showing the road route an offline ally's vehicle is estimated to be following
@@ -1538,6 +1539,7 @@
     const rows = [];
     (p.units || []).forEach(u => {
       if (!u || u.id == null || !U[u.ty]) return;
+      if (u.st !== "idle" && !u.rm) return; // hide ally vehicles not on a shared room mission
       let st = "idle", label = "", cls = "idle", mins = 0;
       if (u.st === "idle") {
         label = u.oos ? "Out of service" : u.nc ? "Needs crew" : ((typeof SL !== "undefined" && SL.idle) || "Available");
