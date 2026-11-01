@@ -41,6 +41,7 @@ h3{margin:16px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.05e
 <header>
   <h1>Admin</h1>
   <div class="tabs" id="tabs" hidden><button data-t="p" class="on">Players</button><button data-t="l">Log</button></div>
+  <button class="btn" id="out" hidden>Sign out</button>
 </header>
 <main id="main"><div class="card mu">Loading…</div></main>
 <div id="sheet"></div>
@@ -110,6 +111,17 @@ h3{margin:16px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.05e
   function closeSheet() { sheet.style.display = "none"; sheet.innerHTML = ""; }
   sheet.onclick = e => { if (e.target === sheet) closeSheet(); };
 
+  // ---- lists inside a player's sheet ----
+  const lst = (title, n, rows) => `<details style="margin:6px 0"><summary style="cursor:pointer;font-weight:600">${esc(title)} (${n})</summary><div style="max-height:260px;overflow:auto;margin-top:4px">${n ? rows : '<div class="mu">None</div>'}</div></details>`;
+  const gameLists = g => {
+    const st = (g.stationList || []).map(x => `<div class="lg"><b>${esc(x.name)}</b> <span class="mu">${esc(x.type)} · ${x.units} vehicle${x.units === 1 ? "" : "s"}</span></div>`).join("");
+    const hs = (g.hospitalList || []).map(x => `<div class="lg"><b>${esc(x.name)}</b> <span class="mu">${esc(x.type)}</span></div>`).join("");
+    const vh = (g.vehicleList || []).map(v => `<div class="lg"><b>${esc(v.cs)}</b> <span class="mu">${esc(v.type)} · ${esc(v.status)}${v.station ? " · " + esc(v.station) : ""}</span></div>`).join("");
+    const jb = (g.jobs || []).map(j => `<div class="lg"><b>${esc(j.n)}</b> <span class="mu">${esc(when(j.t))}</span><br><span class="mu">${j.e >= 0 ? "+" : "−"}${money(Math.abs(j.e))} · balance ${money(j.b)}</span></div>`).join("");
+    const lg = (g.log || []).map(l => `<div class="lg"><span class="mu">${esc(when(l.t))}</span><br>${esc(l.m)}</div>`).join("");
+    return lst("Stations", (g.stationList || []).length, st) + lst("Hospitals / prisons", (g.hospitalList || []).length, hs) + lst("Vehicles", (g.vehicleList || []).length, vh) + lst("Money log", (g.jobs || []).length, jb) + lst("Game log", (g.log || []).length, lg);
+  };
+
   async function openUser(id) {
     sheet.style.display = "block"; sheet.innerHTML = '<div class="card mu">Loading…</div>';
     try {
@@ -120,7 +132,7 @@ h3{margin:16px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.05e
         <div class="grid"><div>Joined<b>${esc(when(u.created))}</b></div><div>Last sign-in<b>${esc(when(u.last))}</b></div>
         ${u.banned_until ? `<div>Suspended until<b>${esc(when(u.banned_until))}</b></div>` : ""}</div>
         <h3>Game</h3>
-        ${g ? `<div class="grid"><div>Credits<b>${money(g.cr)}</b></div><div>Jobs done<b>${g.done}</b></div><div>Stations<b>${g.stations}</b></div><div>Hospitals / prisons<b>${g.hospitals}</b></div><div>Vehicles<b>${g.vehicles}</b></div><div>Staff<b>${g.staff}</b></div><div>Running on server<b>${g.running ? "Yes" : "No"}</b></div></div>` : '<div class="mu">No saved game.</div>'}
+        ${g ? `<div class="grid"><div>Rank<b>${esc(g.rank || "–")}</b></div><div>Credits<b>${money(g.cr)}</b></div><div>Jobs done<b>${g.done}</b></div><div>Stations<b>${g.stations}</b></div><div>Hospitals / prisons<b>${g.hospitals}</b></div><div>Vehicles<b>${g.vehicles}</b></div><div>Staff<b>${g.staff}</b></div><div>Running on server<b>${g.running ? "Yes" : "No"}</b></div></div>${gameLists(g)}` : '<div class="mu">No saved game.</div>'}
         <h3>Credits</h3>
         <div class="row"><input id="amt" type="number" inputmode="numeric" placeholder="Amount, e.g. 50000"><input id="why" placeholder="Reason (kept in the log)"></div>
         <div class="row" style="margin-top:8px"><button class="btn grn" id="add">Give</button><button class="btn amb" id="take">Take away</button></div>
@@ -159,13 +171,45 @@ h3{margin:16px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.05e
   function show() { tab === "p" ? showPlayers() : showLog(); }
   document.querySelectorAll("#tabs button").forEach(b => { b.onclick = () => { tab = b.dataset.t; document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x === b)); show(); }; });
 
-  (async function start() {
-    const msg = (t, link) => { $("#main").innerHTML = '<div class="card">' + esc(t) + (link ? ' <a href="./">Open the game</a>' : "") + "</div>"; };
-    if (!session()) return msg("Sign in to the game first (in this same browser), then come back to this page.", true);
+  // ---- own sign-in (this site has its own storage, so it can't reuse the game's session) ----
+  function loginForm(err) {
+    $("#tabs").hidden = true; $("#out").hidden = true;
+    $("#main").innerHTML = `<form class="card" id="lf" style="max-width:360px;margin:40px auto">
+      <b style="font-size:18px">Admin sign-in</b>
+      <div style="margin:12px 0 8px"><input id="em" type="email" placeholder="Email" autocomplete="username" required></div>
+      <div style="margin-bottom:12px"><input id="pw" type="password" placeholder="Password" autocomplete="current-password" required></div>
+      <button class="btn pri" id="go" style="width:100%">Sign in</button>
+      <div id="le" style="color:var(--rd);margin-top:10px;font-size:13px">${esc(err || "")}</div></form>`;
+    $("#lf").onsubmit = async e => {
+      e.preventDefault(); const b = $("#go"); b.disabled = true; $("#le").textContent = "";
+      try {
+        const r = await fetch(SB_URL + "/auth/v1/token?grant_type=password", { method: "POST", headers: { apikey: SB_KEY, "Content-Type": "application/json" }, body: JSON.stringify({ email: $("#em").value.trim(), password: $("#pw").value }) });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok || !j.access_token) throw new Error(j.error_description || j.msg || "Sign-in failed");
+        localStorage.setItem(SES_KEY, JSON.stringify({ access_token: j.access_token, refresh_token: j.refresh_token, expires_at: j.expires_at || Math.floor(Date.now() / 1000) + (j.expires_in || 3600), user: j.user }));
+        start();
+      } catch (x) { b.disabled = false; $("#le").textContent = x.message; }
+    };
+  }
+  async function signOut() {
+    try { const t = await token(); if (t) await fetch(SB_URL + "/auth/v1/logout", { method: "POST", headers: { apikey: SB_KEY, Authorization: "Bearer " + t } }); } catch (e) { /* ignore */ }
+    try { localStorage.removeItem(SES_KEY); } catch (e) { /* ignore */ }
+    closeSheet(); loginForm();
+  }
+  $("#out").onclick = signOut;
+
+  async function start() {
+    if (!session()) return loginForm();
     try { me = await api("/api/admin/me"); }
-    catch (e) { return msg(/not an admin/i.test(e.message) ? "This account isn't an admin." : "Can't open the admin panel: " + e.message, true); }
-    $("#tabs").hidden = false; show();
-  })();
+    catch (e) {
+      if (/not an admin/i.test(e.message)) { try { localStorage.removeItem(SES_KEY); } catch (x) { /* ignore */ } return loginForm("That account isn't an admin."); }
+      if (/not signed in|401|invalid|expired|jwt/i.test(e.message)) { try { localStorage.removeItem(SES_KEY); } catch (x) { /* ignore */ } return loginForm("Session expired, please sign in again."); }
+      $("#main").innerHTML = '<div class="card" style="color:var(--rd)">Can\'t open the admin panel: ' + esc(e.message) + ' <button class="btn" id="rt">Retry</button> <button class="btn" id="so">Sign out</button></div>';
+      $("#rt").onclick = start; $("#so").onclick = signOut; return;
+    }
+    $("#tabs").hidden = false; $("#out").hidden = false; show();
+  }
+  start();
 })();
 </script>
 </body>
