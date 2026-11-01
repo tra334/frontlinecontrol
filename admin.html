@@ -4,47 +4,93 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light dark">
 <title>Admin · Frontline Control</title>
 <style>
-:root{--bg:#f3f4f6;--card:#fff;--tx:#111827;--mu:#6b7280;--bd:#e5e7eb;--ac:#2563eb;--rd:#dc2626;--gn:#16a34a;--am:#d97706}
-@media(prefers-color-scheme:dark){:root{--bg:#0b1220;--card:#131c2e;--tx:#e5e7eb;--mu:#94a3b8;--bd:#24304a;--ac:#3b82f6;--rd:#f87171;--gn:#4ade80;--am:#fbbf24}}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,-apple-system,Segoe UI,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
-header{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--bd);padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-header h1{font-size:17px;margin:0;flex:1}
-main{max-width:760px;margin:0 auto;padding:14px}
-.tabs{display:flex;gap:6px}
-.tabs button,.btn{border:0;border-radius:9px;padding:9px 14px;font:600 14px system-ui;cursor:pointer;background:var(--bd);color:var(--tx)}
-.tabs button.on,.btn.pri{background:var(--ac);color:#fff}
-.btn.red{background:var(--rd);color:#fff}.btn.amb{background:var(--am);color:#fff}.btn.grn{background:var(--gn);color:#052e16}
-.btn:disabled{opacity:.5}
-input,select{width:100%;padding:10px 12px;border-radius:9px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font:inherit}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;margin:0 0 10px}
-.u{display:flex;gap:10px;align-items:center;cursor:pointer}
-.u .m{flex:1;min-width:0}.u b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+:root{
+  --bg:#eef1f6;--card:#fff;--card2:#f6f8fb;--tx:#0f172a;--mu:#64748b;--bd:#e2e8f0;
+  --ac:#2563eb;--ac2:#1d4ed8;--acs:rgba(37,99,235,.1);
+  --rd:#dc2626;--rds:rgba(220,38,38,.1);--gn:#16a34a;--gns:rgba(22,163,74,.12);--am:#d97706;--ams:rgba(217,119,6,.13);
+  --sh:0 1px 2px rgba(15,23,42,.06),0 4px 14px rgba(15,23,42,.05);--r:14px
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#080d18;--card:#111a2c;--card2:#16203a;--tx:#e8edf6;--mu:#8b9ab5;--bd:#22304d;
+  --ac:#4f8cff;--ac2:#3b7bf5;--acs:rgba(79,140,255,.14);
+  --rd:#f87171;--rds:rgba(248,113,113,.14);--gn:#4ade80;--gns:rgba(74,222,128,.14);--am:#fbbf24;--ams:rgba(251,191,36,.14);
+  --sh:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.25)}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{background:var(--bg);color:var(--tx);font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit}
+header{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);border-bottom:1px solid var(--bd);padding:10px 16px;display:flex;align-items:center;gap:12px}
+.brand{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--ac),#7c3aed);display:grid;place-items:center;color:#fff;font-weight:800;font-size:14px;flex:none}
+.brand b{font-size:16px;letter-spacing:-.01em;display:block;line-height:1.1}.brand span{font-size:12px;color:var(--mu)}
+main{max-width:820px;margin:0 auto;padding:16px}
+.seg{display:flex;gap:4px;background:var(--card2);border:1px solid var(--bd);padding:3px;border-radius:11px}
+.seg button{border:0;background:none;padding:7px 14px;border-radius:8px;font-weight:600;font-size:14px;color:var(--mu);cursor:pointer}
+.seg button.on{background:var(--card);color:var(--tx);box-shadow:var(--sh)}
+.btn{border:0;border-radius:10px;padding:10px 16px;font-weight:600;font-size:14px;cursor:pointer;background:var(--card2);color:var(--tx);border:1px solid var(--bd);transition:filter .15s,transform .05s}
+.btn:active{transform:scale(.98)}.btn:hover{filter:brightness(.97)}.btn:disabled{opacity:.45;pointer-events:none}
+.btn.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+.btn.red{background:var(--rd);border-color:var(--rd);color:#fff}.btn.grn{background:var(--gn);border-color:var(--gn);color:#04210f}.btn.amb{background:var(--am);border-color:var(--am);color:#1f1300}
+.btn.sm{padding:6px 11px;font-size:13px;border-radius:8px}
+.btn.ghr{background:var(--rds);border-color:transparent;color:var(--rd)}.btn.gha{background:var(--acs);border-color:transparent;color:var(--ac)}
+input,select{width:100%;padding:11px 13px;border-radius:10px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font:inherit;outline:none}
+input:focus,select:focus{border-color:var(--ac);box-shadow:0 0 0 3px var(--acs)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:14px 16px;margin:0 0 10px;box-shadow:var(--sh)}
 .mu{color:var(--mu);font-size:13px}
-.tag{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:1px 6px;margin-left:4px;vertical-align:1px}
-.t-on{background:var(--gn);color:#052e16}.t-ban{background:var(--rd);color:#fff}.t-ad{background:var(--ac);color:#fff}
 .row{display:flex;gap:8px}.row>*{flex:1}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin:8px 0}
-.grid div{font-size:13px;color:var(--mu)}.grid b{display:block;color:var(--tx);font-size:15px}
-h3{margin:16px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--mu)}
-#sheet{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;z-index:20;overflow:auto;padding:12px}
-#sheet .card{max-width:520px;margin:0 auto 12px;position:relative}
-#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#111827;color:#fff;border-radius:10px;padding:10px 16px;z-index:50;max-width:90%;display:none}
-.pg{display:flex;justify-content:space-between;align-items:center;margin:6px 0 20px}
-.lg{font-size:13px;border-bottom:1px solid var(--bd);padding:8px 0}
-.lg:last-child{border:0}
+.tag{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.04em;border-radius:6px;padding:2px 6px;margin-left:6px;vertical-align:2px}
+.t-on{background:var(--gns);color:var(--gn)}.t-ban{background:var(--rds);color:var(--rd)}.t-ad{background:var(--acs);color:var(--ac)}
+.t-idle{background:var(--gns);color:var(--gn)}.t-busy{background:var(--ams);color:var(--am)}
+.pl{display:flex;gap:12px;align-items:center;cursor:pointer;transition:transform .08s,border-color .15s}
+.pl:hover{border-color:var(--ac)}.pl:active{transform:scale(.995)}
+.av{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:#fff;flex:none;font-size:15px}
+.pl .m{flex:1;min-width:0}.pl b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl .m .mu{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl .r{text-align:right;flex:none}.pl .r b{font-variant-numeric:tabular-nums}
+.pg{display:flex;justify-content:space-between;align-items:center;margin:8px 0 24px;gap:8px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:12px 0}
+.stat{background:var(--card2);border:1px solid var(--bd);border-radius:12px;padding:10px 12px}
+.stat span{display:block;font-size:11.5px;color:var(--mu);text-transform:uppercase;letter-spacing:.05em}
+.stat b{display:block;font-size:19px;letter-spacing:-.01em;margin-top:2px;font-variant-numeric:tabular-nums}
+h3{margin:20px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--mu)}
+.item{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--bd)}
+.item:last-child{border:0}
+.item .m{flex:1;min-width:0}.item .m b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .m .mu{display:block}
+.ico{width:36px;height:36px;border-radius:10px;background:var(--acs);color:var(--ac);display:grid;place-items:center;font-size:17px;flex:none}
+.acts{display:flex;gap:6px;flex:none}
+.empty{text-align:center;color:var(--mu);padding:22px 0}
+.lg{font-size:13.5px;padding:9px 0;border-bottom:1px solid var(--bd)}.lg:last-child{border:0}
+.lg .mu{font-size:12px}
+#sheet{position:fixed;inset:0;background:var(--bg);display:none;z-index:20;overflow:auto;-webkit-overflow-scrolling:touch}
+.sh-top{position:sticky;top:0;z-index:2;background:color-mix(in srgb,var(--card) 90%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--bd);padding:calc(10px + env(safe-area-inset-top)) 16px 10px}
+.sh-in{max-width:820px;margin:0 auto}
+.sh-body{max-width:820px;margin:0 auto;padding:14px 16px 40px}
+#modal{position:fixed;inset:0;background:rgba(2,6,16,.6);display:none;z-index:40;align-items:flex-end;justify-content:center;padding:12px}
+#modal.on{display:flex}
+#modal .box{background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:18px;width:100%;max-width:440px;max-height:86vh;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.4);animation:up .18s ease-out}
+@media(min-width:600px){#modal{align-items:center}}
+@keyframes up{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+.pick{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;background:var(--card2);border:1px solid var(--bd);border-radius:11px;padding:11px 13px;margin-top:7px;cursor:pointer}
+.pick:hover{border-color:var(--ac)}
+.chk{display:flex;gap:9px;align-items:center;margin-top:12px;font-size:14px;cursor:pointer}.chk input{width:18px;height:18px;flex:none;margin:0}
+#toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#0f172a;color:#fff;border-radius:12px;padding:11px 18px;z-index:60;max-width:90%;display:none;box-shadow:0 8px 30px rgba(0,0,0,.35);font-size:14px}
+.login{max-width:380px;margin:9vh auto 0}
+.login .logo{width:48px;height:48px;border-radius:14px;font-size:20px;margin:0 auto 14px}
 </style>
 </head>
 <body>
 <header>
-  <h1>Admin</h1>
-  <div class="tabs" id="tabs" hidden><button data-t="p" class="on">Players</button><button data-t="l">Log</button></div>
-  <button class="btn" id="out" hidden>Sign out</button>
+  <div class="brand"><div class="logo">FC</div><div><b>Frontline Control</b><span>Admin dashboard</span></div></div>
+  <div class="seg" id="tabs" hidden><button data-t="p" class="on">Players</button><button data-t="l">Log</button></div>
+  <button class="btn sm" id="out" hidden>Sign out</button>
 </header>
 <main id="main"><div class="card mu">Loading…</div></main>
 <div id="sheet"></div>
+<div id="modal"></div>
 <div id="toast"></div>
 
 <script>
@@ -56,11 +102,32 @@ h3{margin:16px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.05e
   const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const money = n => "£" + (+n || 0).toLocaleString("en-GB");
   const when = t => t ? new Date(t).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "never";
-  let tab = "p", q = "", page = 1, timer = 0, me = null;
+  const COL = ["#2563eb", "#7c3aed", "#db2777", "#ea580c", "#0d9488", "#4f46e5", "#65a30d", "#0891b2"];
+  const avatar = u => { const n = (u.name || u.email || "?").trim(), h = [...String(u.id)].reduce((a, c) => a + c.charCodeAt(0), 0); return `<div class="av" style="background:${COL[h % COL.length]}">${esc(n[0].toUpperCase())}</div>`; };
+  const SVI = { f: "🚒", p: "🚓", a: "🚑", aa: "🚁", ph: "🚁" };
+  let tab = "p", q = "", page = 1, timer = 0, me = null, cur = null; // cur = {id, data, view}
 
-  function toast(m) { const t = $("#toast"); t.textContent = m; t.style.display = "block"; clearTimeout(toast.t); toast.t = setTimeout(() => { t.style.display = "none"; }, 3500); }
+  function toast(m) { const t = $("#toast"); t.textContent = m; t.style.display = "block"; clearTimeout(toast.t); toast.t = setTimeout(() => { t.style.display = "none"; }, 3600); }
 
-  // ---- sign-in: reuse the game's own session (same site, same browser) ----
+  // ---------- popups ----------
+  const modal = $("#modal");
+  function closeModal() { modal.classList.remove("on"); modal.innerHTML = ""; }
+  modal.onclick = e => { if (e.target === modal) closeModal(); };
+  // ask(): confirmation dialog -> resolves {ok, refund, text}
+  function ask(title, html, o) {
+    o = o || {};
+    return new Promise(res => {
+      modal.innerHTML = `<div class="box"><div style="font-size:18px;font-weight:700;letter-spacing:-.01em">${esc(title)}</div><div style="margin-top:8px;color:var(--mu)">${html}</div>
+        ${o.refund ? `<label class="chk"><input type="checkbox" id="mrf"> <span>${esc(o.refund)}</span></label>` : ""}
+        ${o.reason ? `<input id="mrs" placeholder="Reason (kept in the log)" style="margin-top:12px">` : ""}
+        <div class="row" style="margin-top:16px"><button class="btn" id="mno">Cancel</button><button class="btn ${o.danger ? "red" : "pri"}" id="myes">${esc(o.ok || "Confirm")}</button></div></div>`;
+      modal.classList.add("on");
+      $("#mno").onclick = () => { closeModal(); res(null); };
+      $("#myes").onclick = () => { const r = { refund: !!($("#mrf") && $("#mrf").checked), reason: $("#mrs") ? $("#mrs").value : "" }; closeModal(); res(r); };
+    });
+  }
+
+  // ---------- sign-in (this site has its own storage, so it keeps its own session) ----------
   function session() { try { return JSON.parse(localStorage.getItem(SES_KEY)); } catch (e) { return null; } }
   async function token() {
     let s = session(); if (!s || !s.access_token) return null;
@@ -79,107 +146,14 @@ h3{margin:16px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.05e
     if (!r.ok || j.ok === false) throw new Error(j.reason || ("HTTP " + r.status));
     return j;
   }
-
-  // ---- players ----
-  async function loadPlayers() {
-    const box = $("#list"); if (!box) return;
-    try {
-      const j = await api("/api/admin/users?q=" + encodeURIComponent(q) + "&page=" + page);
-      const pages = Math.max(1, Math.ceil(j.total / j.per));
-      box.innerHTML = (j.users.length ? j.users.map(u => `
-        <div class="card u" data-id="${esc(u.id)}">
-          <div class="m"><b>${esc(u.name || u.email || u.id)}${u.admin ? '<span class="tag t-ad">ADMIN</span>' : ""}${u.online ? '<span class="tag t-on">ONLINE</span>' : ""}${u.banned_until ? '<span class="tag t-ban">SUSPENDED</span>' : ""}</b>
-          <span class="mu">${esc(u.email)}${u.last ? " · seen " + esc(when(u.last)) : ""}</span></div>
-          <div style="text-align:right"><b>${u.hasGame ? money(u.cr) : "–"}</b><span class="mu">${u.hasGame ? (u.done || 0) + " jobs" : "no game"}</span></div>
-        </div>`).join("") : '<div class="card mu">No players found.</div>') +
-        `<div class="pg"><button class="btn" id="prev" ${page <= 1 ? "disabled" : ""}>Back</button><span class="mu">${j.total} player${j.total === 1 ? "" : "s"} · page ${page} of ${pages}</span><button class="btn" id="next" ${page >= pages ? "disabled" : ""}>Next</button></div>`;
-      box.querySelectorAll(".u").forEach(e => { e.onclick = () => openUser(e.dataset.id); });
-      const pv = $("#prev"), nx = $("#next");
-      if (pv) pv.onclick = () => { page--; loadPlayers(); };
-      if (nx) nx.onclick = () => { page++; loadPlayers(); };
-    } catch (e) { box.innerHTML = '<div class="card" style="color:var(--rd)">' + esc(e.message) + "</div>"; }
-  }
-  function showPlayers() {
-    $("#main").innerHTML = '<input id="q" type="search" placeholder="Search name, email or ID" autocomplete="off" style="margin-bottom:12px"><div id="list"><div class="card mu">Loading…</div></div>';
-    $("#q").value = q;
-    $("#q").oninput = e => { clearTimeout(timer); timer = setTimeout(() => { q = e.target.value; page = 1; loadPlayers(); }, 350); };
-    loadPlayers();
-  }
-
-  // ---- one player ----
-  const sheet = $("#sheet");
-  function closeSheet() { sheet.style.display = "none"; sheet.innerHTML = ""; }
-  sheet.onclick = e => { if (e.target === sheet) closeSheet(); };
-
-  // ---- lists inside a player's sheet ----
-  const lst = (title, n, rows) => `<details style="margin:6px 0"><summary style="cursor:pointer;font-weight:600">${esc(title)} (${n})</summary><div style="max-height:260px;overflow:auto;margin-top:4px">${n ? rows : '<div class="mu">None</div>'}</div></details>`;
-  const gameLists = g => {
-    const st = (g.stationList || []).map(x => `<div class="lg"><b>${esc(x.name)}</b> <span class="mu">${esc(x.type)} · ${x.units} vehicle${x.units === 1 ? "" : "s"}</span></div>`).join("");
-    const hs = (g.hospitalList || []).map(x => `<div class="lg"><b>${esc(x.name)}</b> <span class="mu">${esc(x.type)}</span></div>`).join("");
-    const vh = (g.vehicleList || []).map(v => `<div class="lg"><b>${esc(v.cs)}</b> <span class="mu">${esc(v.type)} · ${esc(v.status)}${v.station ? " · " + esc(v.station) : ""}</span></div>`).join("");
-    const jb = (g.jobs || []).map(j => `<div class="lg"><b>${esc(j.n)}</b> <span class="mu">${esc(when(j.t))}</span><br><span class="mu">${j.e >= 0 ? "+" : "−"}${money(Math.abs(j.e))} · balance ${money(j.b)}</span></div>`).join("");
-    const lg = (g.log || []).map(l => `<div class="lg"><span class="mu">${esc(when(l.t))}</span><br>${esc(l.m)}</div>`).join("");
-    return lst("Stations", (g.stationList || []).length, st) + lst("Hospitals / prisons", (g.hospitalList || []).length, hs) + lst("Vehicles", (g.vehicleList || []).length, vh) + lst("Money log", (g.jobs || []).length, jb) + lst("Game log", (g.log || []).length, lg);
-  };
-
-  async function openUser(id) {
-    sheet.style.display = "block"; sheet.innerHTML = '<div class="card mu">Loading…</div>';
-    try {
-      const j = await api("/api/admin/user?id=" + encodeURIComponent(id)), u = j.user, g = j.game, label = u.name || u.email || u.id;
-      sheet.innerHTML = `<div class="card">
-        <div class="row" style="align-items:flex-start"><div><b style="font-size:18px">${esc(label)}</b>${u.admin ? '<span class="tag t-ad">ADMIN</span>' : ""}${u.banned_until ? '<span class="tag t-ban">SUSPENDED</span>' : ""}
-        <div class="mu">${esc(u.email)}</div><div class="mu" style="word-break:break-all">${esc(u.id)}</div></div><button class="btn" id="x" style="flex:none">Close</button></div>
-        <div class="grid"><div>Joined<b>${esc(when(u.created))}</b></div><div>Last sign-in<b>${esc(when(u.last))}</b></div>
-        ${u.banned_until ? `<div>Suspended until<b>${esc(when(u.banned_until))}</b></div>` : ""}</div>
-        <h3>Game</h3>
-        ${g ? `<div class="grid"><div>Rank<b>${esc(g.rank || "–")}</b></div><div>Credits<b>${money(g.cr)}</b></div><div>Jobs done<b>${g.done}</b></div><div>Stations<b>${g.stations}</b></div><div>Hospitals / prisons<b>${g.hospitals}</b></div><div>Vehicles<b>${g.vehicles}</b></div><div>Staff<b>${g.staff}</b></div><div>Running on server<b>${g.running ? "Yes" : "No"}</b></div></div>${gameLists(g)}` : '<div class="mu">No saved game.</div>'}
-        <h3>Credits</h3>
-        <div class="row"><input id="amt" type="number" inputmode="numeric" placeholder="Amount, e.g. 50000"><input id="why" placeholder="Reason (kept in the log)"></div>
-        <div class="row" style="margin-top:8px"><button class="btn grn" id="add">Give</button><button class="btn amb" id="take">Take away</button></div>
-        <h3>Suspend</h3>
-        ${u.admin ? '<div class="mu">Admins can\'t be suspended or reset from here.</div>' : u.banned_until ? '<button class="btn pri" id="unban" style="width:100%">Lift suspension</button>' : `
-        <div class="row"><select id="dur"><option value="1">1 hour</option><option value="24" selected>1 day</option><option value="168">7 days</option><option value="720">30 days</option><option value="0">Permanent</option></select><input id="bwhy" placeholder="Reason (kept in the log)"></div>
-        <button class="btn red" id="ban" style="width:100%;margin-top:8px">Suspend</button>`}
-        ${u.admin ? "" : `<h3>Game data</h3><div class="row"><button class="btn amb" id="reset">Reset game</button><button class="btn red" id="del">Delete saved game</button></div>
-        <div class="mu" style="margin-top:6px">Both start them on a new game. Credits and game changes only stick for players on the game server, or who aren't playing at that moment.</div>`}
-      </div>`;
-      $("#x").onclick = closeSheet;
-      const run = async (body, done) => { try { const r = await api("/api/admin/action", Object.assign({ uid: id }, body)); toast(r.msg || "Done"); if (done !== false) { await openUser(id); loadPlayers(); } } catch (e) { toast(e.message); } };
-      const credits = sign => () => {
-        const n = Math.trunc(+$("#amt").value); if (!n || n < 0) { toast("Enter a positive whole number"); return; }
-        if (!confirm((sign > 0 ? "Give " : "Take ") + money(n) + (sign > 0 ? " to " : " from ") + label + "?")) return;
-        run({ type: "credits", amount: sign * n, reason: $("#why").value });
-      };
-      $("#add").onclick = credits(1); $("#take").onclick = credits(-1);
-      if ($("#ban")) $("#ban").onclick = () => { const h = +$("#dur").value; if (confirm("Suspend " + label + (h ? " for " + $("#dur").selectedOptions[0].text : " permanently") + "? They are signed out of the game server straight away.")) run({ type: "ban", hours: h, reason: $("#bwhy").value }); };
-      if ($("#unban")) $("#unban").onclick = () => run({ type: "unban" });
-      if ($("#reset")) $("#reset").onclick = () => { if (confirm("Reset " + label + "'s game to a brand new game? This cannot be undone.")) run({ type: "reset" }); };
-      if ($("#del")) $("#del").onclick = () => { if (confirm("Delete " + label + "'s saved game? This cannot be undone.")) run({ type: "deletegame" }); };
-    } catch (e) { sheet.innerHTML = '<div class="card" style="color:var(--rd)">' + esc(e.message) + '</div><div class="card"><button class="btn" id="x2" style="width:100%">Close</button></div>'; $("#x2").onclick = closeSheet; }
-  }
-
-  // ---- log ----
-  async function showLog() {
-    $("#main").innerHTML = '<div class="card mu" id="lg">Loading…</div>';
-    try {
-      const j = await api("/api/admin/log");
-      $("#lg").className = "card";
-      $("#lg").innerHTML = j.log.length ? j.log.map(l => `<div class="lg"><b>${esc(l.action)}</b> <span class="mu">${esc(when(l.t))}</span><br><span class="mu">by ${esc(l.admin)}${l.target ? " · on " + esc(l.target) : ""}</span>${l.detail ? '<br><span class="mu">' + esc(JSON.stringify(l.detail)) + "</span>" : ""}</div>`).join("") : '<span class="mu">Nothing logged yet.</span>';
-    } catch (e) { $("#lg").innerHTML = '<span style="color:var(--rd)">' + esc(e.message) + "</span>"; }
-  }
-
-  function show() { tab === "p" ? showPlayers() : showLog(); }
-  document.querySelectorAll("#tabs button").forEach(b => { b.onclick = () => { tab = b.dataset.t; document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x === b)); show(); }; });
-
-  // ---- own sign-in (this site has its own storage, so it can't reuse the game's session) ----
   function loginForm(err) {
     $("#tabs").hidden = true; $("#out").hidden = true;
-    $("#main").innerHTML = `<form class="card" id="lf" style="max-width:360px;margin:40px auto">
-      <b style="font-size:18px">Admin sign-in</b>
-      <div style="margin:12px 0 8px"><input id="em" type="email" placeholder="Email" autocomplete="username" required></div>
-      <div style="margin-bottom:12px"><input id="pw" type="password" placeholder="Password" autocomplete="current-password" required></div>
-      <button class="btn pri" id="go" style="width:100%">Sign in</button>
-      <div id="le" style="color:var(--rd);margin-top:10px;font-size:13px">${esc(err || "")}</div></form>`;
+    $("#main").innerHTML = `<form class="card login" id="lf" style="padding:26px 22px">
+      <div class="logo">FC</div><div style="text-align:center;font-size:20px;font-weight:700;letter-spacing:-.01em">Admin sign-in</div><div class="mu" style="text-align:center;margin-bottom:18px">Admins only</div>
+      <div style="margin-bottom:10px"><input id="em" type="email" placeholder="Email" autocomplete="username" required></div>
+      <div style="margin-bottom:14px"><input id="pw" type="password" placeholder="Password" autocomplete="current-password" required></div>
+      <button class="btn pri" id="go" style="width:100%;padding:12px">Sign in</button>
+      <div id="le" style="color:var(--rd);margin-top:12px;font-size:13px;text-align:center">${esc(err || "")}</div></form>`;
     $("#lf").onsubmit = async e => {
       e.preventDefault(); const b = $("#go"); b.disabled = true; $("#le").textContent = "";
       try {
@@ -194,9 +168,166 @@ h3{margin:16px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.05e
   async function signOut() {
     try { const t = await token(); if (t) await fetch(SB_URL + "/auth/v1/logout", { method: "POST", headers: { apikey: SB_KEY, Authorization: "Bearer " + t } }); } catch (e) { /* ignore */ }
     try { localStorage.removeItem(SES_KEY); } catch (e) { /* ignore */ }
-    closeSheet(); loginForm();
+    closeSheet(); closeModal(); loginForm();
   }
   $("#out").onclick = signOut;
+
+  // ---------- players list ----------
+  async function loadPlayers() {
+    const box = $("#list"); if (!box) return;
+    try {
+      const j = await api("/api/admin/users?q=" + encodeURIComponent(q) + "&page=" + page);
+      const pages = Math.max(1, Math.ceil(j.total / j.per));
+      box.innerHTML = (j.users.length ? j.users.map(u => `
+        <div class="card pl" data-id="${esc(u.id)}">${avatar(u)}
+          <div class="m"><b>${esc(u.name || u.email || u.id)}${u.admin ? '<span class="tag t-ad">ADMIN</span>' : ""}${u.online ? '<span class="tag t-on">ONLINE</span>' : ""}${u.banned_until ? '<span class="tag t-ban">SUSPENDED</span>' : ""}</b>
+          <span class="mu">${esc(u.email)}${u.last ? " · seen " + esc(when(u.last)) : ""}</span></div>
+          <div class="r"><b>${u.hasGame ? money(u.cr) : "–"}</b><span class="mu">${u.hasGame ? (u.done || 0) + " jobs" : "no game"}</span></div>
+        </div>`).join("") : '<div class="card empty">No players found.</div>') +
+        `<div class="pg"><button class="btn" id="prev" ${page <= 1 ? "disabled" : ""}>← Back</button><span class="mu">${j.total} player${j.total === 1 ? "" : "s"} · page ${page} of ${pages}</span><button class="btn" id="next" ${page >= pages ? "disabled" : ""}>Next →</button></div>`;
+      box.querySelectorAll(".pl").forEach(e => { e.onclick = () => openUser(e.dataset.id); });
+      const pv = $("#prev"), nx = $("#next");
+      if (pv) pv.onclick = () => { page--; loadPlayers(); };
+      if (nx) nx.onclick = () => { page++; loadPlayers(); };
+    } catch (e) { box.innerHTML = '<div class="card" style="color:var(--rd)">' + esc(e.message) + "</div>"; }
+  }
+  function showPlayers() {
+    $("#main").innerHTML = '<input id="q" type="search" placeholder="Search name, email or ID" autocomplete="off" style="margin-bottom:12px"><div id="list"><div class="card mu">Loading…</div></div>';
+    $("#q").value = q;
+    $("#q").oninput = e => { clearTimeout(timer); timer = setTimeout(() => { q = e.target.value; page = 1; loadPlayers(); }, 350); };
+    loadPlayers();
+  }
+
+  // ---------- one player ----------
+  const sheet = $("#sheet");
+  function closeSheet() { sheet.style.display = "none"; sheet.innerHTML = ""; cur = null; document.body.style.overflow = ""; }
+
+  async function openUser(id, view) {
+    document.body.style.overflow = "hidden";
+    const keep = sheet.scrollTop;
+    if (!cur || cur.id !== id) sheet.innerHTML = '<div class="sh-body"><div class="card mu">Loading…</div></div>';
+    sheet.style.display = "block";
+    try {
+      const j = await api("/api/admin/user?id=" + encodeURIComponent(id));
+      cur = { id, data: j, view: view || (cur && cur.id === id ? cur.view : "o"), filter: (cur && cur.id === id && cur.filter) || "" };
+      drawUser(); sheet.scrollTop = keep;
+    } catch (e) { sheet.innerHTML = '<div class="sh-body"><div class="card" style="color:var(--rd)">' + esc(e.message) + '</div><button class="btn" id="x2" style="width:100%">Close</button></div>'; $("#x2").onclick = closeSheet; }
+  }
+
+  // one admin action; refreshes the player afterwards
+  async function run(body, label) {
+    try { const r = await api("/api/admin/action", Object.assign({ uid: cur.id }, body)); toast(r.msg || label || "Done"); await openUser(cur.id); loadPlayers(); }
+    catch (e) { toast(e.message); }
+  }
+
+  function drawUser() {
+    const { data: j, view } = cur, u = j.user, g = j.game, label = u.name || u.email || u.id;
+    const V = [["o", "Overview"], ["s", "Stations"], ["v", "Vehicles"], ["g", "Logs"]];
+    sheet.innerHTML = `<div class="sh-top"><div class="sh-in">
+        <div style="display:flex;gap:12px;align-items:center">${avatar(u)}
+          <div style="flex:1;min-width:0"><b style="font-size:17px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(label)}${u.admin ? '<span class="tag t-ad">ADMIN</span>' : ""}${u.banned_until ? '<span class="tag t-ban">SUSPENDED</span>' : ""}</b><span class="mu" style="display:block;overflow:hidden;text-overflow:ellipsis">${esc(u.email)}</span></div>
+          <button class="btn sm" id="x">Close</button></div>
+        <div class="seg" style="margin-top:10px">${V.map(v => `<button data-v="${v[0]}" class="${v[0] === view ? "on" : ""}" style="flex:1;padding:7px 4px">${v[1]}</button>`).join("")}</div>
+      </div></div><div class="sh-body" id="sb"></div>`;
+    $("#x").onclick = closeSheet;
+    sheet.querySelectorAll(".seg button").forEach(b => { b.onclick = () => { cur.view = b.dataset.v; drawUser(); sheet.scrollTop = 0; }; });
+    const sb = $("#sb");
+    if (view === "o") overview(sb, u, g, label);
+    else if (!g) sb.innerHTML = '<div class="card empty">This player has no saved game.</div>';
+    else if (view === "s") stations(sb, g);
+    else if (view === "v") vehicles(sb, g);
+    else logs(sb, g);
+  }
+
+  function overview(sb, u, g, label) {
+    sb.innerHTML = `
+      ${g ? `<div class="stats"><div class="stat"><span>Rank</span><b style="font-size:15px">${esc(g.rank || "–")}</b></div><div class="stat"><span>Credits</span><b>${money(g.cr)}</b></div><div class="stat"><span>Jobs done</span><b>${g.done}</b></div>
+        <div class="stat"><span>Stations</span><b>${g.stations}</b></div><div class="stat"><span>Hospitals / prisons</span><b>${g.hospitals}</b></div><div class="stat"><span>Vehicles</span><b>${g.vehicles}</b></div><div class="stat"><span>Staff</span><b>${g.staff}</b></div><div class="stat"><span>On game server</span><b>${g.running ? "Yes" : "No"}</b></div></div>` : '<div class="card mu">No saved game.</div>'}
+      <div class="card"><div class="stats" style="margin-top:0"><div class="stat"><span>Joined</span><b style="font-size:14px">${esc(when(u.created))}</b></div><div class="stat"><span>Last sign-in</span><b style="font-size:14px">${esc(when(u.last))}</b></div>${u.banned_until ? `<div class="stat"><span>Suspended until</span><b style="font-size:14px">${esc(when(u.banned_until))}</b></div>` : ""}</div>
+        <div class="mu" style="word-break:break-all">ID ${esc(u.id)}</div></div>
+      <h3>Credits</h3><div class="card">
+        <div class="row"><input id="amt" type="number" inputmode="numeric" placeholder="Amount, e.g. 50000"><input id="why" placeholder="Reason (kept in the log)"></div>
+        <div class="row" style="margin-top:8px"><button class="btn grn" id="add">Give</button><button class="btn amb" id="take">Take away</button></div></div>
+      <h3>Suspend</h3><div class="card">
+        ${u.admin ? '<div class="mu">Admins can\'t be suspended or reset from here.</div>' : u.banned_until ? '<button class="btn pri" id="unban" style="width:100%">Lift suspension</button>' : `
+        <div class="row"><select id="dur"><option value="1">1 hour</option><option value="24" selected>1 day</option><option value="168">7 days</option><option value="720">30 days</option><option value="0">Permanent</option></select><input id="bwhy" placeholder="Reason (kept in the log)"></div>
+        <button class="btn red" id="ban" style="width:100%;margin-top:8px">Suspend</button>`}</div>
+      ${u.admin ? "" : `<h3>Game data</h3><div class="card"><div class="row"><button class="btn amb" id="reset">Reset game</button><button class="btn red" id="del">Delete saved game</button></div>
+        <div class="mu" style="margin-top:8px">Both start them on a new game. Credits and game changes only stick for players on the game server, or who aren't playing at that moment.</div></div>`}`;
+    const credits = sign => () => {
+      const n = Math.trunc(+$("#amt").value); if (!n || n < 0) { toast("Enter a positive whole number"); return; }
+      ask((sign > 0 ? "Give " : "Take ") + money(n) + "?", (sign > 0 ? "Add to " : "Remove from ") + "<b>" + esc(label) + "</b>'s credits.", { ok: sign > 0 ? "Give" : "Take away" }).then(r => { if (r) run({ type: "credits", amount: sign * n, reason: $("#why").value }); });
+    };
+    $("#add").onclick = credits(1); $("#take").onclick = credits(-1);
+    if ($("#ban")) $("#ban").onclick = () => { const h = +$("#dur").value; ask("Suspend " + label + "?", (h ? "For " + esc($("#dur").selectedOptions[0].text) : "Permanently") + ". They are signed out of the game server straight away.", { ok: "Suspend", danger: 1 }).then(r => { if (r) run({ type: "ban", hours: h, reason: $("#bwhy").value }); }); };
+    if ($("#unban")) $("#unban").onclick = () => run({ type: "unban" });
+    if ($("#reset")) $("#reset").onclick = () => ask("Reset game?", "Resets <b>" + esc(label) + "</b>'s game to a brand new game. This cannot be undone.", { ok: "Reset", danger: 1, reason: 1 }).then(r => { if (r) run({ type: "reset", reason: r.reason }); });
+    if ($("#del")) $("#del").onclick = () => ask("Delete saved game?", "Deletes <b>" + esc(label) + "</b>'s saved game. This cannot be undone.", { ok: "Delete", danger: 1, reason: 1 }).then(r => { if (r) run({ type: "deletegame", reason: r.reason }); });
+  }
+
+  function stations(sb, g) {
+    const st = g.stationList || [], hs = g.hospitalList || [];
+    sb.innerHTML = `<h3 style="margin-top:4px">Stations (${st.length})</h3><div class="card">${st.length ? st.map(x => `
+      <div class="item"><div class="ico">${SVI[x.sv] || "🏢"}</div><div class="m"><b>${esc(x.name)}</b><span class="mu">${esc(x.type)} · ${x.units} vehicle${x.units === 1 ? "" : "s"}</span></div>
+      <div class="acts"><button class="btn sm ghr" data-ds="${x.id}">Delete</button></div></div>`).join("") : '<div class="empty">No stations</div>'}</div>
+      <h3>Hospitals &amp; prisons (${hs.length})</h3><div class="card">${hs.length ? hs.map(x => `
+      <div class="item"><div class="ico">${x.type === "Prison" ? "🔒" : "🏥"}</div><div class="m"><b>${esc(x.name)}</b><span class="mu">${esc(x.type)}</span></div>
+      <div class="acts"><button class="btn sm ghr" data-dh="${x.id}">Delete</button></div></div>`).join("") : '<div class="empty">None</div>'}</div>
+      <div class="mu">Deleting a station also removes the vehicles based there. Everything must be back at base (no vehicles out, no prisoners or patients inside).</div>`;
+    sb.querySelectorAll("[data-ds]").forEach(b => b.onclick = () => {
+      const x = st.find(s => s.id === +b.dataset.ds);
+      ask("Delete " + x.name + "?", (x.units ? "<b>" + x.units + " vehicle" + (x.units === 1 ? "" : "s") + "</b> based here will be removed too. " : "") + "This cannot be undone.", { ok: "Delete station", danger: 1, refund: "Refund the player the station price (£10,000)", reason: 1 })
+        .then(r => { if (r) run({ type: "delstation", id: x.id, refund: r.refund, reason: r.reason }); });
+    });
+    sb.querySelectorAll("[data-dh]").forEach(b => b.onclick = () => {
+      const x = hs.find(s => s.id === +b.dataset.dh);
+      ask("Delete " + x.name + "?", "This " + esc(x.type.toLowerCase()) + " is removed with no refund. This cannot be undone.", { ok: "Delete", danger: 1, reason: 1 })
+        .then(r => { if (r) run({ type: "delhospital", id: x.id, reason: r.reason }); });
+    });
+  }
+
+  function vehicles(sb, g) {
+    const all = g.vehicleList || [], f = (cur.filter || "").toLowerCase();
+    const list = f ? all.filter(v => (v.cs + " " + v.type + " " + v.station + " " + v.status).toLowerCase().includes(f)) : all;
+    sb.innerHTML = `<input id="vf" type="search" placeholder="Filter vehicles, e.g. FP12, ambulance, station name" value="${esc(cur.filter || "")}" style="margin-bottom:12px" autocomplete="off">
+      <div class="card" style="padding-top:4px;padding-bottom:4px">${list.length ? list.map(v => `
+      <div class="item"><div class="m"><b>${esc(v.cs)} <span class="tag ${v.status === "idle" ? "t-idle" : "t-busy"}" style="margin-left:2px">${esc(String(v.status).toUpperCase())}</span></b><span class="mu">${esc(v.type)}${v.station ? " · " + esc(v.station) : ""}</span></div>
+      <div class="acts"><button class="btn sm gha" data-mv="${v.id}">Move</button><button class="btn sm ghr" data-dv="${v.id}">Delete</button></div></div>`).join("") : '<div class="empty">' + (f ? "No vehicles match" : "No vehicles") + "</div>"}</div>
+      <div class="mu">${list.length} of ${all.length} shown. A vehicle has to be idle at its station to be moved or deleted. Moves follow the game's rules: same station type and a free bay.</div>`;
+    $("#vf").oninput = e => { cur.filter = e.target.value; const p = e.target.selectionStart; vehicles(sb, g); const n = $("#vf"); n.focus(); try { n.setSelectionRange(p, p); } catch (x) { /* ignore */ } };
+    sb.querySelectorAll("[data-dv]").forEach(b => b.onclick = () => {
+      const v = all.find(x => x.id === +b.dataset.dv);
+      ask("Delete " + v.cs + "?", esc(v.type) + (v.station ? " at " + esc(v.station) : "") + ". This cannot be undone.", { ok: "Delete vehicle", danger: 1, refund: "Refund the player (vehicles £15,000+ get 40% back)", reason: 1 })
+        .then(r => { if (r) run({ type: "delvehicle", id: v.id, refund: r.refund, reason: r.reason }); });
+    });
+    sb.querySelectorAll("[data-mv]").forEach(b => b.onclick = () => {
+      const v = all.find(x => x.id === +b.dataset.mv), home = (g.stationList || []).find(s => s.id === v.sid);
+      const dest = (g.stationList || []).filter(s => home && s.id !== home.id && s.sv === home.sv);
+      modal.innerHTML = `<div class="box"><div style="font-size:18px;font-weight:700">Move ${esc(v.cs)}</div><div class="mu" style="margin:4px 0 6px">${esc(v.type)} · currently at ${esc(v.station || "?")}. Pick a ${esc(home ? home.type : "station")}:</div>
+        ${dest.length ? dest.map(s => `<button class="pick" data-to="${s.id}"><span><b>${esc(s.name)}</b><br><span class="mu">${s.units} vehicle${s.units === 1 ? "" : "s"} based</span></span><span class="mu">Move →</span></button>`).join("") : '<div class="empty">No other stations of the same type.</div>'}
+        <button class="btn" id="mno" style="width:100%;margin-top:14px">Cancel</button></div>`;
+      modal.classList.add("on"); $("#mno").onclick = closeModal;
+      modal.querySelectorAll("[data-to]").forEach(p => p.onclick = () => { closeModal(); run({ type: "movevehicle", id: v.id, to: +p.dataset.to }); });
+    });
+  }
+
+  function logs(sb, g) {
+    const lg = g.log || [], jb = g.jobs || [];
+    sb.innerHTML = `<h3 style="margin-top:4px">Game log (${lg.length})</h3><div class="card">${lg.length ? lg.map(l => `<div class="lg"><span class="mu">${esc(when(l.t))}</span><br>${esc(l.m)}</div>`).join("") : '<div class="empty">Empty</div>'}</div>
+      <h3>Money log (${jb.length})</h3><div class="card">${jb.length ? jb.map(j => `<div class="lg"><div style="display:flex;justify-content:space-between;gap:10px"><b style="font-weight:600">${esc(j.n)}</b><b style="color:${j.e >= 0 ? "var(--gn)" : "var(--rd)"};white-space:nowrap">${j.e >= 0 ? "+" : "−"}${money(Math.abs(j.e))}</b></div><span class="mu">${esc(when(j.t))} · balance ${money(j.b)}</span></div>`).join("") : '<div class="empty">Empty</div>'}</div>`;
+  }
+
+  // ---------- admin action log ----------
+  async function showLog() {
+    $("#main").innerHTML = '<div class="card mu" id="lg">Loading…</div>';
+    try {
+      const j = await api("/api/admin/log");
+      $("#lg").innerHTML = j.log.length ? j.log.map(l => `<div class="lg"><b>${esc(l.action)}</b> <span class="mu">${esc(when(l.t))}</span><br><span class="mu">by ${esc(l.admin)}${l.target ? " · on " + esc(l.target) : ""}</span>${l.detail ? '<br><span class="mu">' + esc(JSON.stringify(l.detail)) + "</span>" : ""}</div>`).join("") : '<div class="empty">No admin actions yet.</div>';
+    } catch (e) { $("#lg").innerHTML = '<span style="color:var(--rd)">' + esc(e.message) + "</span>"; }
+  }
+
+  function show() { tab === "p" ? showPlayers() : showLog(); }
+  document.querySelectorAll("#tabs button").forEach(b => { b.onclick = () => { tab = b.dataset.t; document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x === b)); show(); }; });
 
   async function start() {
     if (!session()) return loginForm();
@@ -204,7 +335,7 @@ h3{margin:16px 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.05e
     catch (e) {
       if (/not an admin/i.test(e.message)) { try { localStorage.removeItem(SES_KEY); } catch (x) { /* ignore */ } return loginForm("That account isn't an admin."); }
       if (/not signed in|401|invalid|expired|jwt/i.test(e.message)) { try { localStorage.removeItem(SES_KEY); } catch (x) { /* ignore */ } return loginForm("Session expired, please sign in again."); }
-      $("#main").innerHTML = '<div class="card" style="color:var(--rd)">Can\'t open the admin panel: ' + esc(e.message) + ' <button class="btn" id="rt">Retry</button> <button class="btn" id="so">Sign out</button></div>';
+      $("#main").innerHTML = '<div class="card" style="color:var(--rd)">Can\'t open the admin panel: ' + esc(e.message) + '<div class="row" style="margin-top:10px"><button class="btn" id="rt">Retry</button><button class="btn" id="so">Sign out</button></div></div>';
       $("#rt").onclick = start; $("#so").onclick = signOut; return;
     }
     $("#tabs").hidden = false; $("#out").hidden = false; show();
