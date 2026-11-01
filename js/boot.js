@@ -1,5 +1,5 @@
 /* decide which save to use after sign-in */
-async function pickState(){const lk=KEY+"_"+AU.user.id;curKey=lk;let loc=null,cl=null,off=false;
+async function pickState(){if(window.SRV&&SRV.want){const sj=await SRV.first();if(sj)return sj}const lk=KEY+"_"+AU.user.id;curKey=lk;let loc=null,cl=null,off=false;
 try{loc=JSON.parse(localStorage.getItem(lk))}catch(e){}
 try{cl=await cloudGet()}catch(e){if(e.authFail){sesClear();return null}off=true;console.error("Cloud load error",e);cloudMsg="⚠ Cloud load failed ("+(e.status||"")+": "+String(e.message||"").slice(0,80)+") – using device save"}
 if(off){cloudDirty=true;return loc}
