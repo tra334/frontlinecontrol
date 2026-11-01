@@ -747,6 +747,7 @@
     const m = typeof mm === "function" ? mm(localMid) : (S.ms || []).find(x => x.id === localMid);
     if (!m || !m.ans) { toast("Only answered incidents can be shared."); return; }
     if (m.roomId) { toast("This incident is already linked to the room."); return; }
+    if (window.SRV && SRV.on) { await SRV.act({ type: "rmshare", mid: m.id }); try { await fetchMissions(); bumpRoomUi(); } catch (e) {} return; } // server mode: the server shares it
     const tp = T[m.k];
     if (!tp) return;
     // Avoid double-share of same local mission
@@ -789,6 +790,7 @@
   /* Inject remote shared missions into local S.ms so player can dispatch */
   function applySharedMissions() {
     if (!S || !inRoom()) return;
+    if (window.SRV && SRV.on) return; // server mode: the game server adds shared calls itself
     const mine = myId();
     const liveIds = new Set();
     roomMissions.forEach(rm => {
@@ -972,6 +974,7 @@
        cancelled / gone -> just stand down our copy, no reward                                    */
   let _settling = false;
   async function tryClaimRewards() {
+    if (window.SRV && SRV.on) return; // server mode: the game server settles and pays room rewards
     if (!inRoom() || !S || !gameReady() || _settling) return;
     _settling = true;
     try {
@@ -1680,7 +1683,7 @@
   // Periodic contribution + local complete detection
   let _repAt = 0;
   setInterval(() => {
-    if (!inRoom() || !S) return;
+    if (!inRoom() || !S || (window.SRV && SRV.on)) return; // server mode: the game server reports who is working which call
     const doReport = Date.now() - _repAt >= 5000;
     if (doReport) _repAt = Date.now();
     (S.ms || []).forEach(m => {
@@ -1693,6 +1696,7 @@
   // Hook into local reward: intercept after S.cr increases on shared mission by wrapping in tick is hard;
   // Use a Mutation on S.ms removal — patch recall
   function patchRecall() {
+    if (window.SRV && SRV.on) return; // server mode: the server reports finished calls
     if (typeof recall !== "function" || recall._roomPatched) return;
     const orig = recall;
     window.recall = function (m, ab) {

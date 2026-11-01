@@ -153,6 +153,8 @@
     };
     spareGo = (sid, k, ids) => { const s = stn(sid); if (!s) return; fn("spareGo", [sid, k, (ids || []).map(Number)]); };
 
+    SRV.act = act;                       // rooms.js uses this to ask the server to share a call
+
     // 3) pick up what the server is doing (calls arriving, units moving, jobs paid)
     setInterval(() => { busy = busy.then(async () => { try { const j = await call("/api/state"); if (j.ok) apply(j); } catch (e) {} }); }, 2000);
   }
