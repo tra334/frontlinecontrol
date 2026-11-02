@@ -108,7 +108,7 @@ body.dev-view .admin-only{display:none!important}
 <body>
 <header>
   <div class="brand"><div class="logo">FC</div><div><b>Frontline Control</b><span>Admin dashboard</span></div></div>
-  <div class="seg" id="tabs" hidden><button data-t="p" class="on">Players</button><button data-t="n">Announce</button><button data-t="i">Incidents</button><button data-t="l">Log</button></div>
+  <div class="seg" id="tabs" hidden><button data-t="p" class="on">Players</button><button data-t="r">Rooms</button><button data-t="n">Announce</button><button data-t="i">Incidents</button><button data-t="l">Log</button></div>
   <button class="btn sm" id="out" hidden>Sign out</button>
 </header>
 <main id="main"><div class="card mu">Loading…</div></main>
@@ -345,12 +345,73 @@ body.dev-view .admin-only{display:none!important}
       <h3>Money log (${jb.length})</h3><div class="card">${jb.length ? jb.map(j => `<div class="lg"><div style="display:flex;justify-content:space-between;gap:10px"><b style="font-weight:600">${esc(j.n)}</b><b style="color:${j.e >= 0 ? "var(--gn)" : "var(--rd)"};white-space:nowrap">${j.e >= 0 ? "+" : "−"}${money(Math.abs(j.e))}</b></div><span class="mu">${esc(when(j.t))} · balance ${money(j.b)}</span></div>`).join("") : '<div class="empty">Empty</div>'}</div>`;
   }
 
+  // ---------- rooms ----------
+  let roomQ = "", curRoom = null;
+  async function showRooms() {
+    $("#main").innerHTML = '<input id="rq" type="search" placeholder="Search room name or code" autocomplete="off" style="margin-bottom:12px"><div id="rlist"><div class="card mu">Loading…</div></div>';
+    $("#rq").value = roomQ;
+    $("#rq").oninput = e => { clearTimeout(timer); timer = setTimeout(() => { roomQ = e.target.value; loadRooms(); }, 350); };
+    loadRooms();
+  }
+  async function loadRooms() {
+    const box = $("#rlist"); if (!box) return;
+    try {
+      const j = await api("/api/admin/rooms?q=" + encodeURIComponent(roomQ));
+      box.innerHTML = j.rooms.length ? j.rooms.map(r => `<div class="card pl" data-room="${esc(r.id)}">
+          <div class="m"><b>${esc(r.name || "Room")} <span class="mu">${esc(r.code)}</span></b><span class="mu">Host: ${esc(r.host_name || "unknown")}</span></div>
+          <div class="r"><b>${r.members}</b><span class="mu">${r.members === 1 ? "member" : "members"}</span><span class="mu">${r.open} open call${r.open === 1 ? "" : "s"}</span></div></div>`).join("")
+        : '<div class="card empty">No rooms found.</div>';
+      box.querySelectorAll("[data-room]").forEach(e => e.onclick = () => openRoom(e.dataset.room));
+    } catch (e) { box.innerHTML = '<div class="card" style="color:var(--rd)">' + esc(e.message) + "</div>"; }
+  }
+  async function openRoom(id) {
+    curRoom = id;
+    $("#main").innerHTML = '<div class="card mu">Loading…</div>';
+    try {
+      const j = await api("/api/admin/room?id=" + encodeURIComponent(id));
+      const r = j.room, mem = j.members, open = j.missions, hist = j.recent;
+      const pname = x => x.name || x.display_name || "Player";
+      $("#main").innerHTML = `<button class="btn sm" id="rback">← All rooms</button>
+        <h3>${esc(r.name || "Room")} <span class="mu">code ${esc(r.code)}</span></h3>
+        <div class="card mu">Host: ${esc(r.host_name || "unknown")} · ${mem.length} ${mem.length === 1 ? "member" : "members"} · ${open.length} open call${open.length === 1 ? "" : "s"}</div>
+        <h3>Members</h3><div class="card">${mem.length ? mem.map(x => `<div class="item">${avatar({ id: x.user_id, name: pname(x) })}
+            <div class="m"><b>${esc(pname(x))}${x.user_id === r.host_id ? ' <span class="tag t-ad">HOST</span>' : ""}</b><span class="mu">seen ${esc(relTime(x.last_seen))}</span></div>
+            <div class="acts admin-only"><button class="btn sm ghr" data-rm="${esc(x.user_id)}">Remove</button></div></div>`).join("") : '<div class="empty">No members</div>'}</div>
+        <h3>Open calls</h3><div class="card">${open.length ? open.map(x => `<div class="item"><div class="m"><b>${esc(x.loc || "Call")}</b><span class="mu">${esc(x.owner_name || "Ally")} · ${esc(x.status)}</span></div>
+            <div class="acts admin-only"><button class="btn sm ghr" data-mc="${esc(x.id)}">Cancel</button></div></div>`).join("") : '<div class="empty">No open calls</div>'}</div>
+        <h3>Recently finished</h3><div class="card">${hist.length ? hist.map(x => `<div class="lg"><b>${esc(x.loc || "Call")}</b> <span class="mu">${esc(x.status)} · ${esc(x.owner_name || "")} · ${esc(when(x.updated_at))}</span></div>`).join("") : '<div class="empty">None</div>'}</div>
+        <h3>Danger zone</h3><div class="card"><button class="btn red" id="rclose" style="width:100%">Close this room</button>
+          <div class="mu" style="margin-top:8px">Removes everyone, cancels open calls and hides the room from players. Rewards already earned are kept.</div></div>`;
+      $("#rback").onclick = showRooms;
+      $("#rclose").onclick = () => ask("Close " + (r.name || "this room") + "?", "Everyone is removed and open calls are cancelled. Rewards already earned are kept.", { ok: "Close room", danger: 1, reason: 1 })
+        .then(x => { if (x) roomAct({ type: "room_close", roomId: id, reason: x.reason }); });
+      $("#main").querySelectorAll("[data-rm]").forEach(b => b.onclick = () => {
+        const x = mem.find(v => v.user_id === b.dataset.rm);
+        ask("Remove " + pname(x) + "?", "They leave this room and their open calls here are cancelled.", { ok: "Remove", danger: 1, reason: 1 })
+          .then(y => { if (y) roomAct({ type: "room_member_remove", roomId: id, uid: x.user_id, reason: y.reason }); });
+      });
+      $("#main").querySelectorAll("[data-mc]").forEach(b => b.onclick = () => {
+        ask("Cancel this call?", "The call stops for everyone in the room.", { ok: "Cancel call", danger: 1, reason: 1 })
+          .then(y => { if (y) roomAct({ type: "room_mission_cancel", roomId: id, missionId: b.dataset.mc, reason: y.reason }); });
+      });
+    } catch (e) { toast(e.message); showRooms(); }
+  }
+  async function roomAct(body) {
+    try {
+      const r = await api("/api/admin/room/action", body);
+      toast(r.msg || "Done");
+      if (body.type === "room_close") showRooms(); else openRoom(body.roomId);
+    } catch (e) { toast(e.message); }
+  }
+
   // ---------- admin action log (cards with names) ----------
   const ACTION_NAMES = { credits: "Credits", ban: "Suspended", unban: "Unsuspended", reset: "Game reset", deletegame: "Game deleted",
     delvehicle: "Vehicle removed", delstation: "Station removed", delhospital: "Hospital removed", movevehicle: "Vehicle moved",
-    setroles: "Roles", announce: "Announcement", announce_end: "Announcement ended", incident: "Incident", incident_update: "Incident update" };
+    setroles: "Roles", announce: "Announcement", announce_end: "Announcement ended", incident: "Incident", incident_update: "Incident update",
+    room_close: "Room closed", room_member_remove: "Removed from room", room_mission_cancel: "Call cancelled" };
   const CAT = { credits: "money", unban: "info", ban: "danger", setroles: "info", reset: "warn", deletegame: "danger", delvehicle: "danger",
-    delstation: "danger", delhospital: "danger", movevehicle: "info", announce: "info", announce_end: "info", incident: "warn", incident_update: "warn" };
+    delstation: "danger", delhospital: "danger", movevehicle: "info", announce: "info", announce_end: "info", incident: "warn", incident_update: "warn",
+    room_close: "danger", room_member_remove: "danger", room_mission_cancel: "warn" };
   const plural = (n, w) => n + " " + w + (n === 1 ? "" : "s");
   function relTime(t) {
     const s = (Date.now() - Date.parse(t)) / 1000;
@@ -380,6 +441,9 @@ body.dev-view .admin-only{display:none!important}
       case "announce_end": return { say: A + " ended an announcement" };
       case "incident": return { say: A + " posted <b>" + esc(d.title) + "</b>", meta: "Status: " + esc(d.status) };
       case "incident_update": return { say: A + " set an incident to " + esc(d.status) };
+      case "room_close": return { say: A + " closed the room <b>" + esc(d.room || "") + "</b>", meta: d.code ? "Code " + esc(d.code) : "" };
+      case "room_member_remove": return { say: A + " removed " + P + " from a room" };
+      case "room_mission_cancel": return { say: A + " cancelled a call in a room", meta: d.call ? "Call: " + esc(d.call) : "" };
       default: return { say: A + " did " + esc(l.action) };
     }
   }
@@ -474,7 +538,7 @@ body.dev-view .admin-only{display:none!important}
       <button class="btn pri" id="rl_s" style="width:100%;margin-top:12px">Save roles</button></div>`;
   }
 
-  function show() { if (tab === "p") showPlayers(); else if (tab === "n") showAnnounce(); else if (tab === "i") showIncidents(); else showLog(); }
+  function show() { if (tab === "p") showPlayers(); else if (tab === "r") showRooms(); else if (tab === "n") showAnnounce(); else if (tab === "i") showIncidents(); else showLog(); }
   document.querySelectorAll("#tabs button").forEach(b => { b.onclick = () => { tab = b.dataset.t; document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x === b)); show(); }; });
 
   async function start() {
@@ -488,7 +552,7 @@ body.dev-view .admin-only{display:none!important}
     }
     const staff = me.perms || [];
     document.body.classList.toggle("dev-view", !staff.includes("admin"));
-    document.querySelectorAll("#tabs button").forEach(b => { if (["n", "i", "l"].includes(b.dataset.t)) b.hidden = !staff.includes("admin"); });
+    document.querySelectorAll("#tabs button").forEach(b => { if (["r", "n", "i", "l"].includes(b.dataset.t)) b.hidden = !staff.includes("admin"); });
     $("#tabs").hidden = false; $("#out").hidden = false; show();
   }
   start();
