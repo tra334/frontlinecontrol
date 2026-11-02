@@ -1,4 +1,6 @@
+
 name: Deploy to IONOS
+
 on:
   push:
     branches: [main]
@@ -9,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Deploy (SFTP)
+      - name: Deploy website (SFTP)
         uses: wlixcc/SFTP-Deploy-Action@v1.2.4
         with:
           server: ${{ secrets.FTP_SERVER }}
@@ -18,4 +20,15 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local_path: './*'
           remote_path: '/public'
+          sftp_only: true
+
+      - name: Deploy .htaccess
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          port: 22
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local_path: './.htaccess'
+          remote_path: '/public/'
           sftp_only: true
