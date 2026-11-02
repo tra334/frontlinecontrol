@@ -49,9 +49,14 @@
       // incoming-call banner: the browser no longer creates calls, so show it for calls that are new in this reply
       const had = S && S.ms ? new Set(S.ms.map(m => m.id)) : null;
       S = j.state;
+      // close the banner if its call is gone (ended / answered / declined elsewhere) so it can't be tapped when stale
+      try { const tb = $("#toast"); if (tb && !tb.hidden && tb.dataset.cm && Array.isArray(S.ms)) { const c = S.ms.find(x => String(x.id) === tb.dataset.cm); if (!c || c.ans) hideCT(tb.dataset.cm); } } catch (e) {}
       if (had && Array.isArray(S.ms)) { const fresh = S.ms.filter(m => !m.ans && !had.has(m.id)); if (fresh.length) { try { ctoast(fresh[fresh.length - 1]); } catch (e) {} } } try { sbStatus("☁ Server game"); } catch (e) {} refresh(); } }
     const act = body => busy = busy.then(async () => {            // actions go one at a time, in order
-      try { const j = await call("/api/action", body); if (!j.ok && j.reason) { try { toast(j.reason); } catch (e) {} } else if (j.ok && j.msg) { try { toast(j.msg); } catch (e) {} } apply(j); }
+      try { const j = await call("/api/action", body); if (!j.ok && j.reason) {
+        try { if (window.DebugLog) DebugLog.add("server refused '" + body.type + "': " + j.reason, "warn"); } catch (e) {}
+        try { toast(j.reason === "call not found" ? "That call has already ended." : j.reason); } catch (e) {}
+      } else if (j.ok && j.msg) { try { toast(j.msg); } catch (e) {} } apply(j); }
       catch (e) { try { toast("Can't reach the game server"); } catch (x) {} }
     });
 
