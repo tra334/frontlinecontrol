@@ -10,6 +10,14 @@
   const SRV = window.SRV = { on: false, want };
   if (!want) return;
 
+  // keep a copy of the latest server state on this device, so "play offline" starts from it (at most every 5 s)
+  let lastLocal = 0;
+  function keepLocal(state, force) {
+    if (!state) return;
+    const t = Date.now(); if (!force && t - lastLocal < 5000) return; lastLocal = t;
+    try { if (typeof AU !== "undefined" && AU && AU.user && AU.user.id) localStorage.setItem(KEY + "_" + AU.user.id, JSON.stringify(state)); } catch (e) { /* storage full or blocked */ }
+  }
+
   async function call(path, body) {
     await sb("/auth/v1/user", { auth: 1 });                       // refreshes the login token if it is about to expire
     const t0 = Date.now();
@@ -37,21 +45,22 @@
     try {
       const j = await call("/api/state");
       if (!j.ok) throw new Error(j.reason || ("HTTP " + j.http));
-      clock(j); activate(); return j.state;
+      clock(j); activate(); keepLocal(j.state, true); return j.state;
     } catch (e) { console.error("Game server unavailable", e); return null; }
   };
 
   function activate() {
     if (SRV.on) return; SRV.on = true;
+    cloudMsg = "✓ Server game"; try { sbStatus(); } catch (e) { /* ignore */ }
     let busy = Promise.resolve();
     const refresh = () => { try { $("#v").dataset.n = ""; paint(); try { pzUp(); } catch (e) {} if (si && !$("#modal").hidden) drawS(); } catch (e) {} };
     function apply(j) { if (j && j.state) { clock(j);
       // incoming-call banner: the browser no longer creates calls, so show it for calls that are new in this reply
       const had = S && S.ms ? new Set(S.ms.map(m => m.id)) : null;
-      S = j.state;
+      S = j.state; keepLocal(S);
       // close the banner if its call is gone (ended / answered / declined elsewhere) so it can't be tapped when stale
       try { const tb = $("#toast"); if (tb && !tb.hidden && tb.dataset.cm && Array.isArray(S.ms)) { const c = S.ms.find(x => String(x.id) === tb.dataset.cm); if (!c || c.ans) hideCT(tb.dataset.cm); } } catch (e) {}
-      if (had && Array.isArray(S.ms)) { const fresh = S.ms.filter(m => !m.ans && !had.has(m.id)); if (fresh.length) { try { ctoast(fresh[fresh.length - 1]); } catch (e) {} } } try { sbStatus("☁ Server game"); } catch (e) {} refresh(); } }
+      if (had && Array.isArray(S.ms)) { const fresh = S.ms.filter(m => !m.ans && !had.has(m.id)); if (fresh.length) { try { ctoast(fresh[fresh.length - 1]); } catch (e) {} } } try { sbStatus("✓ Server game"); } catch (e) {} refresh(); } }
     const act = body => busy = busy.then(async () => {            // actions go one at a time, in order
       try { const j = await call("/api/action", body); if (!j.ok && j.reason) {
         try { if (window.DebugLog) DebugLog.add("server refused '" + body.type + "': " + j.reason, "warn"); } catch (e) {}
