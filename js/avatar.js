@@ -11,7 +11,7 @@
   // An <img> to place on top of a letter/icon. If the player has no picture it removes itself.
   const img = id => ID.test(String(id || "")) ? '<img class="fcav" alt="" loading="lazy" decoding="async" src="' + url(id) + '" onerror="this.remove()">' : "";
   // Round avatar for the signed-in player (icon underneath, picture on top)
-  const mine = n => '<span class="fcav-w" style="width:' + n + "px;height:" + n + 'px">' + AVSVG(n) + img(myId()) + "</span>";
+  const mine = n => '<i class="fcav-w" style="width:' + n + "px;height:" + n + 'px">' + AVSVG(n) + img(myId()) + "</i>"; // an <i>, not a <span>: the phone layout hides every span inside the account button
 
   async function toBlob(file) {
     let bmp;
