@@ -1,6 +1,6 @@
 /* decide which save to use after sign-in */
 // offline on this device only: nothing is written to the cloud for this visit (the device keeps the save)
-function offlineOnly(){cloudDirty=false;pushCloud=async function(){};cloudSoon=function(){};}
+function offlineOnly(){cloudDirty=false;cloudMsg="Offline: saved on this device only";pushCloud=async function(){};cloudSoon=function(){};try{sbStatus()}catch(e){}}
 async function pickState(){if(window.SRV&&SRV.want){for(;;){const sj=await SRV.first();if(sj)return sj;
  if(confirm("Can't reach the game server, so your progress can't be loaded right now.\n\nOK = try again.\nCancel = play offline on this device only. Nothing is saved to the cloud, and progress made offline stays on this device. The copy on this device may be out of date."))continue;
  const lo=KEY+"_"+AU.user.id;curKey=lo;let dev=null;try{dev=JSON.parse(localStorage.getItem(lo))}catch(e){}
