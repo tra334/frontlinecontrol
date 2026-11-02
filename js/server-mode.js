@@ -68,6 +68,24 @@
     pushCloud = async function () {};    // never upload a browser save over the server's
     cloudSoon = function () {};
 
+    // Manual spawn (dev tools): the browser used to create the call in its OWN copy of the game, which the server
+    // knows nothing about (and the next refresh wipes) - so answering it gave "call not found". Ask the server instead.
+    spawn = function (fk) {
+      return new Promise(res => {
+        busy = busy.then(async () => {
+          try {
+            const j = await call("/api/action", { type: "fn", name: "spawn", args: fk === undefined ? [] : [+fk] });
+            if (!j.ok) {
+              const why = j.reason || ("HTTP " + j.http);
+              try { if (window.DebugLog) DebugLog.add("server refused manual spawn: " + why, "warn"); } catch (e) {}
+              try { toast("Server couldn't spawn that call: " + why); } catch (e) {}
+            }
+            apply(j); res(!!j.ok);
+          } catch (e) { try { toast("Can't reach the game server"); } catch (x) {} res(false); }
+        });
+      });
+    };
+
     // 2) player actions go to the server
     const openQ0 = openQ;
     openQ = function (id) { openQ0(id); act({ type: "answer", id }); };
