@@ -1,12 +1,12 @@
-/* ===== Server mode (OFF by default) =====
-   Open the site with ?server=1 to play on the game server; ?server=0 turns it off again.
-   In server mode the browser only sends actions (answer / dispatch / buy / build) and draws what the server returns.
-   If the server can't be reached at start-up, nothing here activates and the normal game runs. */
+/* ===== Server mode (ALWAYS ON) =====
+   Everyone plays on the game server. There is no opt-out: ?server=0 is ignored.
+   The browser only sends actions (answer / dispatch / buy / build) and draws what the server returns.
+   If the server can't be reached at start-up, boot.js lets the player retry or play offline on this device only. */
 (function () {
   const API = window.FC_API || "https://api.frontlinecontrol.co.uk";
-  try { const q = new URLSearchParams(location.search).get("server"); if (q === "1") localStorage.setItem("fc_server", "1"); if (q === "0") localStorage.setItem("fc_server", "0"); } catch (e) {}
-  /* ON by default. Open the site with ?server=0 to opt out (remembered), ?server=1 to opt back in. */
-  let want = true; try { want = localStorage.getItem("fc_server") !== "0"; } catch (e) {}
+  // clear any old opt-out flag left on this device from the previous ?server=0 switch
+  try { localStorage.removeItem("fc_server"); } catch (e) {}
+  const want = true;
   const SRV = window.SRV = { on: false, want };
   if (!want) return;
 
