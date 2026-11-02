@@ -182,6 +182,15 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
 .dz .dzr b{display:block}.dz .dzr .mu{display:block;margin-top:2px}
 @media(max-width:520px){.dz .dzr{flex-direction:column;align-items:stretch}}
 .dz .dzr.off{opacity:.5}.dz .dzr.off .btn{background:var(--card2);border-color:var(--bd);color:var(--mu);cursor:not-allowed}
+.dz .dzr.final{margin-top:14px;padding:14px;border:1px solid color-mix(in srgb,var(--rd) 45%,var(--bd));border-radius:14px;background:color-mix(in srgb,var(--rd) 9%,var(--card))}
+.dz .dzr.final:last-child{padding-bottom:14px}
+.dz .dzr.final .ic{width:40px;height:40px;border-radius:12px;background:var(--rds);color:var(--rd);display:grid;place-items:center;flex:none}
+.dz .dzr.final .ic svg{width:20px;height:20px}
+.dz .dzr.final .tx{flex:1;min-width:0}
+.dz .dzr.final .tx b{color:var(--rd);letter-spacing:-.01em}
+.dz .dzr.final .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap;box-shadow:0 2px 10px color-mix(in srgb,var(--rd) 35%,transparent)}
+.dz .dzr.final .btn svg{width:16px;height:16px;flex:none}
+@media(max-width:520px){.dz .dzr.final{flex-wrap:wrap}.dz .dzr.final .tx{flex:1 1 calc(100% - 56px)}.dz .dzr.final .btn{width:100%}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -396,7 +405,7 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
       ${u.admin ? "" : `<h3>Danger zone</h3><div class="card dz">
         <div class="dzr"><div><b>Reset game</b><span class="mu">Starts them on a brand new game.</span></div><button class="btn amb" id="reset">Reset game</button></div>
         <div class="dzr"><div><b>Delete saved game</b><span class="mu">Removes their save. They start fresh next time.</span></div><button class="btn ghr" id="del">Delete game</button></div>
-        <div class="dzr admin-only off"><div><b>Delete user</b><span class="mu">Coming soon. Will permanently remove the account and its saved game.</span></div><button class="btn red" id="deluser" disabled aria-disabled="true" title="Coming soon">${IC.trash} Delete user</button></div>
+        <div class="dzr final admin-only"><span class="ic">${IC.trash}</span><div class="tx"><b>Delete user</b><span class="mu">Permanently removes the account and its saved game. This can't be undone.</span></div><button class="btn red" id="deluser">${IC.trash} Delete user</button></div>
         <div class="mu" style="margin-top:10px">Credits and game changes only stick for players on the game server, or who aren't playing at that moment.</div></div>`}`;
     let sign = 1;
     const bal = g ? +g.cr || 0 : null;
