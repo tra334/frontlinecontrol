@@ -1,8 +1,11 @@
 /* decide which save to use after sign-in */
+// offline on this device only: nothing is written to the cloud for this visit (the device keeps the save)
+function offlineOnly(){cloudDirty=false;pushCloud=async function(){};cloudSoon=function(){};}
 async function pickState(){if(window.SRV&&SRV.want){for(;;){const sj=await SRV.first();if(sj)return sj;
- if(confirm("Can't reach the game server, so your progress can't be loaded right now.\n\nOK = try again.\nCancel = play offline on this device. The copy on this device may be out of date."))continue;
+ if(confirm("Can't reach the game server, so your progress can't be loaded right now.\n\nOK = try again.\nCancel = play offline on this device only. Nothing is saved to the cloud, and progress made offline stays on this device. The copy on this device may be out of date."))continue;
  const lo=KEY+"_"+AU.user.id;curKey=lo;let dev=null;try{dev=JSON.parse(localStorage.getItem(lo))}catch(e){}
- if(dev)return dev;alert("There's no copy of your game on this device, so you can only try again.")}}
+ if(!dev){alert("There's no copy of your game on this device, so you can only try again.");continue}
+ offlineOnly();return dev}}
 const lk=KEY+"_"+AU.user.id;curKey=lk;let loc=null,cl=null,off=false;
 try{loc=JSON.parse(localStorage.getItem(lk))}catch(e){}
 try{cl=await cloudGet()}catch(e){if(e.authFail){sesClear();return null}off=true;console.error("Cloud load error",e);cloudMsg="⚠ Cloud load failed ("+(e.status||"")+": "+String(e.message||"").slice(0,80)+") – using device save"}
