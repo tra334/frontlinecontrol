@@ -43,7 +43,7 @@
   function activate() {
     if (SRV.on) return; SRV.on = true;
     let busy = Promise.resolve();
-    const refresh = () => { try { $("#v").dataset.n = ""; paint(); if (si && !$("#modal").hidden) drawS(); } catch (e) {} };
+    const refresh = () => { try { $("#v").dataset.n = ""; paint(); try { pzUp(); } catch (e) {} if (si && !$("#modal").hidden) drawS(); } catch (e) {} };
     function apply(j) { if (j && j.state) { clock(j); S = j.state; try { sbStatus("☁ Server game"); } catch (e) {} refresh(); } }
     const act = body => busy = busy.then(async () => {            // actions go one at a time, in order
       try { const j = await call("/api/action", body); if (!j.ok && j.reason) { try { toast(j.reason); } catch (e) {} } else if (j.ok && j.msg) { try { toast(j.msg); } catch (e) {} } apply(j); }
@@ -109,7 +109,7 @@
     claimRank = () => fn("claimRank", []);
     claimStaff = () => fn("claimStaff", []);
     claimDev = () => { try { toast("The dev bonus isn't available in server mode."); } catch (e) {} };
-    togglePause = () => fn("togglePause", []);
+    togglePause = () => fn("togglePause", []).then(() => { try { pzUp(); } catch (e) {} });
     sfAsg = (xid, uid) => fn("sfAsg", [xid, uid || 0]).then(() => { try { sfRef(); } catch (e) {} });
     sfAuto = sid => fn("sfAuto", [sid]).then(() => { try { sfRef(); } catch (e) {} });
     sfAutoV = uid => fn("sfAutoV", [uid]).then(() => { try { sfRef(); } catch (e) {} });
