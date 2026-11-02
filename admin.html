@@ -212,6 +212,7 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
   // ---------- role symbols ----------
   const IC = {
     crown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 12H5L3 7z"/></svg>',
+    sshield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6l8-3z"/><path d="M12 8.5l1.1 2.3 2.5.3-1.8 1.7.5 2.5-2.3-1.2-2.3 1.2.5-2.5-1.8-1.7 2.5-.3z" fill="currentColor" stroke-width="1"/></svg>',
     shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>',
     code: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>',
@@ -219,8 +220,8 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
     minus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"/></svg>',
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>'
   };
-  const badge = (k, txt) => `<span class="rb ${k}">${IC[k === "owner" ? "crown" : k === "admin" ? "shield" : "code"]}${txt}</span>`;
-  const badges = u => (u.owner ? badge("owner", "OWNER") : "") + (u.admin && !u.owner ? badge("admin", "ADMIN") : "") + ((u.roles || []).includes("developer") ? badge("dev", "DEV") : "");
+  const badge = (k, txt) => `<span class="rb ${k}">${IC[k === "owner" ? "sshield" : k === "admin" ? "shield" : "code"]}${txt}</span>`;
+  const badges = u => (u.owner ? badge("owner", "SUPER ADMIN") : "") + (u.admin && !u.owner ? badge("admin", "ADMIN") : "") + ((u.roles || []).includes("developer") ? badge("dev", "DEV") : "");
   let tab = "p", q = "", page = 1, timer = 0, me = null, cur = null; // cur = {id, data, view}
 
   function toast(m) { const t = $("#toast"); t.textContent = m; t.style.display = "block"; clearTimeout(toast.t); toast.t = setTimeout(() => { t.style.display = "none"; }, 3600); }
@@ -651,7 +652,7 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
   function rolesCard(u) {
     const has = r => (u.roles || []).includes(r);
     const card = (cls, ico, name, desc, inner) => `<label class="role ${cls}">${inner}<span class="sym">${ico}</span><b>${name}</b><span class="d">${desc}</span><span class="tick">${IC.check}</span></label>`;
-    if (u.owner) return `<h3>Roles</h3><div class="roles"><div class="role fixed"><span class="sym">${IC.crown}</span><b>Owner</b><span class="d">Set in ADMIN_IDS on the server, so it can't be changed here.</span></div></div>`;
+    if (u.owner) return `<h3>Roles</h3><div class="roles"><div class="role fixed"><span class="sym">${IC.sshield}</span><b>Super Admin</b><span class="d">Full control, including roles. Set in ADMIN_IDS on the server, so it can't be changed here.</span></div></div>`;
     if (!me.owner) {
       const list = [];
       if (has("admin")) list.push('<div class="role admin" style="border-color:var(--c);cursor:default"><span class="sym">' + IC.shield + '</span><b>Admin</b><span class="d">Can do everything in this panel.</span></div>');
