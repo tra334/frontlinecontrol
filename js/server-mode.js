@@ -74,7 +74,7 @@
       return new Promise(res => {
         busy = busy.then(async () => {
           try {
-            const j = await call("/api/action", { type: "fn", name: "spawn", args: fk === undefined ? [] : [+fk] });
+            const j = await call("/api/action", { type: "spawn", k: fk === undefined ? null : +fk });
             if (!j.ok) {
               const why = j.reason || ("HTTP " + j.http);
               try { if (window.DebugLog) DebugLog.add("server refused manual spawn: " + why, "warn"); } catch (e) {}
