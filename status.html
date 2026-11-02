@@ -21,7 +21,7 @@ a{color:var(--bl)}
 .banner{display:flex;align-items:center;gap:14px}
 .banner .ic{width:34px;height:34px;color:#fff}
 .ic{width:24px;height:24px;flex:none;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round}
-.ic .ring{stroke-width:1.5;opacity:.4}.ic .core{fill:currentColor;fill-opacity:.14;stroke:none}.ic .mk{stroke-width:2.2}
+.ic{stroke-width:2}
 .ic.operational{color:var(--gn)}.ic.degraded{color:var(--am)}.ic.outage{color:var(--rd)}
 .grp{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:24px 0 10px}
 .grp h2{margin:0}
@@ -75,8 +75,8 @@ h2{font-size:16px;margin:24px 0 10px}
     saves: "Saving and loading your progress."
   };
   const HINT = { degraded: "You may notice slowness or the odd failed action.", outage: "This part of the game is not working right now." };
-  const MARK = { operational: "M8.5 12.3l2.4 2.4 4.6-5", degraded: "M12 7.5v5.2M12 16.2v.1", outage: "M9 9l6 6M15 9l-6 6", loading: "M8 12h.01M12 12h.01M16 12h.01" };
-  const ico = st => `<svg class="ic ${esc(st)}" viewBox="0 0 24 24" aria-hidden="true"><circle class="ring" cx="12" cy="12" r="10.5"/><circle class="core" cx="12" cy="12" r="7.5"/><path class="mk" d="${MARK[st] || MARK.loading}"/></svg>`;
+  const MARK = { operational: "m9 12 2 2 4-4", degraded: "M12 8v4M12 16h.01", outage: "m15 9-6 6m0-6 6 6", loading: "M8 12h.01M12 12h.01M16 12h.01" };
+  const ico = st => `<svg class="ic ${esc(st)}" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="${MARK[st] || MARK.loading}"/></svg>`;
   const OVR = { operational: "operational", partial: "degraded", major: "outage" };
 
   function comp(k, st, s) {
