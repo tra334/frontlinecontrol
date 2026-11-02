@@ -80,12 +80,14 @@ h3{margin:20px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.08e
 #toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#0f172a;color:#fff;border-radius:12px;padding:11px 18px;z-index:60;max-width:90%;display:none;box-shadow:0 8px 30px rgba(0,0,0,.35);font-size:14px}
 .login{max-width:380px;margin:9vh auto 0}
 .login .logo{width:48px;height:48px;border-radius:14px;font-size:20px;margin:0 auto 14px}
+body.dev-view .admin-only{display:none!important}
+.tag.t-dev{background:var(--acs);color:var(--ac)}
 </style>
 </head>
 <body>
 <header>
   <div class="brand"><div class="logo">FC</div><div><b>Frontline Control</b><span>Admin dashboard</span></div></div>
-  <div class="seg" id="tabs" hidden><button data-t="p" class="on">Players</button><button data-t="l">Log</button></div>
+  <div class="seg" id="tabs" hidden><button data-t="p" class="on">Players</button><button data-t="n">Announce</button><button data-t="i">Incidents</button><button data-t="l">Log</button></div>
   <button class="btn sm" id="out" hidden>Sign out</button>
 </header>
 <main id="main"><div class="card mu">Loading…</div></main>
@@ -180,7 +182,7 @@ h3{margin:20px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.08e
       const pages = Math.max(1, Math.ceil(j.total / j.per));
       box.innerHTML = (j.users.length ? j.users.map(u => `
         <div class="card pl" data-id="${esc(u.id)}">${avatar(u)}
-          <div class="m"><b>${esc(u.name || u.email || u.id)}${u.admin ? '<span class="tag t-ad">ADMIN</span>' : ""}${u.online ? '<span class="tag t-on">ONLINE</span>' : ""}${u.banned_until ? '<span class="tag t-ban">SUSPENDED</span>' : ""}</b>
+          <div class="m"><b>${esc(u.name || u.email || u.id)}${u.admin ? '<span class="tag t-ad">ADMIN</span>' : ""}${(u.roles || []).includes("developer") ? '<span class="tag t-dev">DEV</span>' : ""}${u.online ? '<span class="tag t-on">ONLINE</span>' : ""}${u.banned_until ? '<span class="tag t-ban">SUSPENDED</span>' : ""}</b>
           <span class="mu">${esc(u.email)}${u.last ? " · seen " + esc(when(u.last)) : ""}</span></div>
           <div class="r"><b>${u.hasGame ? money(u.cr) : "–"}</b><span class="mu">${u.hasGame ? (u.done || 0) + " jobs" : "no game"}</span></div>
         </div>`).join("") : '<div class="card empty">No players found.</div>') +
@@ -225,7 +227,7 @@ h3{margin:20px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.08e
     const V = [["o", "Overview"], ["s", "Stations"], ["v", "Vehicles"], ["g", "Logs"]];
     sheet.innerHTML = `<div class="sh-top"><div class="sh-in">
         <div style="display:flex;gap:12px;align-items:center">${avatar(u)}
-          <div style="flex:1;min-width:0"><b style="font-size:17px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(label)}${u.admin ? '<span class="tag t-ad">ADMIN</span>' : ""}${u.banned_until ? '<span class="tag t-ban">SUSPENDED</span>' : ""}</b><span class="mu" style="display:block;overflow:hidden;text-overflow:ellipsis">${esc(u.email)}</span></div>
+          <div style="flex:1;min-width:0"><b style="font-size:17px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(label)}${u.admin ? '<span class="tag t-ad">ADMIN</span>' : ""}${(u.roles || []).includes("developer") ? '<span class="tag t-dev">DEV</span>' : ""}${u.banned_until ? '<span class="tag t-ban">SUSPENDED</span>' : ""}</b><span class="mu" style="display:block;overflow:hidden;text-overflow:ellipsis">${esc(u.email)}</span></div>
           <button class="btn sm" id="x">Close</button></div>
         <div class="seg" style="margin-top:10px">${V.map(v => `<button data-v="${v[0]}" class="${v[0] === view ? "on" : ""}" style="flex:1;padding:7px 4px">${v[1]}</button>`).join("")}</div>
       </div></div><div class="sh-body" id="sb"></div>`;
@@ -245,10 +247,11 @@ h3{margin:20px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.08e
         <div class="stat"><span>Stations</span><b>${g.stations}</b></div><div class="stat"><span>Hospitals / prisons</span><b>${g.hospitals}</b></div><div class="stat"><span>Vehicles</span><b>${g.vehicles}</b></div><div class="stat"><span>Staff</span><b>${g.staff}</b></div><div class="stat"><span>On game server</span><b>${g.running ? "Yes" : "No"}</b></div></div>` : '<div class="card mu">No saved game.</div>'}
       <div class="card"><div class="stats" style="margin-top:0"><div class="stat"><span>Joined</span><b style="font-size:14px">${esc(when(u.created))}</b></div><div class="stat"><span>Last sign-in</span><b style="font-size:14px">${esc(when(u.last))}</b></div>${u.banned_until ? `<div class="stat"><span>Suspended until</span><b style="font-size:14px">${esc(when(u.banned_until))}</b></div>` : ""}</div>
         <div class="mu" style="word-break:break-all">ID ${esc(u.id)}</div></div>
+      ${rolesCard(u)}
       <h3>Credits</h3><div class="card">
         <div class="row"><input id="amt" type="number" inputmode="numeric" placeholder="Amount, e.g. 50000"><input id="why" placeholder="Reason (kept in the log)"></div>
         <div class="row" style="margin-top:8px"><button class="btn grn" id="add">Give</button><button class="btn amb" id="take">Take away</button></div></div>
-      <h3>Suspend</h3><div class="card">
+      <h3 class="admin-only">Suspend</h3><div class="card admin-only">
         ${u.admin ? '<div class="mu">Admins can\'t be suspended or reset from here.</div>' : u.banned_until ? '<button class="btn pri" id="unban" style="width:100%">Lift suspension</button>' : `
         <div class="row"><select id="dur"><option value="1">1 hour</option><option value="24" selected>1 day</option><option value="168">7 days</option><option value="720">30 days</option><option value="0">Permanent</option></select><input id="bwhy" placeholder="Reason (kept in the log)"></div>
         <button class="btn red" id="ban" style="width:100%;margin-top:8px">Suspend</button>`}</div>
@@ -261,6 +264,10 @@ h3{margin:20px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.08e
     $("#add").onclick = credits(1); $("#take").onclick = credits(-1);
     if ($("#ban")) $("#ban").onclick = () => { const h = +$("#dur").value; ask("Suspend " + label + "?", (h ? "For " + esc($("#dur").selectedOptions[0].text) : "Permanently") + ". They are signed out of the game server straight away.", { ok: "Suspend", danger: 1 }).then(r => { if (r) run({ type: "ban", hours: h, reason: $("#bwhy").value }); }); };
     if ($("#unban")) $("#unban").onclick = () => run({ type: "unban" });
+    if ($("#rl_s")) $("#rl_s").onclick = () => {
+      const r = []; if ($("#rl_a").checked) r.push("admin"); if ($("#rl_d").checked) r.push("developer");
+      ask("Change roles?", "Set <b>" + esc(label) + "</b>'s roles to: " + esc(r.join(", ") || "none") + ".", { ok: "Save" }).then(x => { if (x) run({ type: "setroles", roles: r }); });
+    };
     if ($("#reset")) $("#reset").onclick = () => ask("Reset game?", "Resets <b>" + esc(label) + "</b>'s game to a brand new game. This cannot be undone.", { ok: "Reset", danger: 1, reason: 1 }).then(r => { if (r) run({ type: "reset", reason: r.reason }); });
     if ($("#del")) $("#del").onclick = () => ask("Delete saved game?", "Deletes <b>" + esc(label) + "</b>'s saved game. This cannot be undone.", { ok: "Delete", danger: 1, reason: 1 }).then(r => { if (r) run({ type: "deletegame", reason: r.reason }); });
   }
@@ -269,10 +276,10 @@ h3{margin:20px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.08e
     const st = g.stationList || [], hs = g.hospitalList || [];
     sb.innerHTML = `<h3 style="margin-top:4px">Stations (${st.length})</h3><div class="card">${st.length ? st.map(x => `
       <div class="item"><div class="ico">${SVI[x.sv] || "🏢"}</div><div class="m"><b>${esc(x.name)}</b><span class="mu">${esc(x.type)} · ${x.units} vehicle${x.units === 1 ? "" : "s"}</span></div>
-      <div class="acts"><button class="btn sm ghr" data-ds="${x.id}">Delete</button></div></div>`).join("") : '<div class="empty">No stations</div>'}</div>
+      <div class="acts admin-only"><button class="btn sm ghr" data-ds="${x.id}">Delete</button></div></div>`).join("") : '<div class="empty">No stations</div>'}</div>
       <h3>Hospitals &amp; prisons (${hs.length})</h3><div class="card">${hs.length ? hs.map(x => `
       <div class="item"><div class="ico">${x.type === "Prison" ? "🔒" : "🏥"}</div><div class="m"><b>${esc(x.name)}</b><span class="mu">${esc(x.type)}</span></div>
-      <div class="acts"><button class="btn sm ghr" data-dh="${x.id}">Delete</button></div></div>`).join("") : '<div class="empty">None</div>'}</div>
+      <div class="acts admin-only"><button class="btn sm ghr" data-dh="${x.id}">Delete</button></div></div>`).join("") : '<div class="empty">None</div>'}</div>
       <div class="mu">Deleting a station also removes the vehicles based there. Everything must be back at base (no vehicles out, no prisoners or patients inside).</div>`;
     sb.querySelectorAll("[data-ds]").forEach(b => b.onclick = () => {
       const x = st.find(s => s.id === +b.dataset.ds);
@@ -292,7 +299,7 @@ h3{margin:20px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.08e
     sb.innerHTML = `<input id="vf" type="search" placeholder="Filter vehicles, e.g. FP12, ambulance, station name" value="${esc(cur.filter || "")}" style="margin-bottom:12px" autocomplete="off">
       <div class="card" style="padding-top:4px;padding-bottom:4px">${list.length ? list.map(v => `
       <div class="item"><div class="m"><b>${esc(v.cs)} <span class="tag ${v.status === "idle" ? "t-idle" : "t-busy"}" style="margin-left:2px">${esc(String(v.status).toUpperCase())}</span></b><span class="mu">${esc(v.type)}${v.station ? " · " + esc(v.station) : ""}</span></div>
-      <div class="acts"><button class="btn sm gha" data-mv="${v.id}">Move</button><button class="btn sm ghr" data-dv="${v.id}">Delete</button></div></div>`).join("") : '<div class="empty">' + (f ? "No vehicles match" : "No vehicles") + "</div>"}</div>
+      <div class="acts admin-only"><button class="btn sm gha" data-mv="${v.id}">Move</button><button class="btn sm ghr" data-dv="${v.id}">Delete</button></div></div>`).join("") : '<div class="empty">' + (f ? "No vehicles match" : "No vehicles") + "</div>"}</div>
       <div class="mu">${list.length} of ${all.length} shown. A vehicle has to be idle at its station to be moved or deleted. Moves follow the game's rules: same station type and a free bay.</div>`;
     $("#vf").oninput = e => { cur.filter = e.target.value; const p = e.target.selectionStart; vehicles(sb, g); const n = $("#vf"); n.focus(); try { n.setSelectionRange(p, p); } catch (x) { /* ignore */ } };
     sb.querySelectorAll("[data-dv]").forEach(b => b.onclick = () => {
@@ -326,7 +333,81 @@ h3{margin:20px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.08e
     } catch (e) { $("#lg").innerHTML = '<span style="color:var(--rd)">' + esc(e.message) + "</span>"; }
   }
 
-  function show() { tab === "p" ? showPlayers() : showLog(); }
+  // ---------- announcements (banner in the game) ----------
+  async function showAnnounce() {
+    $("#main").innerHTML = `<h3 style="margin-top:4px">New announcement</h3><div class="card">
+      <input id="an_t" placeholder="Title" maxlength="120" style="margin-bottom:8px">
+      <textarea id="an_b" rows="4" placeholder="Message to players" maxlength="1000" style="width:100%;margin-bottom:8px"></textarea>
+      <div class="row"><select id="an_h"><option value="1">Show for 1 hour</option><option value="24" selected>Show for 1 day</option><option value="168">Show for 7 days</option><option value="0">Until I end it</option></select><button class="btn pri" id="an_go">Publish</button></div>
+      <div class="mu" style="margin-top:8px">Players see this as a banner when they open the game. They can close it.</div></div>
+      <h3>Announcements</h3><div class="card" id="an_list"><div class="mu">Loading…</div></div>`;
+    $("#an_go").onclick = async () => {
+      const title = $("#an_t").value.trim(), body = $("#an_b").value.trim();
+      if (!title || !body) { toast("Write a title and a message"); return; }
+      try { await api("/api/admin/announcement", { title, body, hours: +$("#an_h").value }); toast("Announcement is live"); $("#an_t").value = ""; $("#an_b").value = ""; loadAnnounce(); }
+      catch (e) { toast(e.message); }
+    };
+    loadAnnounce();
+  }
+  async function loadAnnounce() {
+    const box = $("#an_list"); if (!box) return;
+    try {
+      const j = await api("/api/admin/announcements");
+      const now = new Date().toISOString();
+      box.innerHTML = j.announcements.length ? j.announcements.map(a => {
+        const live = !a.ended_at && a.starts_at <= now && (!a.ends_at || a.ends_at > now);
+        return `<div class="item"><div class="m"><b>${esc(a.title)} ${live ? '<span class="tag t-on">LIVE</span>' : '<span class="tag t-idle">ENDED</span>'}</b><span class="mu">${esc(a.body)}</span><span class="mu">${esc(when(a.created_at))}${a.ends_at ? " · until " + esc(when(a.ends_at)) : ""}</span></div>${live ? `<div class="acts admin-only"><button class="btn sm ghr" data-end="${a.id}">End</button></div>` : ""}</div>`;
+      }).join("") : '<div class="empty">No announcements yet</div>';
+      box.querySelectorAll("[data-end]").forEach(b => b.onclick = async () => {
+        try { await api("/api/admin/announcement/end", { id: +b.dataset.end }); toast("Announcement ended"); loadAnnounce(); } catch (e) { toast(e.message); }
+      });
+    } catch (e) { box.innerHTML = '<span style="color:var(--rd)">' + esc(e.message) + "</span>"; }
+  }
+
+  // ---------- status page incidents ----------
+  const STATUSES = ["investigating", "identified", "monitoring", "resolved"];
+  async function showIncidents() {
+    $("#main").innerHTML = `<h3 style="margin-top:4px">Post an incident</h3><div class="card">
+      <input id="in_t" placeholder="e.g. Sign-in is slow" maxlength="120" style="margin-bottom:8px">
+      <div class="row"><select id="in_s">${STATUSES.map(s => `<option value="${s}">${s[0].toUpperCase() + s.slice(1)}</option>`).join("")}</select></div>
+      <textarea id="in_b" rows="3" placeholder="Details for players (optional)" maxlength="1000" style="width:100%;margin:8px 0"></textarea>
+      <button class="btn pri" id="in_go" style="width:100%">Post to status page</button>
+      <div class="mu" style="margin-top:8px">Shows on the public status page straight away.</div></div>
+      <h3>Recent incidents</h3><div class="card" id="in_list"><div class="mu">Loading…</div></div>`;
+    $("#in_go").onclick = async () => {
+      const title = $("#in_t").value.trim();
+      if (!title) { toast("Give the incident a title"); return; }
+      try { await api("/api/admin/incident", { title, status: $("#in_s").value, body: $("#in_b").value.trim() }); toast("Posted"); $("#in_t").value = ""; $("#in_b").value = ""; loadIncidents(); }
+      catch (e) { toast(e.message); }
+    };
+    loadIncidents();
+  }
+  async function loadIncidents() {
+    const box = $("#in_list"); if (!box) return;
+    try {
+      const j = await api("/api/admin/incidents");
+      box.innerHTML = j.incidents.length ? j.incidents.map(i => `<div class="item" style="display:block"><div style="display:flex;gap:8px;align-items:center"><b style="flex:1">${esc(i.title)}</b><span class="tag ${i.status === "resolved" ? "t-on" : "t-busy"}">${esc(i.status.toUpperCase())}</span></div><span class="mu">${esc(when(i.created_at))}</span>
+        ${i.status === "resolved" ? "" : `<div class="row" style="margin-top:8px"><select data-is="${i.id}">${STATUSES.map(s => `<option value="${s}" ${s === i.status ? "selected" : ""}>${s}</option>`).join("")}</select><input data-ib="${i.id}" placeholder="Update for players (optional)"><button class="btn sm" data-iu="${i.id}">Update</button></div>`}</div>`).join("") : '<div class="empty">No incidents</div>';
+      box.querySelectorAll("[data-iu]").forEach(b => b.onclick = async () => {
+        const id = +b.dataset.iu;
+        try { await api("/api/admin/incident/update", { id, status: box.querySelector('[data-is="' + id + '"]').value, body: box.querySelector('[data-ib="' + id + '"]').value.trim() }); toast("Updated"); loadIncidents(); }
+        catch (e) { toast(e.message); }
+      });
+    } catch (e) { box.innerHTML = '<span style="color:var(--rd)">' + esc(e.message) + "</span>"; }
+  }
+
+  // ---------- roles (owner sets them; everyone else sees them) ----------
+  function rolesCard(u) {
+    const has = r => (u.roles || []).includes(r);
+    if (u.owner) return '<h3>Roles</h3><div class="card mu">Owner. Set in ADMIN_IDS on the server, so it can\'t be changed here.</div>';
+    if (!me.owner) return `<h3>Roles</h3><div class="card">${has("admin") ? '<span class="tag t-ad">ADMIN</span>' : ""}${has("developer") ? '<span class="tag t-dev">DEVELOPER</span>' : ""}${has("admin") || has("developer") ? "" : '<span class="mu">No staff role</span>'}</div>`;
+    return `<h3>Roles</h3><div class="card">
+      <label class="chk"><input type="checkbox" id="rl_a" ${has("admin") ? "checked" : ""}> <span>Admin: can do everything in this panel</span></label>
+      <label class="chk" style="margin-top:8px"><input type="checkbox" id="rl_d" ${has("developer") ? "checked" : ""}> <span>Developer: view games, give credits, spawn test calls, reset or delete saved games</span></label>
+      <button class="btn pri" id="rl_s" style="width:100%;margin-top:12px">Save roles</button></div>`;
+  }
+
+  function show() { if (tab === "p") showPlayers(); else if (tab === "n") showAnnounce(); else if (tab === "i") showIncidents(); else showLog(); }
   document.querySelectorAll("#tabs button").forEach(b => { b.onclick = () => { tab = b.dataset.t; document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x === b)); show(); }; });
 
   async function start() {
@@ -338,6 +419,9 @@ h3{margin:20px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.08e
       $("#main").innerHTML = '<div class="card" style="color:var(--rd)">Can\'t open the admin panel: ' + esc(e.message) + '<div class="row" style="margin-top:10px"><button class="btn" id="rt">Retry</button><button class="btn" id="so">Sign out</button></div></div>';
       $("#rt").onclick = start; $("#so").onclick = signOut; return;
     }
+    const staff = me.perms || [];
+    document.body.classList.toggle("dev-view", !staff.includes("admin"));
+    document.querySelectorAll("#tabs button").forEach(b => { if (["n", "i", "l"].includes(b.dataset.t)) b.hidden = !staff.includes("admin"); });
     $("#tabs").hidden = false; $("#out").hidden = false; show();
   }
   start();

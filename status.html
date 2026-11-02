@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Live status of Frontline Control: game server, sign-in, saves and rooms.">
+<title>Status · Frontline Control</title>
+<style>
+:root{--bg:#f4f6fa;--card:#fff;--tx:#0f172a;--mu:#64748b;--bd:#e2e8f0;--gn:#16a34a;--am:#d97706;--rd:#dc2626;--bl:#2563eb}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#080d18;--card:#111a2c;--tx:#e8edf6;--mu:#8b9ab5;--bd:#22304d;--gn:#4ade80;--am:#fbbf24;--rd:#f87171;--bl:#4f8cff}}
+:root[data-theme="dark"]{--bg:#080d18;--card:#111a2c;--tx:#e8edf6;--mu:#8b9ab5;--bd:#22304d;--gn:#4ade80;--am:#fbbf24;--rd:#f87171;--bl:#4f8cff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+main{max-width:640px;margin:0 auto;padding:24px 16px}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+h1{font-size:22px;margin:0;letter-spacing:-.01em}
+a{color:var(--bl)}
+.banner{border-radius:14px;padding:18px;font-weight:600;font-size:17px;margin-bottom:22px;color:#fff}
+.operational{background:#16a34a}.partial{background:#d97706}.major{background:#dc2626}.loading{background:#64748b}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:6px 16px;margin-bottom:18px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--bd)}
+.row:last-child{border-bottom:0}
+.dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:8px;background:var(--gn)}
+.dot.degraded{background:var(--am)}.dot.outage{background:var(--rd)}
+.mu{color:var(--mu);font-size:13px}
+h2{font-size:16px;margin:24px 0 10px}
+.inc{padding:12px 0;border-bottom:1px solid var(--bd)}
+.inc:last-child{border-bottom:0}
+.upd{margin:6px 0 0 0;padding:0;list-style:none}
+.upd li{font-size:14px;margin-top:6px}
+.tag{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--mu)}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Frontline Control status</h1>
+    <a href="/">Back to the game</a>
+  </header>
+  <div id="overall" class="banner loading">Checking the game…</div>
+  <div class="card" id="components"></div>
+  <h2>Incidents</h2>
+  <div class="card" id="incidents"><div class="inc mu">Loading…</div></div>
+  <p class="mu" id="meta"></p>
+</main>
+<script>
+(function () {
+  "use strict";
+  const API = window.FC_API || "https://api.frontlinecontrol.co.uk";
+  const NAMES = { game: "Game server", saves: "Saves", signin: "Sign-in", rooms: "Rooms and database" };
+  const WORDS = { operational: "Operational", degraded: "Degraded", outage: "Outage" };
+  const SUMMARY = { operational: "All systems are working.", partial: "Some things are not working properly.", major: "The game is having a major problem." };
+  const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const when = t => t ? new Date(t).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
+  const STATUS_WORDS = { investigating: "Investigating", identified: "Identified", monitoring: "Monitoring", resolved: "Resolved" };
+
+  function draw(s) {
+    const o = document.getElementById("overall");
+    o.className = "banner " + (s.overall || "loading");
+    o.textContent = SUMMARY[s.overall] || "Status unknown.";
+    document.getElementById("components").innerHTML = Object.keys(s.components || {}).map(k => {
+      const st = s.components[k];
+      return `<div class="row"><span><span class="dot ${esc(st)}"></span>${esc(NAMES[k] || k)}</span><span class="mu">${esc(WORDS[st] || st)}</span></div>`;
+    }).join("");
+    const inc = s.incidents || [];
+    document.getElementById("incidents").innerHTML = inc.length ? inc.map(i => `
+      <div class="inc"><div><b>${esc(i.title)}</b> <span class="tag">${esc(STATUS_WORDS[i.status] || i.status)}</span></div>
+        <div class="mu">${esc(when(i.created_at))}${i.updated_at !== i.created_at ? " · updated " + esc(when(i.updated_at)) : ""}</div>
+        <ul class="upd">${(i.updates || []).filter(u => u.body).map(u => `<li><span class="mu">${esc(when(u.at))}</span> · ${esc(STATUS_WORDS[u.status] || u.status)}: ${esc(u.body)}</li>`).join("")}</ul>
+      </div>`).join("") : '<div class="inc mu">No incidents reported.</div>';
+    document.getElementById("meta").textContent = "Last checked " + when(s.checked) + " · " + (s.players_in_game || 0) + " players in game right now.";
+  }
+
+  async function load() {
+    try {
+      const r = await fetch(API + "/api/status", { cache: "no-store" });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      draw(await r.json());
+    } catch (e) {
+      const o = document.getElementById("overall");
+      o.className = "banner major"; o.textContent = "Can't reach the game server. It may be down.";
+      document.getElementById("meta").textContent = "Checked " + new Date().toLocaleTimeString("en-GB") + ".";
+    }
+  }
+  load();
+  setInterval(load, 60000);
+})();
+</script>
+</body>
+</html>
