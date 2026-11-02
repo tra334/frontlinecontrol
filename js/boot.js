@@ -1,5 +1,9 @@
 /* decide which save to use after sign-in */
-async function pickState(){if(window.SRV&&SRV.want){const sj=await SRV.first();if(sj)return sj}const lk=KEY+"_"+AU.user.id;curKey=lk;let loc=null,cl=null,off=false;
+async function pickState(){if(window.SRV&&SRV.want){for(;;){const sj=await SRV.first();if(sj)return sj;
+ if(confirm("Can't reach the game server, so your progress can't be loaded right now.\n\nOK = try again.\nCancel = play offline on this device. The copy on this device may be out of date."))continue;
+ const lo=KEY+"_"+AU.user.id;curKey=lo;let dev=null;try{dev=JSON.parse(localStorage.getItem(lo))}catch(e){}
+ if(dev)return dev;alert("There's no copy of your game on this device, so you can only try again.")}}
+const lk=KEY+"_"+AU.user.id;curKey=lk;let loc=null,cl=null,off=false;
 try{loc=JSON.parse(localStorage.getItem(lk))}catch(e){}
 try{cl=await cloudGet()}catch(e){if(e.authFail){sesClear();return null}off=true;console.error("Cloud load error",e);cloudMsg="⚠ Cloud load failed ("+(e.status||"")+": "+String(e.message||"").slice(0,80)+") – using device save"}
 if(off){cloudDirty=true;return loc}

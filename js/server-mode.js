@@ -38,7 +38,7 @@
       const j = await call("/api/state");
       if (!j.ok) throw new Error(j.reason || ("HTTP " + j.http));
       clock(j); activate(); return j.state;
-    } catch (e) { console.error("Game server unavailable", e); try { alert("Game server unavailable (" + String(e.message || e).slice(0, 80) + "). Playing the normal way this time."); } catch (x) {} return null; }
+    } catch (e) { console.error("Game server unavailable", e); return null; }
   };
 
   function activate() {
