@@ -103,6 +103,86 @@ body.dev-view .admin-only{display:none!important}
 .pill.danger{background:var(--rds);color:var(--rd)}
 .pill.warn{background:var(--ams);color:var(--am)}
 .pill.info{background:var(--acs);color:var(--ac)}
+
+/* ===== refreshed look ===== */
+:root{--r:16px;--ow:#f59e0b;--ows:rgba(245,158,11,.14);--dv:#8b5cf6;--dvs:rgba(139,92,246,.14)}
+body{background:radial-gradient(1100px 420px at 50% -120px,var(--acs),transparent 70%),var(--bg);background-attachment:fixed}
+header{padding:12px 18px}
+.logo{box-shadow:0 4px 12px rgba(37,99,235,.35)}
+main{padding:20px 16px 40px}
+.seg{border-radius:12px;padding:4px}
+.seg button{transition:background .15s,color .15s}
+.btn{border-radius:11px;padding:11px 17px;font-weight:650}
+.btn.pri{box-shadow:0 2px 8px rgba(37,99,235,.28)}
+input,select,textarea{border-radius:11px}
+textarea{padding:11px 13px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font:inherit;outline:none;border-radius:11px}
+textarea:focus{border-color:var(--ac);box-shadow:0 0 0 3px var(--acs)}
+.card{border-radius:var(--r);padding:16px 18px;margin:0 0 12px}
+.pl{padding:14px 16px}
+.pl:hover{border-color:var(--ac);box-shadow:0 0 0 3px var(--acs),var(--sh)}
+.av{width:46px;height:46px;font-size:16px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.25)}
+h3{display:flex;align-items:center;gap:8px;margin:26px 0 10px;font-size:13px;letter-spacing:.06em}
+h3::after{content:"";flex:1;height:1px;background:var(--bd)}
+.stats{grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.stat{border-radius:13px;padding:12px 14px;background:var(--card)}
+.stat b{font-size:20px}
+.stat.hero{background:linear-gradient(135deg,var(--acs),transparent);border-color:var(--ac)}
+.sh-top{padding-bottom:12px}
+.tag{display:inline-flex;align-items:center;gap:3px}
+
+/* role badges (list + header) */
+.rb{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:800;letter-spacing:.04em;border-radius:999px;padding:2px 8px 2px 6px;margin-left:6px;vertical-align:2px}
+.rb svg{width:12px;height:12px;flex:none}
+.rb.owner{background:var(--ows);color:var(--ow)}
+.rb.admin{background:var(--acs);color:var(--ac)}
+.rb.dev{background:var(--dvs);color:var(--dv)}
+
+/* role picker */
+.roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.role{position:relative;display:flex;flex-direction:column;gap:6px;padding:16px;border-radius:16px;border:2px solid var(--bd);background:var(--card);cursor:pointer;transition:border-color .15s,background .15s,transform .08s;user-select:none}
+.role:active{transform:scale(.99)}
+.role input{position:absolute;opacity:0;pointer-events:none}
+.role .sym{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;background:var(--tint);color:var(--c)}
+.role .sym svg{width:26px;height:26px}
+.role b{font-size:16px;letter-spacing:-.01em}
+.role .d{font-size:13px;color:var(--mu);line-height:1.4}
+.role .tick{position:absolute;top:12px;right:12px;width:24px;height:24px;border-radius:50%;border:2px solid var(--bd);display:grid;place-items:center;color:transparent;transition:all .15s}
+.role .tick svg{width:14px;height:14px}
+.role.admin{--c:var(--ac);--tint:var(--acs)}
+.role.dev{--c:var(--dv);--tint:var(--dvs)}
+.role:has(input:checked){border-color:var(--c);background:linear-gradient(160deg,var(--tint),transparent 75%),var(--card)}
+.role:has(input:checked) .tick{background:var(--c);border-color:var(--c);color:#fff}
+.role:has(input:focus-visible){outline:3px solid var(--tint);outline-offset:2px}
+.role.fixed{cursor:default;--c:var(--ow);--tint:var(--ows);border-color:var(--c);background:linear-gradient(160deg,var(--tint),transparent 75%),var(--card)}
+
+/* credits */
+.bal{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:14px}
+.bal span{color:var(--mu);font-size:13px}.bal b{font-size:26px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.mode{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.mode button{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:12px;border:2px solid var(--bd);background:var(--card);font-weight:700;cursor:pointer;transition:all .15s}
+.mode button svg{width:18px;height:18px}
+.mode button.give.on{border-color:var(--gn);background:var(--gns);color:var(--gn)}
+.mode button.take.on{border-color:var(--am);background:var(--ams);color:var(--am)}
+.lbl{display:block;font-size:12.5px;font-weight:650;color:var(--mu);margin:0 0 6px}
+.amtw{position:relative}
+.amtw i{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-style:normal;font-weight:700;color:var(--mu);font-size:18px}
+.amtw input{padding-left:32px;font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+.quick{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 14px}
+.quick button{border:1px solid var(--bd);background:var(--card2);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:650;cursor:pointer}
+.quick button:hover{border-color:var(--ac);color:var(--ac)}
+.prev{font-size:14px;padding:11px 13px;border-radius:11px;background:var(--card2);border:1px dashed var(--bd);margin:14px 0;color:var(--mu)}
+.prev b{color:var(--tx)}
+.go.give{background:var(--gn);border-color:var(--gn);color:#04210f}
+.go.take{background:var(--am);border-color:var(--am);color:#1f1300}
+
+/* danger zone */
+.dz{border-color:color-mix(in srgb,var(--rd) 40%,var(--bd));background:linear-gradient(160deg,var(--rds),transparent 60%),var(--card)}
+.dz .dzr{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--bd)}
+.dz .dzr:last-child{border:0;padding-bottom:0}.dz .dzr:first-child{padding-top:0}
+.dz .dzr b{display:block}.dz .dzr .mu{display:block;margin-top:2px}
+@media(max-width:520px){.dz .dzr{flex-direction:column;align-items:stretch}}
+.dz .dzr.off{opacity:.5}.dz .dzr.off .btn{background:var(--card2);border-color:var(--bd);color:var(--mu);cursor:not-allowed}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
@@ -128,6 +208,19 @@ body.dev-view .admin-only{display:none!important}
   const COL = ["#2563eb", "#7c3aed", "#db2777", "#ea580c", "#0d9488", "#4f46e5", "#65a30d", "#0891b2"];
   const avatar = u => { const n = (u.name || u.email || "?").trim(), h = [...String(u.id)].reduce((a, c) => a + c.charCodeAt(0), 0); return `<div class="av" style="background:${COL[h % COL.length]}">${esc(n[0].toUpperCase())}</div>`; };
   const SVI = { f: "🚒", p: "🚓", a: "🚑", aa: "🚁", ph: "🚁" };
+
+  // ---------- role symbols ----------
+  const IC = {
+    crown: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l4.5 4L12 4l4.5 7L21 7l-2 12H5L3 7z"/></svg>',
+    shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>',
+    code: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></svg>',
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>',
+    plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+    minus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"/></svg>',
+    trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>'
+  };
+  const badge = (k, txt) => `<span class="rb ${k}">${IC[k === "owner" ? "crown" : k === "admin" ? "shield" : "code"]}${txt}</span>`;
+  const badges = u => (u.owner ? badge("owner", "OWNER") : "") + (u.admin && !u.owner ? badge("admin", "ADMIN") : "") + ((u.roles || []).includes("developer") ? badge("dev", "DEV") : "");
   let tab = "p", q = "", page = 1, timer = 0, me = null, cur = null; // cur = {id, data, view}
 
   function toast(m) { const t = $("#toast"); t.textContent = m; t.style.display = "block"; clearTimeout(toast.t); toast.t = setTimeout(() => { t.style.display = "none"; }, 3600); }
@@ -203,7 +296,7 @@ body.dev-view .admin-only{display:none!important}
       const pages = Math.max(1, Math.ceil(j.total / j.per));
       box.innerHTML = (j.users.length ? j.users.map(u => `
         <div class="card pl" data-id="${esc(u.id)}">${avatar(u)}
-          <div class="m"><b>${esc(u.name || u.email || u.id)}${u.admin ? '<span class="tag t-ad">ADMIN</span>' : ""}${(u.roles || []).includes("developer") ? '<span class="tag t-dev">DEV</span>' : ""}${u.online ? '<span class="tag t-on">ONLINE</span>' : ""}${u.banned_until ? '<span class="tag t-ban">SUSPENDED</span>' : ""}</b>
+          <div class="m"><b>${esc(u.name || u.email || u.id)}${badges(u)}${u.online ? '<span class="tag t-on">ONLINE</span>' : ""}${u.banned_until ? '<span class="tag t-ban">SUSPENDED</span>' : ""}</b>
           <span class="mu">${esc(u.email)}${u.last ? " · seen " + esc(when(u.last)) : ""}</span></div>
           <div class="r"><b>${u.hasGame ? money(u.cr) : "–"}</b><span class="mu">${u.hasGame ? (u.done || 0) + " jobs" : "no game"}</span></div>
         </div>`).join("") : '<div class="card empty">No players found.</div>') +
@@ -248,7 +341,7 @@ body.dev-view .admin-only{display:none!important}
     const V = [["o", "Overview"], ["s", "Stations"], ["v", "Vehicles"], ["g", "Logs"]];
     sheet.innerHTML = `<div class="sh-top"><div class="sh-in">
         <div style="display:flex;gap:12px;align-items:center">${avatar(u)}
-          <div style="flex:1;min-width:0"><b style="font-size:17px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(label)}${u.admin ? '<span class="tag t-ad">ADMIN</span>' : ""}${(u.roles || []).includes("developer") ? '<span class="tag t-dev">DEV</span>' : ""}${u.banned_until ? '<span class="tag t-ban">SUSPENDED</span>' : ""}</b><span class="mu" style="display:block;overflow:hidden;text-overflow:ellipsis">${esc(u.email)}</span></div>
+          <div style="flex:1;min-width:0"><b style="font-size:17px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(label)}${badges(u)}${u.banned_until ? '<span class="tag t-ban">SUSPENDED</span>' : ""}</b><span class="mu" style="display:block;overflow:hidden;text-overflow:ellipsis">${esc(u.email)}</span></div>
           <button class="btn sm" id="x">Close</button></div>
         <div class="seg" style="margin-top:10px">${V.map(v => `<button data-v="${v[0]}" class="${v[0] === view ? "on" : ""}" style="flex:1;padding:7px 4px">${v[1]}</button>`).join("")}</div>
       </div></div><div class="sh-body" id="sb"></div>`;
@@ -264,31 +357,57 @@ body.dev-view .admin-only{display:none!important}
 
   function overview(sb, u, g, label) {
     sb.innerHTML = `
-      ${g ? `<div class="stats"><div class="stat"><span>Rank</span><b style="font-size:15px">${esc(g.rank || "–")}</b></div><div class="stat"><span>Credits</span><b>${money(g.cr)}</b></div><div class="stat"><span>Jobs done</span><b>${g.done}</b></div>
+      ${g ? `<div class="stats"><div class="stat"><span>Rank</span><b style="font-size:15px">${esc(g.rank || "–")}</b></div><div class="stat hero"><span>Credits</span><b>${money(g.cr)}</b></div><div class="stat"><span>Jobs done</span><b>${g.done}</b></div>
         <div class="stat"><span>Stations</span><b>${g.stations}</b></div><div class="stat"><span>Hospitals / prisons</span><b>${g.hospitals}</b></div><div class="stat"><span>Vehicles</span><b>${g.vehicles}</b></div><div class="stat"><span>Staff</span><b>${g.staff}</b></div><div class="stat"><span>On game server</span><b>${g.running ? "Yes" : "No"}</b></div></div>` : '<div class="card mu">No saved game.</div>'}
       <div class="card"><div class="stats" style="margin-top:0"><div class="stat"><span>Joined</span><b style="font-size:14px">${esc(when(u.created))}</b></div><div class="stat"><span>Last sign-in</span><b style="font-size:14px">${esc(when(u.last))}</b></div>${u.banned_until ? `<div class="stat"><span>Suspended until</span><b style="font-size:14px">${esc(when(u.banned_until))}</b></div>` : ""}</div>
         <div class="mu" style="word-break:break-all">ID ${esc(u.id)}</div></div>
       ${rolesCard(u)}
       <h3>Credits</h3><div class="card">
-        <div class="row"><input id="amt" type="number" inputmode="numeric" placeholder="Amount, e.g. 50000"><input id="why" placeholder="Reason (kept in the log)"></div>
-        <div class="row" style="margin-top:8px"><button class="btn grn" id="add">Give</button><button class="btn amb" id="take">Take away</button></div></div>
+        <div class="bal"><span>Current balance</span><b>${g ? money(g.cr) : "–"}</b></div>
+        <div class="mode"><button class="give on" id="m_give" type="button">${IC.plus} Give credits</button><button class="take" id="m_take" type="button">${IC.minus} Take credits</button></div>
+        <label class="lbl" for="amt">Amount</label>
+        <div class="amtw"><i>£</i><input id="amt" type="number" inputmode="numeric" min="1" placeholder="e.g. 50000"></div>
+        <div class="quick">${[1000, 5000, 10000, 50000, 100000].map(n => `<button type="button" data-q="${n}">${money(n)}</button>`).join("")}</div>
+        <label class="lbl" for="why">Reason (kept in the log)</label>
+        <input id="why" placeholder="Optional, e.g. compensation for a bug">
+        <div class="prev" id="prev_cr">Enter an amount to see the new balance.</div>
+        <button class="btn go give" id="cr_go" style="width:100%;padding:13px">Give credits</button></div>
       <h3 class="admin-only">Suspend</h3><div class="card admin-only">
         ${u.admin ? '<div class="mu">Admins can\'t be suspended or reset from here.</div>' : u.banned_until ? '<button class="btn pri" id="unban" style="width:100%">Lift suspension</button>' : `
         <div class="row"><select id="dur"><option value="1">1 hour</option><option value="24" selected>1 day</option><option value="168">7 days</option><option value="720">30 days</option><option value="0">Permanent</option></select><input id="bwhy" placeholder="Reason (kept in the log)"></div>
         <button class="btn red" id="ban" style="width:100%;margin-top:8px">Suspend</button>`}</div>
-      ${u.admin ? "" : `<h3>Game data</h3><div class="card"><div class="row"><button class="btn amb" id="reset">Reset game</button><button class="btn red" id="del">Delete saved game</button></div>
-        <div class="mu" style="margin-top:8px">Both start them on a new game. Credits and game changes only stick for players on the game server, or who aren't playing at that moment.</div></div>`}`;
-    const credits = sign => () => {
+      ${u.admin ? "" : `<h3>Danger zone</h3><div class="card dz">
+        <div class="dzr"><div><b>Reset game</b><span class="mu">Starts them on a brand new game.</span></div><button class="btn amb" id="reset">Reset game</button></div>
+        <div class="dzr"><div><b>Delete saved game</b><span class="mu">Removes their save. They start fresh next time.</span></div><button class="btn ghr" id="del">Delete game</button></div>
+        <div class="dzr admin-only off"><div><b>Delete user</b><span class="mu">Coming soon. Will permanently remove the account and its saved game.</span></div><button class="btn red" id="deluser" disabled aria-disabled="true" title="Coming soon">${IC.trash} Delete user</button></div>
+        <div class="mu" style="margin-top:10px">Credits and game changes only stick for players on the game server, or who aren't playing at that moment.</div></div>`}`;
+    let sign = 1;
+    const bal = g ? +g.cr || 0 : null;
+    const refreshCr = () => {
+      const n = Math.trunc(+$("#amt").value) || 0, go = $("#cr_go"), pv = $("#prev_cr");
+      $("#m_give").classList.toggle("on", sign > 0); $("#m_take").classList.toggle("on", sign < 0);
+      go.className = "btn go " + (sign > 0 ? "give" : "take"); go.textContent = (sign > 0 ? "Give" : "Take") + (n > 0 ? " " + money(n) : " credits");
+      if (n <= 0) { pv.innerHTML = "Enter an amount to see the new balance."; return; }
+      const after = bal == null ? null : bal + sign * n;
+      pv.innerHTML = (sign > 0 ? "Adding " : "Removing ") + "<b>" + money(n) + "</b>" + (sign > 0 ? " to " : " from ") + "<b>" + esc(label) + "</b>" + (after == null ? "." : ". New balance: <b>" + (after < 0 ? "−" : "") + money(Math.abs(after)) + "</b>" + (after < 0 ? " (goes below zero)" : "."));
+    };
+    $("#m_give").onclick = () => { sign = 1; refreshCr(); }; $("#m_take").onclick = () => { sign = -1; refreshCr(); };
+    $("#amt").oninput = refreshCr;
+    sb.querySelectorAll("[data-q]").forEach(b => b.onclick = () => { $("#amt").value = b.dataset.q; refreshCr(); });
+    $("#cr_go").onclick = () => {
       const n = Math.trunc(+$("#amt").value); if (!n || n < 0) { toast("Enter a positive whole number"); return; }
       ask((sign > 0 ? "Give " : "Take ") + money(n) + "?", (sign > 0 ? "Add to " : "Remove from ") + "<b>" + esc(label) + "</b>'s credits.", { ok: sign > 0 ? "Give" : "Take away" }).then(r => { if (r) run({ type: "credits", amount: sign * n, reason: $("#why").value }); });
     };
-    $("#add").onclick = credits(1); $("#take").onclick = credits(-1);
     if ($("#ban")) $("#ban").onclick = () => { const h = +$("#dur").value; ask("Suspend " + label + "?", (h ? "For " + esc($("#dur").selectedOptions[0].text) : "Permanently") + ". They are signed out of the game server straight away.", { ok: "Suspend", danger: 1 }).then(r => { if (r) run({ type: "ban", hours: h, reason: $("#bwhy").value }); }); };
     if ($("#unban")) $("#unban").onclick = () => run({ type: "unban" });
     if ($("#rl_s")) $("#rl_s").onclick = () => {
       const r = []; if ($("#rl_a").checked) r.push("admin"); if ($("#rl_d").checked) r.push("developer");
       ask("Change roles?", "Set <b>" + esc(label) + "</b>'s roles to: " + esc(r.join(", ") || "none") + ".", { ok: "Save" }).then(x => { if (x) run({ type: "setroles", roles: r }); });
     };
+    if ($("#deluser") && !$("#deluser").disabled) $("#deluser").onclick = () => ask("Delete " + label + "?", "This permanently deletes the <b>account</b> and saved game for <b>" + esc(u.email || label) + "</b>. This cannot be undone.", { ok: "Delete user", danger: 1, reason: 1 }).then(r => {
+      if (!r) return;
+      api("/api/admin/action", { uid: u.id, type: "deleteuser", reason: r.reason }).then(x => { toast(x.msg || "User deleted"); closeSheet(); loadPlayers(); }).catch(e => toast(e.message));
+    });
     if ($("#reset")) $("#reset").onclick = () => ask("Reset game?", "Resets <b>" + esc(label) + "</b>'s game to a brand new game. This cannot be undone.", { ok: "Reset", danger: 1, reason: 1 }).then(r => { if (r) run({ type: "reset", reason: r.reason }); });
     if ($("#del")) $("#del").onclick = () => ask("Delete saved game?", "Deletes <b>" + esc(label) + "</b>'s saved game. This cannot be undone.", { ok: "Delete", danger: 1, reason: 1 }).then(r => { if (r) run({ type: "deletegame", reason: r.reason }); });
   }
@@ -407,9 +526,9 @@ body.dev-view .admin-only{display:none!important}
   // ---------- admin action log (cards with names) ----------
   const ACTION_NAMES = { credits: "Credits", ban: "Suspended", unban: "Unsuspended", reset: "Game reset", deletegame: "Game deleted",
     delvehicle: "Vehicle removed", delstation: "Station removed", delhospital: "Hospital removed", movevehicle: "Vehicle moved",
-    setroles: "Roles", announce: "Announcement", announce_end: "Announcement ended", incident: "Incident", incident_update: "Incident update",
+    setroles: "Roles", deleteuser: "User deleted", announce: "Announcement", announce_end: "Announcement ended", incident: "Incident", incident_update: "Incident update",
     room_close: "Room closed", room_member_remove: "Removed from room", room_mission_cancel: "Call cancelled" };
-  const CAT = { credits: "money", unban: "info", ban: "danger", setroles: "info", reset: "warn", deletegame: "danger", delvehicle: "danger",
+  const CAT = { credits: "money", unban: "info", ban: "danger", setroles: "info", reset: "warn", deletegame: "danger", deleteuser: "danger", delvehicle: "danger",
     delstation: "danger", delhospital: "danger", movevehicle: "info", announce: "info", announce_end: "info", incident: "warn", incident_update: "warn",
     room_close: "danger", room_member_remove: "danger", room_mission_cancel: "warn" };
   const plural = (n, w) => n + " " + w + (n === 1 ? "" : "s");
@@ -432,6 +551,7 @@ body.dev-view .admin-only{display:none!important}
       case "unban": return { say: A + " lifted " + P + "'s suspension" };
       case "setroles": return { say: A + " changed " + P + "'s roles", meta: ((d.from || []).join(", ") || "no roles") + " → " + ((d.to || []).join(", ") || "no roles") };
       case "reset": return { say: A + " reset " + P + "'s game" };
+      case "deleteuser": return { say: A + " deleted the account of " + P };
       case "deletegame": return { say: A + " deleted " + P + "'s saved game" };
       case "delvehicle": return { say: A + " removed a vehicle from " + P + "'s game", meta: refund };
       case "delstation": return { say: A + " removed a station from " + P + "'s game", meta: refund };
@@ -530,12 +650,18 @@ body.dev-view .admin-only{display:none!important}
   // ---------- roles (owner sets them; everyone else sees them) ----------
   function rolesCard(u) {
     const has = r => (u.roles || []).includes(r);
-    if (u.owner) return '<h3>Roles</h3><div class="card mu">Owner. Set in ADMIN_IDS on the server, so it can\'t be changed here.</div>';
-    if (!me.owner) return `<h3>Roles</h3><div class="card">${has("admin") ? '<span class="tag t-ad">ADMIN</span>' : ""}${has("developer") ? '<span class="tag t-dev">DEVELOPER</span>' : ""}${has("admin") || has("developer") ? "" : '<span class="mu">No staff role</span>'}</div>`;
-    return `<h3>Roles</h3><div class="card">
-      <label class="chk"><input type="checkbox" id="rl_a" ${has("admin") ? "checked" : ""}> <span>Admin: can do everything in this panel</span></label>
-      <label class="chk" style="margin-top:8px"><input type="checkbox" id="rl_d" ${has("developer") ? "checked" : ""}> <span>Developer: view games, give credits, spawn test calls, reset or delete saved games</span></label>
-      <button class="btn pri" id="rl_s" style="width:100%;margin-top:12px">Save roles</button></div>`;
+    const card = (cls, ico, name, desc, inner) => `<label class="role ${cls}">${inner}<span class="sym">${ico}</span><b>${name}</b><span class="d">${desc}</span><span class="tick">${IC.check}</span></label>`;
+    if (u.owner) return `<h3>Roles</h3><div class="roles"><div class="role fixed"><span class="sym">${IC.crown}</span><b>Owner</b><span class="d">Set in ADMIN_IDS on the server, so it can't be changed here.</span></div></div>`;
+    if (!me.owner) {
+      const list = [];
+      if (has("admin")) list.push('<div class="role admin" style="border-color:var(--c);cursor:default"><span class="sym">' + IC.shield + '</span><b>Admin</b><span class="d">Can do everything in this panel.</span></div>');
+      if (has("developer")) list.push('<div class="role dev" style="border-color:var(--c);cursor:default"><span class="sym">' + IC.code + '</span><b>Developer</b><span class="d">Views games, gives credits, spawns test calls.</span></div>');
+      return `<h3>Roles</h3>` + (list.length ? `<div class="roles">${list.join("")}</div>` : '<div class="card mu">No staff role</div>');
+    }
+    return `<h3>Roles</h3><div class="roles">
+      ${card("admin", IC.shield, "Admin", "Can do everything in this panel.", `<input type="checkbox" id="rl_a" ${has("admin") ? "checked" : ""}>`)}
+      ${card("dev", IC.code, "Developer", "View games, give credits, spawn test calls, reset or delete saved games.", `<input type="checkbox" id="rl_d" ${has("developer") ? "checked" : ""}>`)}
+    </div><button class="btn pri" id="rl_s" style="width:100%;margin-top:12px">Save roles</button>`;
   }
 
   function show() { if (tab === "p") showPlayers(); else if (tab === "r") showRooms(); else if (tab === "n") showAnnounce(); else if (tab === "i") showIncidents(); else showLog(); }
