@@ -43,6 +43,12 @@
     if (!o || !ready()) return;
     offers = offers.filter(x => x.id !== id);   /* hide at once so it can't be double-tapped */
     try { paint(); } catch (e) {}
+    /* server mode: the game server records the claim and adds the credits (a browser-only credit is overwritten by the server's save) */
+    if (window.SRV && SRV.on) {
+      try { await SRV.act({ type: "claimbonus", id }); } catch (e) {}
+      refresh();
+      return;
+    }
     try {
       /* claim row first: the (bonus_id,user_id) primary key stops double claims */
       await sb("/rest/v1/global_bonus_claims", {

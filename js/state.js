@@ -10,7 +10,7 @@ function pip(lat,lon,poly){let c=false;for(let i=0,j=poly.length-1;i<poly.length
 const land=(la,lo)=>LANDS.some(g=>pip(la,lo,g));const OUTMSG="Frontline Control is based in the UK & Ireland. Please select a new location on the map.";
 const km=(a,b)=>{const dy=(a[0]-b[0])*111,dx=(a[1]-b[1])*111*Math.cos(a[0]*Math.PI/180);return Math.hypot(dx,dy)};
 const near=(la,lo)=>CITY.reduce((b,c)=>km([la,lo],[c[1],c[2]])<km([la,lo],[b[1],b[2]])?c:b)[0];
-const rank=()=>{let r=0;RK.forEach((x,i)=>{if(S.done>=x[1])r=i});return r};
+const rank=()=>{if(S.rko!=null&&S.rko>=0&&S.rko<RK.length)return S.rko;let r=0;RK.forEach((x,i)=>{if(S.done>=x[1])r=i});return r};
 function fresh(){return{cr:1000000,done:0,nid:1,fb:{aa:0,ph:0},gf:{aa:0,ph:0},ts:now(),sf:[],sn:0,rq:1,next:now()+rateMs(),lg:[{t:now(),m:"Welcome, controller. You have £1,000,000. Open the Stations tab and build your first station on the map.",r:0}],ms:[],st:[],hs:[],un:[],rate:2,rcl:0,dr:{last:"",day:0}}}
 var EXP=new Set(),hi=0,hTab=0;
 const mb=(n,k,xp,w)=>`<div style="margin:6px 0 10px"><button class="g s" onclick="${xp}('${k}')">Show ${n} more${w||""}</button></div>`;
