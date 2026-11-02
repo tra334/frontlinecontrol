@@ -4,8 +4,9 @@
    If the server can't be reached at start-up, nothing here activates and the normal game runs. */
 (function () {
   const API = window.FC_API || "https://api.frontlinecontrol.co.uk";
-  try { const q = new URLSearchParams(location.search).get("server"); if (q === "1") localStorage.setItem("fc_server", "1"); if (q === "0") localStorage.removeItem("fc_server"); } catch (e) {}
-  let want = false; try { want = localStorage.getItem("fc_server") === "1"; } catch (e) {}
+  try { const q = new URLSearchParams(location.search).get("server"); if (q === "1") localStorage.setItem("fc_server", "1"); if (q === "0") localStorage.setItem("fc_server", "0"); } catch (e) {}
+  /* ON by default. Open the site with ?server=0 to opt out (remembered), ?server=1 to opt back in. */
+  let want = true; try { want = localStorage.getItem("fc_server") !== "0"; } catch (e) {}
   const SRV = window.SRV = { on: false, want };
   if (!want) return;
 
@@ -44,7 +45,11 @@
     if (SRV.on) return; SRV.on = true;
     let busy = Promise.resolve();
     const refresh = () => { try { $("#v").dataset.n = ""; paint(); try { pzUp(); } catch (e) {} if (si && !$("#modal").hidden) drawS(); } catch (e) {} };
-    function apply(j) { if (j && j.state) { clock(j); S = j.state; try { sbStatus("☁ Server game"); } catch (e) {} refresh(); } }
+    function apply(j) { if (j && j.state) { clock(j);
+      // incoming-call banner: the browser no longer creates calls, so show it for calls that are new in this reply
+      const had = S && S.ms ? new Set(S.ms.map(m => m.id)) : null;
+      S = j.state;
+      if (had && Array.isArray(S.ms)) { const fresh = S.ms.filter(m => !m.ans && !had.has(m.id)); if (fresh.length) { try { ctoast(fresh[fresh.length - 1]); } catch (e) {} } } try { sbStatus("☁ Server game"); } catch (e) {} refresh(); } }
     const act = body => busy = busy.then(async () => {            // actions go one at a time, in order
       try { const j = await call("/api/action", body); if (!j.ok && j.reason) { try { toast(j.reason); } catch (e) {} } else if (j.ok && j.msg) { try { toast(j.msg); } catch (e) {} } apply(j); }
       catch (e) { try { toast("Can't reach the game server"); } catch (x) {} }
