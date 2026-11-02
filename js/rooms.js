@@ -457,7 +457,7 @@
           const nm = m.display_name || "Controller";
           const t = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
           return `<div class="rm-row${mine ? " me" : ""}">
-            <span class="rm-ra">${esc(nm.trim().charAt(0).toUpperCase() || "C")}</span>
+            <span class="rm-ra">${esc(nm.trim().charAt(0).toUpperCase() || "C")}${window.fcAvatar ? fcAvatar.img(m.user_id) : ""}</span>
             <div class="rm-rb"><div class="rm-rn"><b>${esc(nm)}</b>${mine ? '<em>you</em>' : ""}<small>${t}</small></div><div class="rm-rt">${esc(m.body)}</div></div>
           </div>`;
         }).join("")
@@ -1343,7 +1343,7 @@
       const host = room.host_id === m.user_id;
       const nm = m.display_name || "Controller";
       return `<div class="rm-per">
-        <span class="rm-av${on ? " on" : ""}">${esc(nm.trim().charAt(0).toUpperCase() || "C")}<i></i></span>
+        <span class="rm-av${on ? " on" : ""}">${esc(nm.trim().charAt(0).toUpperCase() || "C")}${window.fcAvatar ? fcAvatar.img(m.user_id) : ""}<i></i></span>
         <span class="rm-nm">${esc(nm)}${host ? ' <b class="rm-tag h">HOST</b>' : ""}${m.user_id === myId() ? ' <b class="rm-tag">YOU</b>' : ""}</span>
         <span class="rm-ps${on ? " on" : ""}">${on ? "Online" : "Offline"}</span>
       </div>`;
@@ -1363,7 +1363,7 @@
     const reqH = room.host_id !== myId() ? "" : joinRequests.length
       ? `<div class="rm-hd"><span>JOIN REQUESTS</span><span>${joinRequests.length} pending</span></div>
          <div class="rm-card">${joinRequests.map(q => `<div class="rm-per rm-req">
-           <span class="rm-av">${esc((q.display_name || "C").trim().charAt(0).toUpperCase() || "C")}</span>
+           <span class="rm-av">${esc((q.display_name || "C").trim().charAt(0).toUpperCase() || "C")}${window.fcAvatar ? fcAvatar.img(q.user_id) : ""}</span>
            <span class="rm-nm">${esc(q.display_name || "Controller")}</span>
            <span class="rm-req-b"><button type="button" class="rm-btn indigo" data-rm-accept="${esc(q.id)}">Accept</button><button type="button" class="rm-btn rm-btn-dim" data-rm-decline="${esc(q.id)}">Decline</button></span>
          </div>`).join("")}</div>`
