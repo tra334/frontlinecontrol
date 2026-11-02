@@ -11,7 +11,8 @@
 */
 (function () {
   const ROOM_KEY = "fc_room";
-  const POLL_MS = 4000;
+  const POLL_MS = 5000;
+  let _leaving = false;     // true while leaveRoom() is deleting our rows (blocks late presence publishes)
   const PRESENCE_MS = 2500;
   const STALE_UNIT_MS = 45000;  // vehicles vanish if ally offline
   const STALE_MEMBER_MS = 90000; // member list 'online' dot
@@ -198,18 +199,24 @@
   async function leaveRoom() {
     if (!room || !myId()) { room = null; saveRoomLocal(); stopLoops(); clearAllyMarkers(); return; }
     const rid = room.id;
-    // Keep last presence snapshot so allies still see your stations while you're offline.
-    // Only remove membership if user leaves the room intentionally.
+    // Stop publishing FIRST: a periodic/final presence upsert landing after the delete below
+    // would re-create our row and leave our station markers on everyone else's map.
+    stopLoops();
+    _leaving = true;
+    // Leaving on purpose removes our membership and our presence row (stations included).
     try {
       await rest("room_members?room_id=eq." + rid + "&user_id=eq." + myId(), { method: "DELETE" });
     } catch (e) {}
-    // Optional: freeze presence updated_at so units stop showing as live
     try {
-      await rest("room_presence?room_id=eq." + rid + "&user_id=eq." + myId(), {
+      const gone = await rest("room_presence?room_id=eq." + rid + "&user_id=eq." + myId() + "&select=user_id", {
         method: "DELETE",
-        headers: { Prefer: "return=minimal" }
+        headers: { Prefer: "return=representation" }
       });
-    } catch (e) {}
+      // If Supabase has no DELETE policy this succeeds but removes 0 rows. Readers ignore
+      // non-members anyway (see fetchPresence), so this is only a warning for the console.
+      if (Array.isArray(gone) && !gone.length) console.warn("room_presence delete removed 0 rows - check the DELETE policy / member_left trigger");
+    } catch (e) { console.error("Presence delete failed", e); }
+    _leaving = false;
     // If host leaves and no members, room can stay; host transfer is out of scope for v1
     room = null;
     members = [];
@@ -281,7 +288,8 @@
 
   async function refreshAll() {
     if (!inRoom()) return;
-    await Promise.all([fetchMembers(), fetchPresence(), fetchMissions(), fetchChat(), fetchJoinRequests()]);
+    const membersP = fetchMembers();
+    await Promise.all([membersP, fetchPresence(membersP), fetchMissions(), fetchChat(), fetchJoinRequests()]);
     applySharedMissions();
     syncAllyMarkers();
     tickAllyUnits();
@@ -308,16 +316,44 @@
     } catch (e) {}
   }
 
-  async function fetchPresence() {
-    // Stations = last-known (kept while in room even if ally offline)
-    // Units = only if presence is recent (ally app open + online)
-    const rows = await rest("room_presence?room_id=eq." + room.id + "&select=user_id,display_name,stations,units,updated_at");
+  /* Stations = last-known (kept while the player is a member, even if offline).
+     Units (the big route data) are only downloaded when a player's row has changed since we last
+     saw it, so offline players cost nothing after the first fetch.
+     Only CURRENT MEMBERS are shown: someone who left (or was removed) disappears from the map even if
+     their presence row could not be deleted on the server. */
+  async function fetchPresence(membersP) {
+    const rid = room.id;
+    const rows = await rest("room_presence?room_id=eq." + rid + "&select=user_id,display_name,stations,updated_at");
+    if (membersP) { try { await membersP; } catch (e) {} }
+    if (!room || room.id !== rid) return; // left / switched room while loading
+    const memberIds = new Set((members || []).map(m => m.user_id));
+    const useMembers = memberIds.size > 0; // if the member list failed to load, don't hide everyone
+    const list = (rows || []).filter(r => r.user_id !== myId() && (!useMembers || memberIds.has(r.user_id)));
+
+    // which players' units do we need to (re)download?
+    const need = list.filter(r => {
+      const prev = presence[r.user_id];
+      return !(prev && prev.updated_at === r.updated_at && prev._uOk);
+    }).map(r => r.user_id).filter(id => /^[0-9a-f-]{36}$/i.test(String(id)));
+    const fresh = {};
+    if (need.length) {
+      try {
+        const ur = await rest("room_presence?room_id=eq." + rid + "&user_id=in.(" + need.join(",") + ")&select=user_id,units,updated_at");
+        (ur || []).forEach(u => { fresh[u.user_id] = u; });
+      } catch (e) { console.error("Presence units fetch failed", e); }
+      if (!room || room.id !== rid) return;
+    }
+
     const map = {};
     const unitCut = Date.now() - STALE_UNIT_MS;
-    (rows || []).forEach(r => {
-      if (r.user_id === myId()) return;
-      const ts = r.updated_at ? Date.parse(r.updated_at) : 0;
-      let stations = r.stations, units = r.units;
+    list.forEach(r => {
+      const prev = presence[r.user_id];
+      const f = fresh[r.user_id];
+      let units, uOk;
+      if (f) { units = f.units; uOk = true; }
+      else if (prev && prev._uOk) { units = prev.units; uOk = true; }
+      else { units = []; uOk = false; }
+      let stations = r.stations;
       if (typeof stations === "string") {
         try { stations = JSON.parse(stations); } catch (e) { stations = []; }
       }
@@ -326,6 +362,9 @@
       }
       if (!Array.isArray(stations)) stations = [];
       if (!Array.isArray(units)) units = [];
+      // use the newest updated_at we saw, so a units row fetched a moment later is not re-fetched forever
+      const upd = (f && f.updated_at && f.updated_at > r.updated_at) ? f.updated_at : r.updated_at;
+      const ts = upd ? Date.parse(upd) : 0;
       const online = ts && ts >= unitCut;
       map[r.user_id] = {
         user_id: r.user_id,
@@ -333,7 +372,8 @@
         stations: stations,
         units: units, // keep last units payload; live layer decides online vs extrapolate
         online: !!online,
-        updated_at: r.updated_at
+        updated_at: upd,
+        _uOk: uOk
       };
     });
     presence = map;
@@ -681,7 +721,7 @@
   const gameReady = () => (typeof gameOn !== "undefined" && gameOn) && typeof S !== "undefined" && !!S;
 
   async function publishPresence() {
-    if (!inRoom() || !gameReady()) return;
+    if (_leaving || !inRoom() || !gameReady()) return;
     const body = {
       room_id: room.id,
       user_id: myId(),
@@ -713,7 +753,7 @@
      sent, so the stations list is left alone. */
   let _finalAt = 0;
   async function publishFinal(opts) {
-    if (!inRoom() || !gameReady()) return;
+    if (_leaving || !inRoom() || !gameReady()) return;
     const ka = !!(opts && opts.keepalive);
     stopPresenceLoop(); // a periodic publish must not land after this and mark us online again
     _finalAt = Date.now();
