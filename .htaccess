@@ -2,3 +2,6 @@ RewriteEngine On
 
 RewriteCond %{HTTP_HOST} ^dashboard\.frontlinecontrol\.co\.uk$ [NC]
 RewriteRule ^$ admin.html [L]
+
+RewriteCond %{HTTP_HOST} ^status\.frontlinecontrol\.co\.uk$ [NC]
+RewriteRule ^$ status.html [L]
