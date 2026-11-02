@@ -34,10 +34,13 @@ const eta=(u,m)=>km(upos(u),mp(m))*(SP[u.ty]>=150?1:1.3)/(SP[u.ty]*spd())*3600;
 const dd=u=>(now()-u.t0)/3.6e6*SP[u.ty]*spd();
 function along(rt,dk){const L=rt.d.length,g=Math.min(1,dk/rt.len)*rt.d[L-1];let i=1;while(i<L-1&&rt.d[i]<g)i++;const a=rt.p[i-1],b=rt.p[i],f=Math.min(1,Math.max(0,(g-rt.d[i-1])/((rt.d[i]-rt.d[i-1])||1)));return[a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f]}
 const credit=u=>{if(u.rt&&u.t0)u.km=(u.km||0)+Math.min(Math.max(0,dd(u)),u.rt.len)};
+/* A road-routing answer stops at the nearest ROAD. If the call is off-road (park, field...), add the call's own spot as the final point
+   so the vehicle finishes the trip there instead of parking at the end of the road while the clock runs. Gap must be 20 m - 2 km. */
+const tail=(p,b)=>{try{const l=p[p.length-1],g=l?km(l,b):0;if(g>.02&&g<2)return p.concat([[+(+b[0]).toFixed(5),+(+b[1]).toFixed(5)]])}catch(e){}return p};
 function leg(u,a,b,st){credit(u);u.st=st;if(st!=="back")u.rl=0;u.rt=null;u.a=a;u.b=b;const tk=u.lk=(u.lk||0)+1,fly=SP[u.ty]>=150;
 const fin=(p,len)=>{if(u.lk!==tk)return;if(p.length<2)p=[a,b];const d=[0];for(let i=1;i<p.length;i++)d.push(+(d[i-1]+km(p[i-1],p[i])).toFixed(3));u.rt={p,d,len:len||d[d.length-1]};u.t0=(u.bk0&&u.bk0<now())?u.bk0:now();u.bk0=0;dirty=true};
 if(fly){fin([a,b],km(a,b));return}
-J("https://router.project-osrm.org/route/v1/driving/"+a[1]+","+a[0]+";"+b[1]+","+b[0]+"?overview="+(km(a,b)>40?"simplified":"full")+"&geometries=geojson",12000).then(j=>{const q=j&&j.routes&&j.routes[0];q?fin(q.geometry.coordinates.map(c=>[+c[1].toFixed(5),+c[0].toFixed(5)])):fin([a,b],km(a,b)*1.3)})}
+J("https://router.project-osrm.org/route/v1/driving/"+a[1]+","+a[0]+";"+b[1]+","+b[0]+"?overview="+(km(a,b)>40?"simplified":"full")+"&geometries=geojson",12000).then(j=>{const q=j&&j.routes&&j.routes[0];q?fin(tail(q.geometry.coordinates.map(c=>[+c[1].toFixed(5),+c[0].toFixed(5)]),b)):fin([a,b],km(a,b)*1.3)})}
 function send(u,m){cloudSoon();u.dsp=(u.dsp||0)+1;const bk=u.st==="back",from=upos(u);u.mid=m.id;u.half=0;leg(u,from,mp(m),"out");const g=gr(m.k),e=Math.max(1,Math.ceil(eta(u,m)/60)),sn=stn(u.sid).name;
 log("📻 Control → "+u.cs+": “"+u.cs+", "+T[m.k][1]+", Grade "+g+", at "+m.loc+(m.rev&&m.hid?". Caller reports "+(hk(m)==="h"?"persons injured":"possible weapons or hazards"):"")+". "+(g<=2?"Respond on blue lights.":"Respond as soon as you can.")+" Acknowledge.”",1,m.id);
 setTimeout(()=>{const r=u.cs+": “Control, "+u.cs+", received. "+(bk?"Diverting from return to "+sn+", ETA ":"Mobile from "+sn+", ETA ")+e+" min"+(e>1?"s":"")+".”";log("📻 "+r,1,m.id);rtoast(r)},R(1200,2800))}
