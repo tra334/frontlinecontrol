@@ -18,17 +18,30 @@ a{color:var(--bl)}
 .banner{border-radius:14px;padding:18px;font-weight:600;font-size:17px;margin-bottom:22px;color:#fff}
 .operational{background:#16a34a}.partial{background:#d97706}.major{background:#dc2626}.loading{background:#64748b}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:6px 16px;margin-bottom:18px}
-.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--bd)}
-.row:last-child{border-bottom:0}
-.dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:8px;background:var(--gn)}
-.dot.degraded{background:var(--am)}.dot.outage{background:var(--rd)}
+.banner{display:flex;align-items:center;gap:14px}
+.banner .ic{width:34px;height:34px;color:#fff}
+.ic{width:24px;height:24px;flex:none;fill:none;stroke:currentColor;stroke-linecap:round;stroke-linejoin:round}
+.ic .ring{stroke-width:1.5;opacity:.4}.ic .core{fill:currentColor;fill-opacity:.14;stroke:none}.ic .mk{stroke-width:2.2}
+.ic.operational{color:var(--gn)}.ic.degraded{color:var(--am)}.ic.outage{color:var(--rd)}
+.grp{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin:24px 0 10px}
+.grp h2{margin:0}
+details{border-bottom:1px solid var(--bd)}
+details:last-child{border-bottom:0}
+summary{display:flex;align-items:center;gap:12px;padding:12px 0;cursor:pointer;list-style:none}
+summary::-webkit-details-marker{display:none}
+summary:focus-visible{outline:2px solid var(--bl);outline-offset:2px;border-radius:6px}
+.nm{flex:1;font-weight:500}
+.chev{width:8px;height:8px;border-right:2px solid var(--mu);border-bottom:2px solid var(--mu);transform:rotate(45deg);margin:0 4px 3px 2px;transition:transform .15s}
+details[open]>summary .chev{transform:rotate(-135deg);margin-top:5px}
+.det{margin:0 0 14px 36px;color:var(--mu);font-size:14px}
+.det p{margin:0 0 6px}.det b{color:var(--tx);font-weight:600}
+@media (prefers-reduced-motion:reduce){.chev{transition:none}}
 .mu{color:var(--mu);font-size:13px}
 h2{font-size:16px;margin:24px 0 10px}
-.inc{padding:12px 0;border-bottom:1px solid var(--bd)}
-.inc:last-child{border-bottom:0}
 .upd{margin:6px 0 0 0;padding:0;list-style:none}
 .upd li{font-size:14px;margin-top:6px}
-.tag{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--mu)}
+.tag{font-size:12px;color:var(--mu);border:1px solid var(--bd);border-radius:99px;padding:1px 8px;margin-left:6px}
+.inc summary{padding:12px 0}.inc .det{margin-left:0}
 </style>
 </head>
 <body>
@@ -37,10 +50,10 @@ h2{font-size:16px;margin:24px 0 10px}
     <h1>Frontline Control status</h1>
     <a href="/">Back to the game</a>
   </header>
-  <div id="overall" class="banner loading">Checking the game…</div>
-  <div class="card" id="components"></div>
+  <div id="overall" class="banner loading"><span id="bi"></span><span id="bt">Checking the game…</span></div>
+  <div id="components"></div>
   <h2>Incidents</h2>
-  <div class="card" id="incidents"><div class="inc mu">Loading…</div></div>
+  <div class="card" id="incidents"><div class="mu" style="padding:12px 0">Loading…</div></div>
   <p class="mu" id="meta"></p>
 </main>
 <script>
@@ -54,21 +67,45 @@ h2{font-size:16px;margin:24px 0 10px}
   const when = t => t ? new Date(t).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "";
   const STATUS_WORDS = { investigating: "Investigating", identified: "Identified", monitoring: "Monitoring", resolved: "Resolved" };
 
+  const GROUPS = [["Playing", ["game", "rooms"]], ["Your account", ["signin", "saves"]]];
+  const DESC = {
+    game: "The live game: the map, jobs and your units.",
+    rooms: "Multiplayer rooms and the database behind them.",
+    signin: "Creating an account and signing in.",
+    saves: "Saving and loading your progress."
+  };
+  const HINT = { degraded: "You may notice slowness or the odd failed action.", outage: "This part of the game is not working right now." };
+  const MARK = { operational: "M8.5 12.3l2.4 2.4 4.6-5", degraded: "M12 7.5v5.2M12 16.2v.1", outage: "M9 9l6 6M15 9l-6 6", loading: "M8 12h.01M12 12h.01M16 12h.01" };
+  const ico = st => `<svg class="ic ${esc(st)}" viewBox="0 0 24 24" aria-hidden="true"><circle class="ring" cx="12" cy="12" r="10.5"/><circle class="core" cx="12" cy="12" r="7.5"/><path class="mk" d="${MARK[st] || MARK.loading}"/></svg>`;
+  const OVR = { operational: "operational", partial: "degraded", major: "outage" };
+
+  function comp(k, st, s) {
+    const extra = k === "game" && s.players_in_game != null ? `<p><b>${esc(s.players_in_game)}</b> player${s.players_in_game === 1 ? "" : "s"} in game right now.</p>` : "";
+    return `<details><summary>${ico(st)}<span class="nm">${esc(NAMES[k] || k)}</span><span class="mu">${esc(WORDS[st] || st)}</span><span class="chev"></span></summary>
+      <div class="det"><p>${esc(DESC[k] || "Part of the Frontline Control service.")}</p>${extra}${HINT[st] ? `<p>${esc(HINT[st])}</p>` : ""}<p>Last checked ${esc(when(s.checked))}.</p></div></details>`;
+  }
+
   function draw(s) {
     const o = document.getElementById("overall");
     o.className = "banner " + (s.overall || "loading");
-    o.textContent = SUMMARY[s.overall] || "Status unknown.";
-    document.getElementById("components").innerHTML = Object.keys(s.components || {}).map(k => {
-      const st = s.components[k];
-      return `<div class="row"><span><span class="dot ${esc(st)}"></span>${esc(NAMES[k] || k)}</span><span class="mu">${esc(WORDS[st] || st)}</span></div>`;
+    document.getElementById("bi").innerHTML = ico(OVR[s.overall] || "loading");
+    document.getElementById("bt").textContent = SUMMARY[s.overall] || "Status unknown.";
+    const c = s.components || {}, used = new Set();
+    const groups = GROUPS.map(g => [g[0], g[1].filter(k => c[k])]);
+    const rest = Object.keys(c).filter(k => !GROUPS.some(g => g[1].includes(k)));
+    if (rest.length) groups.push(["Other", rest]);
+    document.getElementById("components").innerHTML = groups.filter(g => g[1].length).map(g => {
+      const ok = g[1].filter(k => c[k] === "operational").length;
+      return `<div class="grp"><h2>${esc(g[0])}</h2><span class="mu">${ok} of ${g[1].length} operational</span></div>
+        <div class="card">${g[1].map(k => comp(k, c[k], s)).join("")}</div>`;
     }).join("");
     const inc = s.incidents || [];
     document.getElementById("incidents").innerHTML = inc.length ? inc.map(i => `
-      <div class="inc"><div><b>${esc(i.title)}</b> <span class="tag">${esc(STATUS_WORDS[i.status] || i.status)}</span></div>
-        <div class="mu">${esc(when(i.created_at))}${i.updated_at !== i.created_at ? " · updated " + esc(when(i.updated_at)) : ""}</div>
-        <ul class="upd">${(i.updates || []).filter(u => u.body).map(u => `<li><span class="mu">${esc(when(u.at))}</span> · ${esc(STATUS_WORDS[u.status] || u.status)}: ${esc(u.body)}</li>`).join("")}</ul>
-      </div>`).join("") : '<div class="inc mu">No incidents reported.</div>';
-    document.getElementById("meta").textContent = "Last checked " + when(s.checked) + " · " + (s.players_in_game || 0) + " players in game right now.";
+      <details class="inc"${i.status !== "resolved" ? " open" : ""}><summary>${ico(i.status === "resolved" ? "operational" : "degraded")}<span class="nm">${esc(i.title)}<span class="tag">${esc(STATUS_WORDS[i.status] || i.status)}</span></span><span class="chev"></span></summary>
+        <div class="det"><p>${esc(when(i.created_at))}${i.updated_at !== i.created_at ? " · updated " + esc(when(i.updated_at)) : ""}</p>
+        <ul class="upd">${(i.updates || []).filter(u => u.body).map(u => `<li><span class="mu">${esc(when(u.at))}</span> · ${esc(STATUS_WORDS[u.status] || u.status)}: ${esc(u.body)}</li>`).join("")}</ul></div>
+      </details>`).join("") : '<div class="mu" style="padding:12px 0">No incidents reported.</div>';
+    document.getElementById("meta").textContent = "Last checked " + when(s.checked) + " · refreshes every minute.";
   }
 
   async function load() {
@@ -78,7 +115,8 @@ h2{font-size:16px;margin:24px 0 10px}
       draw(await r.json());
     } catch (e) {
       const o = document.getElementById("overall");
-      o.className = "banner major"; o.textContent = "Can't reach the game server. It may be down.";
+      o.className = "banner major"; document.getElementById("bi").innerHTML = ico("outage");
+      document.getElementById("bt").textContent = "Can’t reach the game server. It may be down.";
       document.getElementById("meta").textContent = "Checked " + new Date().toLocaleTimeString("en-GB") + ".";
     }
   }
