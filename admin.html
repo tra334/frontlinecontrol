@@ -82,6 +82,27 @@ h3{margin:20px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.08e
 .login .logo{width:48px;height:48px;border-radius:14px;font-size:20px;margin:0 auto 14px}
 body.dev-view .admin-only{display:none!important}
 .tag.t-dev{background:var(--acs);color:var(--ac)}
+@media (max-width:640px){
+  header{flex-wrap:wrap;padding:10px 12px;gap:10px}
+  .brand{flex:1 1 auto;min-width:0}
+  .brand span{display:none}
+  #tabs{order:3;flex:1 1 100%;display:flex;width:100%}
+  #tabs[hidden]{display:none}
+  #tabs button{flex:1;padding:8px 4px;font-size:14px;white-space:nowrap}
+  #out{order:2;flex:none}
+}
+.evt{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--bd);align-items:flex-start}
+.evt:last-child{border-bottom:0}
+.evt .txt{flex:1;min-width:0}
+.evt .head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.evt .when{color:var(--mu);font-size:12px;margin-left:auto;white-space:nowrap}
+.evt .say{font-size:15px;margin-top:4px;overflow-wrap:anywhere}
+.evt .meta{color:var(--mu);font-size:13px;margin-top:3px;overflow-wrap:anywhere}
+.pill{font-size:11px;font-weight:600;border-radius:999px;padding:2px 9px;white-space:nowrap}
+.pill.money{background:var(--gns);color:var(--gn)}
+.pill.danger{background:var(--rds);color:var(--rd)}
+.pill.warn{background:var(--ams);color:var(--am)}
+.pill.info{background:var(--acs);color:var(--ac)}
 </style>
 </head>
 <body>
@@ -324,12 +345,58 @@ body.dev-view .admin-only{display:none!important}
       <h3>Money log (${jb.length})</h3><div class="card">${jb.length ? jb.map(j => `<div class="lg"><div style="display:flex;justify-content:space-between;gap:10px"><b style="font-weight:600">${esc(j.n)}</b><b style="color:${j.e >= 0 ? "var(--gn)" : "var(--rd)"};white-space:nowrap">${j.e >= 0 ? "+" : "−"}${money(Math.abs(j.e))}</b></div><span class="mu">${esc(when(j.t))} · balance ${money(j.b)}</span></div>`).join("") : '<div class="empty">Empty</div>'}</div>`;
   }
 
+  // ---------- admin action log (cards with names) ----------
+  const ACTION_NAMES = { credits: "Credits", ban: "Suspended", unban: "Unsuspended", reset: "Game reset", deletegame: "Game deleted",
+    delvehicle: "Vehicle removed", delstation: "Station removed", delhospital: "Hospital removed", movevehicle: "Vehicle moved",
+    setroles: "Roles", announce: "Announcement", announce_end: "Announcement ended", incident: "Incident", incident_update: "Incident update" };
+  const CAT = { credits: "money", unban: "info", ban: "danger", setroles: "info", reset: "warn", deletegame: "danger", delvehicle: "danger",
+    delstation: "danger", delhospital: "danger", movevehicle: "info", announce: "info", announce_end: "info", incident: "warn", incident_update: "warn" };
+  const plural = (n, w) => n + " " + w + (n === 1 ? "" : "s");
+  function relTime(t) {
+    const s = (Date.now() - Date.parse(t)) / 1000;
+    if (!(s >= 0)) return when(t);
+    if (s < 60) return "just now";
+    if (s < 3600) return Math.floor(s / 60) + " min ago";
+    if (s < 86400) return Math.floor(s / 3600) + " h ago";
+    return when(t);
+  }
+  function sentence(l) {
+    const d = l.detail || {};
+    const A = l.adminName ? "<b>" + esc(l.adminName) + "</b>" : "An admin";
+    const P = l.targetName ? "<b>" + esc(l.targetName) + "</b>" : "a player";
+    const refund = d.refund ? "Refund given" : "No refund";
+    switch (l.action) {
+      case "credits": return { say: A + (d.amount > 0 ? " gave " : " took ") + "<b>" + money(Math.abs(d.amount)) + "</b>" + (d.amount > 0 ? " to " : " from ") + P, meta: "Balance " + money(d.before) + " → " + money(d.after) };
+      case "ban": return { say: A + " suspended " + P, meta: d.hours === "permanent" ? "Permanent" : "For " + plural(d.hours, "hour") };
+      case "unban": return { say: A + " lifted " + P + "'s suspension" };
+      case "setroles": return { say: A + " changed " + P + "'s roles", meta: ((d.from || []).join(", ") || "no roles") + " → " + ((d.to || []).join(", ") || "no roles") };
+      case "reset": return { say: A + " reset " + P + "'s game" };
+      case "deletegame": return { say: A + " deleted " + P + "'s saved game" };
+      case "delvehicle": return { say: A + " removed a vehicle from " + P + "'s game", meta: refund };
+      case "delstation": return { say: A + " removed a station from " + P + "'s game", meta: refund };
+      case "delhospital": return { say: A + " removed a hospital or prison from " + P + "'s game", meta: refund };
+      case "movevehicle": return { say: A + " moved a vehicle in " + P + "'s game" };
+      case "announce": return { say: A + " published <b>" + esc(d.title) + "</b>", meta: "Shown " + (d.hours === "until ended" ? "until ended" : "for " + plural(d.hours, "hour")) };
+      case "announce_end": return { say: A + " ended an announcement" };
+      case "incident": return { say: A + " posted <b>" + esc(d.title) + "</b>", meta: "Status: " + esc(d.status) };
+      case "incident_update": return { say: A + " set an incident to " + esc(d.status) };
+      default: return { say: A + " did " + esc(l.action) };
+    }
+  }
+  function logLine(l) {
+    const s = sentence(l), cat = CAT[l.action] || "info", d = l.detail || {};
+    return `<div class="evt">${avatar({ id: l.admin, name: l.adminName || "?" })}<div class="txt">
+      <div class="head"><span class="pill ${cat}">${esc(ACTION_NAMES[l.action] || l.action)}</span><span class="when" title="${esc(when(l.t))}">${esc(relTime(l.t))}</span></div>
+      <div class="say">${s.say}</div>${s.meta ? `<div class="meta">${s.meta}</div>` : ""}${d.reason ? `<div class="meta">Reason: ${esc(d.reason)}</div>` : ""}
+    </div></div>`;
+  }
+
   // ---------- admin action log ----------
   async function showLog() {
     $("#main").innerHTML = '<div class="card mu" id="lg">Loading…</div>';
     try {
       const j = await api("/api/admin/log");
-      $("#lg").innerHTML = j.log.length ? j.log.map(l => `<div class="lg"><b>${esc(l.action)}</b> <span class="mu">${esc(when(l.t))}</span><br><span class="mu">by ${esc(l.admin)}${l.target ? " · on " + esc(l.target) : ""}</span>${l.detail ? '<br><span class="mu">' + esc(JSON.stringify(l.detail)) + "</span>" : ""}</div>`).join("") : '<div class="empty">No admin actions yet.</div>';
+      $("#lg").innerHTML = j.log.length ? j.log.map(logLine).join("") : '<div class="empty">No admin actions yet.</div>';
     } catch (e) { $("#lg").innerHTML = '<span style="color:var(--rd)">' + esc(e.message) + "</span>"; }
   }
 
