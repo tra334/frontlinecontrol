@@ -88,7 +88,7 @@ body.dev-view .admin-only{display:none!important}
   .brand span{display:none}
   #tabs{order:3;flex:1 1 100%;display:flex;width:100%}
   #tabs[hidden]{display:none}
-  #tabs button{flex:1;padding:8px 4px;font-size:14px;white-space:nowrap}
+  #tabs button{flex:1;padding:8px 2px;font-size:12.5px;white-space:nowrap}
   #out{order:2;flex:none}
 }
 .evt{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--bd);align-items:flex-start}
@@ -188,7 +188,7 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
 <body>
 <header>
   <div class="brand"><div class="logo">FC</div><div><b>Frontline Control</b><span>Admin dashboard</span></div></div>
-  <div class="seg" id="tabs" hidden><button data-t="p" class="on">Players</button><button data-t="r">Rooms</button><button data-t="n">Announce</button><button data-t="i">Incidents</button><button data-t="l">Log</button></div>
+  <div class="seg" id="tabs" hidden><button data-t="p" class="on">Players</button><button data-t="r">Rooms</button><button data-t="n">Announce</button><button data-t="b">Bonuses</button><button data-t="i">Incidents</button><button data-t="l">Log</button></div>
   <button class="btn sm" id="out" hidden>Sign out</button>
 </header>
 <main id="main"><div class="card mu">Loading…</div></main>
@@ -356,6 +356,21 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
     else logs(sb, g);
   }
 
+  // ---------- rank (admin sets it by hand; the game otherwise works it out from jobs done) ----------
+  const RANKS = ["Trainee Call-Handler", "Dispatcher", "Senior Dispatcher", "Duty Officer", "Inspector", "Chief Controller"];
+  const rankName = i => i == null ? "Automatic" : (RANKS[i] || ("Rank " + i));
+  function rankCard(g) {
+    if (!g) return "";
+    const idx = typeof g.rankIdx === "number" ? g.rankIdx : RANKS.indexOf(g.rank), manual = g.rankOverride != null;
+    return `<h3 class="admin-only">Rank</h3><div class="card admin-only">
+      <div class="bal"><span>Current rank${manual ? " (set by hand)" : ""}</span><b style="font-size:18px">${esc(g.rank || "–")}</b></div>
+      <label class="lbl" for="rk_sel">Set rank</label>
+      <select id="rk_sel">${RANKS.map((n, i) => `<option value="${i}" ${i === idx ? "selected" : ""}>${esc(n)}</option>`).join("")}<option value="auto">Automatic (from jobs done)</option></select>
+      <input id="rk_why" placeholder="Reason (kept in the log)" style="margin-top:8px">
+      <button class="btn pri" id="rk_go" style="width:100%;margin-top:10px">Set rank</button>
+      <div class="mu" style="margin-top:8px">A rank set by hand stays fixed until you set it back to Automatic. Vehicle and building unlocks follow the rank.</div></div>`;
+  }
+
   function overview(sb, u, g, label) {
     sb.innerHTML = `
       ${g ? `<div class="stats"><div class="stat"><span>Rank</span><b style="font-size:15px">${esc(g.rank || "–")}</b></div><div class="stat hero"><span>Credits</span><b>${money(g.cr)}</b></div><div class="stat"><span>Jobs done</span><b>${g.done}</b></div>
@@ -363,6 +378,7 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
       <div class="card"><div class="stats" style="margin-top:0"><div class="stat"><span>Joined</span><b style="font-size:14px">${esc(when(u.created))}</b></div><div class="stat"><span>Last sign-in</span><b style="font-size:14px">${esc(when(u.last))}</b></div>${u.banned_until ? `<div class="stat"><span>Suspended until</span><b style="font-size:14px">${esc(when(u.banned_until))}</b></div>` : ""}</div>
         <div class="mu" style="word-break:break-all">ID ${esc(u.id)}</div></div>
       ${rolesCard(u)}
+      ${rankCard(g)}
       <h3>Credits</h3><div class="card">
         <div class="bal"><span>Current balance</span><b>${g ? money(g.cr) : "–"}</b></div>
         <div class="mode"><button class="give on" id="m_give" type="button">${IC.plus} Give credits</button><button class="take" id="m_take" type="button">${IC.minus} Take credits</button></div>
@@ -401,6 +417,11 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
     };
     if ($("#ban")) $("#ban").onclick = () => { const h = +$("#dur").value; ask("Suspend " + label + "?", (h ? "For " + esc($("#dur").selectedOptions[0].text) : "Permanently") + ". They are signed out of the game server straight away.", { ok: "Suspend", danger: 1 }).then(r => { if (r) run({ type: "ban", hours: h, reason: $("#bwhy").value }); }); };
     if ($("#unban")) $("#unban").onclick = () => run({ type: "unban" });
+    if ($("#rk_go")) $("#rk_go").onclick = () => {
+      const v = $("#rk_sel").value, auto = v === "auto";
+      ask("Change rank?", "Set <b>" + esc(label) + "</b>'s rank to <b>" + esc(auto ? "Automatic (from jobs done)" : RANKS[+v]) + "</b>.", { ok: "Set rank" })
+        .then(x => { if (x) run({ type: "setrank", rank: auto ? null : +v, reason: $("#rk_why").value }); });
+    };
     if ($("#rl_s")) $("#rl_s").onclick = () => {
       const r = []; if ($("#rl_a").checked) r.push("admin"); if ($("#rl_d").checked) r.push("developer");
       ask("Change roles?", "Set <b>" + esc(label) + "</b>'s roles to: " + esc(r.join(", ") || "none") + ".", { ok: "Save" }).then(x => { if (x) run({ type: "setroles", roles: r }); });
@@ -528,10 +549,10 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
   const ACTION_NAMES = { credits: "Credits", ban: "Suspended", unban: "Unsuspended", reset: "Game reset", deletegame: "Game deleted",
     delvehicle: "Vehicle removed", delstation: "Station removed", delhospital: "Hospital removed", movevehicle: "Vehicle moved",
     setroles: "Roles", deleteuser: "User deleted", announce: "Announcement", announce_end: "Announcement ended", incident: "Incident", incident_update: "Incident update",
-    room_close: "Room closed", room_member_remove: "Removed from room", room_mission_cancel: "Call cancelled" };
+    setrank: "Rank changed", bonus: "Bonus created", bonus_end: "Bonus ended", room_close: "Room closed", room_member_remove: "Removed from room", room_mission_cancel: "Call cancelled" };
   const CAT = { credits: "money", unban: "info", ban: "danger", setroles: "info", reset: "warn", deletegame: "danger", deleteuser: "danger", delvehicle: "danger",
     delstation: "danger", delhospital: "danger", movevehicle: "info", announce: "info", announce_end: "info", incident: "warn", incident_update: "warn",
-    room_close: "danger", room_member_remove: "danger", room_mission_cancel: "warn" };
+    setrank: "info", bonus: "money", bonus_end: "info", room_close: "danger", room_member_remove: "danger", room_mission_cancel: "warn" };
   const plural = (n, w) => n + " " + w + (n === 1 ? "" : "s");
   function relTime(t) {
     const s = (Date.now() - Date.parse(t)) / 1000;
@@ -551,6 +572,9 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
       case "ban": return { say: A + " suspended " + P, meta: d.hours === "permanent" ? "Permanent" : "For " + plural(d.hours, "hour") };
       case "unban": return { say: A + " lifted " + P + "'s suspension" };
       case "setroles": return { say: A + " changed " + P + "'s roles", meta: ((d.from || []).join(", ") || "no roles") + " → " + ((d.to || []).join(", ") || "no roles") };
+      case "setrank": return { say: A + " set " + P + "'s rank to <b>" + esc(rankName(d.to)) + "</b>", meta: rankName(d.from) + " → " + rankName(d.to) };
+      case "bonus": return { say: A + " created the bonus <b>" + esc(d.title) + "</b> (" + money(d.amount) + " each)", meta: "Open for " + plural(d.hours, "hour") };
+      case "bonus_end": return { say: A + " ended the bonus <b>" + esc(d.title || "") + "</b>" };
       case "reset": return { say: A + " reset " + P + "'s game" };
       case "deleteuser": return { say: A + " deleted the account of " + P };
       case "deletegame": return { say: A + " deleted " + P + "'s saved game" };
@@ -616,6 +640,43 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
     } catch (e) { box.innerHTML = '<span style="color:var(--rd)">' + esc(e.message) + "</span>"; }
   }
 
+  // ---------- global bonuses (every player can claim each one once, from the Ranks tab) ----------
+  async function showBonuses() {
+    $("#main").innerHTML = `<h3 style="margin-top:4px">New global bonus</h3><div class="card">
+      <input id="bn_t" placeholder="Title, e.g. Weekend bonus" maxlength="80" style="margin-bottom:10px">
+      <label class="lbl" for="bn_a">Amount each player can claim</label>
+      <div class="amtw" style="margin-bottom:10px"><i>£</i><input id="bn_a" type="number" inputmode="numeric" min="1" placeholder="e.g. 25000"></div>
+      <div class="row"><select id="bn_h"><option value="1">Open for 1 hour</option><option value="24" selected>Open for 1 day</option><option value="72">Open for 3 days</option><option value="168">Open for 7 days</option><option value="720">Open for 30 days</option></select><button class="btn pri" id="bn_go">Create</button></div>
+      <div class="mu" style="margin-top:8px">Players see it in their Ranks tab until it ends. Each player can claim it once.</div></div>
+      <h3>Bonuses</h3><div class="card" id="bn_list"><div class="mu">Loading…</div></div>`;
+    $("#bn_go").onclick = () => {
+      const title = $("#bn_t").value.trim(), amount = Math.trunc(+$("#bn_a").value), hours = +$("#bn_h").value;
+      if (!title) { toast("Give the bonus a title"); return; }
+      if (!(amount > 0)) { toast("Enter a positive whole amount"); return; }
+      ask("Create bonus?", "Every player will be able to claim <b>" + money(amount) + "</b> from <b>" + esc(title) + "</b> for the next " + esc($("#bn_h").selectedOptions[0].text.replace("Open for ", "")) + ".", { ok: "Create bonus" }).then(async r => {
+        if (!r) return;
+        try { await api("/api/admin/bonus", { title, amount, hours }); toast("Bonus is live"); $("#bn_t").value = ""; $("#bn_a").value = ""; loadBonuses(); }
+        catch (e) { toast(e.message); }
+      });
+    };
+    loadBonuses();
+  }
+  async function loadBonuses() {
+    const box = $("#bn_list"); if (!box) return;
+    try {
+      const j = await api("/api/admin/bonuses"), now = Date.now();
+      box.innerHTML = j.bonuses.length ? j.bonuses.map(b => {
+        const live = Date.parse(b.starts_at) <= now && Date.parse(b.ends_at) > now;
+        return `<div class="item"><div class="m"><b>${esc(b.title)} ${live ? '<span class="tag t-on">LIVE</span>' : '<span class="tag t-idle">ENDED</span>'}</b><span class="mu">${money(b.amount)} each · ${b.claims == null ? 0 : b.claims} claimed</span><span class="mu">${live ? "Ends " : "Ended "}${esc(when(b.ends_at))}</span></div>
+          ${live ? `<div class="acts"><button class="btn sm ghr" data-bend="${esc(b.id)}">End now</button></div>` : ""}</div>`;
+      }).join("") : '<div class="empty">No bonuses yet</div>';
+      box.querySelectorAll("[data-bend]").forEach(b => b.onclick = () => ask("End this bonus?", "Players who haven't claimed it yet will no longer be able to. Claims already made are kept.", { ok: "End bonus", danger: 1 }).then(async r => {
+        if (!r) return;
+        try { await api("/api/admin/bonus/end", { id: b.dataset.bend }); toast("Bonus ended"); loadBonuses(); } catch (e) { toast(e.message); }
+      }));
+    } catch (e) { box.innerHTML = '<span style="color:var(--rd)">' + esc(e.message) + "</span>"; }
+  }
+
   // ---------- status page incidents ----------
   const STATUSES = ["investigating", "identified", "monitoring", "resolved"];
   async function showIncidents() {
@@ -665,7 +726,7 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
     </div><button class="btn pri" id="rl_s" style="width:100%;margin-top:12px">Save roles</button>`;
   }
 
-  function show() { if (tab === "p") showPlayers(); else if (tab === "r") showRooms(); else if (tab === "n") showAnnounce(); else if (tab === "i") showIncidents(); else showLog(); }
+  function show() { if (tab === "p") showPlayers(); else if (tab === "r") showRooms(); else if (tab === "n") showAnnounce(); else if (tab === "b") showBonuses(); else if (tab === "i") showIncidents(); else showLog(); }
   document.querySelectorAll("#tabs button").forEach(b => { b.onclick = () => { tab = b.dataset.t; document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x === b)); show(); }; });
 
   async function start() {
@@ -679,7 +740,7 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
     }
     const staff = me.perms || [];
     document.body.classList.toggle("dev-view", !staff.includes("admin"));
-    document.querySelectorAll("#tabs button").forEach(b => { if (["r", "n", "i", "l"].includes(b.dataset.t)) b.hidden = !staff.includes("admin"); });
+    document.querySelectorAll("#tabs button").forEach(b => { if (["r", "n", "b", "i", "l"].includes(b.dataset.t)) b.hidden = !staff.includes("admin"); });
     $("#tabs").hidden = false; $("#out").hidden = false; show();
   }
   start();
