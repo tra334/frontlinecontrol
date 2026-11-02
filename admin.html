@@ -46,7 +46,7 @@ input:focus,select:focus{border-color:var(--ac);box-shadow:0 0 0 3px var(--acs)}
 .t-idle{background:var(--gns);color:var(--gn)}.t-busy{background:var(--ams);color:var(--am)}
 .pl{display:flex;gap:12px;align-items:center;cursor:pointer;transition:transform .08s,border-color .15s}
 .pl:hover{border-color:var(--ac)}.pl:active{transform:scale(.995)}
-.av{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:#fff;flex:none;font-size:15px}
+.av{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-weight:700;color:#fff;flex:none;font-size:15px;position:relative;overflow:hidden}.av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .pl .m{flex:1;min-width:0}.pl b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pl .m .mu{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pl .r{text-align:right;flex:none}.pl .r b{font-variant-numeric:tabular-nums}
@@ -215,7 +215,7 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
   const money = n => "£" + (+n || 0).toLocaleString("en-GB");
   const when = t => t ? new Date(t).toLocaleString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "never";
   const COL = ["#2563eb", "#7c3aed", "#db2777", "#ea580c", "#0d9488", "#4f46e5", "#65a30d", "#0891b2"];
-  const avatar = u => { const n = (u.name || u.email || "?").trim(), h = [...String(u.id)].reduce((a, c) => a + c.charCodeAt(0), 0); return `<div class="av" style="background:${COL[h % COL.length]}">${esc(n[0].toUpperCase())}</div>`; };
+  const avatar = u => { const n = (u.name || u.email || "?").trim(), h = [...String(u.id)].reduce((a, c) => a + c.charCodeAt(0), 0); return `<div class="av" style="background:${COL[h % COL.length]}">${esc(n[0].toUpperCase())}${/^[0-9a-f-]{36}$/i.test(String(u.id || "")) ? `<img alt="" loading="lazy" src="${API}/api/avatar/${esc(u.id)}" onerror="this.remove()">` : ""}</div>`; };
   const SVI = { f: "🚒", p: "🚓", a: "🚑", aa: "🚁", ph: "🚁" };
 
   // ---------- role symbols ----------
@@ -405,6 +405,7 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
       ${u.admin ? "" : `<h3>Danger zone</h3><div class="card dz">
         <div class="dzr"><div><b>Reset game</b><span class="mu">Starts them on a brand new game.</span></div><button class="btn amb" id="reset">Reset game</button></div>
         <div class="dzr"><div><b>Delete saved game</b><span class="mu">Removes their save. They start fresh next time.</span></div><button class="btn ghr" id="del">Delete game</button></div>
+        <div class="dzr admin-only"><div><b>Profile picture</b><span class="mu">Removes their photo. They can upload a new one.</span></div><button class="btn ghr" id="rmav">Remove picture</button></div>
         <div class="dzr final admin-only"><span class="ic">${IC.trash}</span><div class="tx"><b>Delete user</b><span class="mu">Permanently removes the account and its saved game. This can't be undone.</span></div><button class="btn red" id="deluser">${IC.trash} Delete user</button></div>
         <div class="mu" style="margin-top:10px">Credits and game changes only stick for players on the game server, or who aren't playing at that moment.</div></div>`}`;
     let sign = 1;
@@ -439,6 +440,7 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
       if (!r) return;
       api("/api/admin/action", { uid: u.id, type: "deleteuser", reason: r.reason }).then(x => { toast(x.msg || "User deleted"); closeSheet(); loadPlayers(); }).catch(e => toast(e.message));
     });
+    if ($("#rmav")) $("#rmav").onclick = () => ask("Remove profile picture?", "Removes <b>" + esc(label) + "</b>'s photo.", { ok: "Remove", danger: 1, reason: 1 }).then(r => { if (r) run({ type: "removeavatar", reason: r.reason }); });
     if ($("#reset")) $("#reset").onclick = () => ask("Reset game?", "Resets <b>" + esc(label) + "</b>'s game to a brand new game. This cannot be undone.", { ok: "Reset", danger: 1, reason: 1 }).then(r => { if (r) run({ type: "reset", reason: r.reason }); });
     if ($("#del")) $("#del").onclick = () => ask("Delete saved game?", "Deletes <b>" + esc(label) + "</b>'s saved game. This cannot be undone.", { ok: "Delete", danger: 1, reason: 1 }).then(r => { if (r) run({ type: "deletegame", reason: r.reason }); });
   }
@@ -557,9 +559,9 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
   // ---------- admin action log (cards with names) ----------
   const ACTION_NAMES = { credits: "Credits", ban: "Suspended", unban: "Unsuspended", reset: "Game reset", deletegame: "Game deleted",
     delvehicle: "Vehicle removed", delstation: "Station removed", delhospital: "Hospital removed", movevehicle: "Vehicle moved",
-    setroles: "Roles", deleteuser: "User deleted", announce: "Announcement", announce_end: "Announcement ended", incident: "Incident", incident_update: "Incident update",
+    setroles: "Roles", deleteuser: "User deleted", removeavatar: "Picture removed", announce: "Announcement", announce_end: "Announcement ended", incident: "Incident", incident_update: "Incident update",
     setrank: "Rank changed", bonus: "Bonus created", bonus_end: "Bonus ended", room_close: "Room closed", room_member_remove: "Removed from room", room_mission_cancel: "Call cancelled" };
-  const CAT = { credits: "money", unban: "info", ban: "danger", setroles: "info", reset: "warn", deletegame: "danger", deleteuser: "danger", delvehicle: "danger",
+  const CAT = { credits: "money", unban: "info", ban: "danger", setroles: "info", reset: "warn", deletegame: "danger", deleteuser: "danger", removeavatar: "warn", delvehicle: "danger",
     delstation: "danger", delhospital: "danger", movevehicle: "info", announce: "info", announce_end: "info", incident: "warn", incident_update: "warn",
     setrank: "info", bonus: "money", bonus_end: "info", room_close: "danger", room_member_remove: "danger", room_mission_cancel: "warn" };
   const plural = (n, w) => n + " " + w + (n === 1 ? "" : "s");
@@ -585,6 +587,7 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
       case "bonus": return { say: A + " created the bonus <b>" + esc(d.title) + "</b> (" + money(d.amount) + " each)", meta: "Open for " + plural(d.hours, "hour") };
       case "bonus_end": return { say: A + " ended the bonus <b>" + esc(d.title || "") + "</b>" };
       case "reset": return { say: A + " reset " + P + "'s game" };
+      case "removeavatar": return { say: A + " removed " + P + "'s profile picture" };
       case "deleteuser": return { say: A + " deleted the account of " + P };
       case "deletegame": return { say: A + " deleted " + P + "'s saved game" };
       case "delvehicle": return { say: A + " removed a vehicle from " + P + "'s game", meta: refund };
