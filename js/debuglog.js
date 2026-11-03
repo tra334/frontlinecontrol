@@ -1,7 +1,7 @@
 /* ===== Debug log =====
    Loaded FIRST so it sees everything. Quietly records problems (JS errors, failed network calls,
-   console errors/warnings, failed script/image loads) and adds a "Debug log" button at the bottom of
-   Settings to view, copy, download or clear them.
+   console errors/warnings, failed script/image loads) and is opened from the "Development & testing tools" section of the account menu
+   (Account > Debug log) to view, copy, download or clear them.
    Privacy: only the method, URL path (no query string), HTTP status and a short error text are kept.
    Request headers, tokens and request bodies are never recorded. */
 (function () {
@@ -111,7 +111,7 @@
     box.style.cssText = "width:100%;max-width:640px;max-height:90vh;display:flex;flex-direction:column;background:var(--card,#111827);color:var(--tx,#e5e7eb);border:1px solid var(--bd,#374151);border-radius:14px;padding:14px";
     const head = document.createElement("div");
     head.style.cssText = "display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:800;font-size:16px";
-    head.textContent = "Debug log";
+    head.innerHTML = (typeof lci === "function" ? lci("bug") + " " : "") + "Debug log";
     const x = document.createElement("button"); x.textContent = "✕"; x.setAttribute("aria-label", "Close");
     x.style.cssText = "background:none;border:0;color:inherit;font-size:18px;cursor:pointer";
     x.onclick = () => ov.remove(); head.appendChild(x);
@@ -147,28 +147,6 @@
     ov.addEventListener("click", e => { if (e.target === ov) ov.remove(); });
     document.body.appendChild(ov); draw();
   }
-
-  // add the button at the bottom of the Settings panel (the panel is rebuilt on every change, so re-add as needed)
-  let raf = 0;
-  function inject() {
-    raf = 0;
-    const body = document.getElementById("set_body");
-    if (!body || body.querySelector("#dbg_btn")) return;
-    const wrap = document.createElement("div");
-    wrap.style.cssText = "margin:16px 0 8px";
-    const b = document.createElement("button"); b.id = "dbg_btn"; b.type = "button";
-    const n = list.length;
-    b.textContent = "🐞 Debug log" + (n ? " (" + n + ")" : "");
-    b.style.cssText = "width:100%;padding:10px;border:0;border-radius:8px;font:700 14px system-ui;cursor:pointer;background:var(--bd,#374151);color:var(--tx,#e5e7eb)";
-    b.onclick = openUI;
-    const d = document.createElement("div"); d.style.cssText = "font-size:12px;opacity:.65;margin-top:4px;line-height:1.4";
-    d.textContent = "Shows errors and failed requests. Handy to copy and send when something doesn't work.";
-    wrap.append(b, d); body.appendChild(wrap);
-  }
-  const start = () => {
-    new MutationObserver(() => { if (!raf) raf = requestAnimationFrame(inject); }).observe(document.body, { childList: true, subtree: true });
-  };
-  if (document.body) start(); else document.addEventListener("DOMContentLoaded", start);
 
   window.DebugLog = { add: (m, t) => add(t || "info", m), report, open: openUI, clear, list: () => list.slice() };
 })();
