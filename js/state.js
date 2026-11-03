@@ -7,7 +7,12 @@ let S,tab="m",si=0,dirty=false,lastSave=0,dbDoc=null,sel=new Set(),curM=0,bm=nul
 let SIMOFF=0;const $=s=>document.querySelector(s),now=()=>Date.now()+SIMOFF,R=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.length)],fmt=n=>n.toLocaleString("en-GB");
 const P=(la,lo)=>[(lo+11)*34.44,(61-la)*60],mrg=(a,b)=>{const o={...a};for(const k in b)o[k]=(o[k]||0)+b[k];return o};
 function pip(lat,lon,poly){let c=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const[xi,yi]=poly[i],[xj,yj]=poly[j];if((yi>lat)!==(yj>lat)&&lon<(xj-xi)*(lat-yi)/(yj-yi)+xi)c=!c}return c}
-const land=(la,lo)=>LANDS.some(g=>pip(la,lo,g));const OUTMSG="Frontline Control is based in the UK & Ireland. Please select a new location on the map.";
+const COAST_KM=15;
+// distance in km from a point to one polygon edge (polygon points are [lon,lat])
+const edgeKm=(la,lo,a,b)=>{const c=Math.cos(la*Math.PI/180),ax=(a[0]-lo)*111*c,ay=(a[1]-la)*111,bx=(b[0]-lo)*111*c,by=(b[1]-la)*111,dx=bx-ax,dy=by-ay,L=dx*dx+dy*dy;const t=L?Math.max(0,Math.min(1,-(ax*dx+ay*dy)/L)):0;return Math.hypot(ax+dx*t,ay+dy*t)};
+// quick reject by bounding box (padded by the coast distance), then the exact edge test
+const nearCoast=(la,lo,g)=>{const p=COAST_KM/111,pc=COAST_KM/(111*Math.cos(la*Math.PI/180));if(!g._bb){let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;g.forEach(([x,y])=>{if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y});g._bb=[x0,x1,y0,y1]}const[x0,x1,y0,y1]=g._bb;if(lo<x0-pc||lo>x1+pc||la<y0-p||la>y1+p)return false;for(let i=0,j=g.length-1;i<g.length;j=i++)if(edgeKm(la,lo,g[j],g[i])<=COAST_KM)return true;return false};
+const land=(la,lo)=>LANDS.some(g=>pip(la,lo,g)||nearCoast(la,lo,g));const OUTMSG="Frontline Control is based in the UK & Ireland. Please select a new location on the map.";
 const km=(a,b)=>{const dy=(a[0]-b[0])*111,dx=(a[1]-b[1])*111*Math.cos(a[0]*Math.PI/180);return Math.hypot(dx,dy)};
 const near=(la,lo)=>CITY.reduce((b,c)=>km([la,lo],[c[1],c[2]])<km([la,lo],[b[1],b[2]])?c:b)[0];
 const rank=()=>{if(S.rko!=null&&S.rko>=0&&S.rko<RK.length)return S.rko;let r=0;RK.forEach((x,i)=>{if(S.done>=x[1])r=i});return r};
