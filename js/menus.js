@@ -135,7 +135,7 @@ ov.innerHTML=`<div style="width:100%;max-width:440px;max-height:88%;position:rel
 document.body.appendChild(ov);$("#jl_x").onclick=()=>ov.remove();ov.onclick=e=>{if(e.target===ov)ov.remove()};ov.querySelectorAll("[data-jt]").forEach(b=>b.onclick=()=>openJobLogs(b.dataset.jt))}
 /* ===== staff roles: display only. The API checks roles again on every protected action. ===== */
 const fcRoles=(()=>{const API=window.FC_API||"https://api.frontlinecontrol.co.uk",TTL=60000;let c=null;
-const BADGES=[["owner","SUPER ADMIN","shield","#f59e0b"],["admin","ADMIN","shield","#4f8cff"],["developer","DEVELOPER","wrench","#22d3ee"]];
+const BADGES=[["owner","MANAGER","shield","#8b5cf6"],["admin","ADMIN","shield","#4f8cff"],["developer","DEV","code","#22d3ee"]];
 /* Ask the game API for the signed-in player's own roles. The server works out who is asking from the access token. */
 async function get(force){const id=AU&&AU.user&&AU.user.id;if(!(AU&&AU.access_token&&id))return null;
 if(!force&&c&&c.id===id&&Date.now()-c.t<TTL)return c.v;
@@ -144,7 +144,7 @@ const r=await fetch(API+"/api/me/roles",{headers:{Authorization:"Bearer "+AU.acc
 if(!r.ok)throw new Error("roles "+r.status);const j=await r.json().catch(()=>({}));
 const v={owner:j.owner===true,roles:Array.isArray(j.roles)?j.roles.filter(x=>typeof x==="string"):[]};c={id,t:Date.now(),v};return v}
 /* Badge HTML. Only known roles are drawn, and the text comes from this table, never from the server. */
-function html(v,legacyDev){const has=new Set(v.roles);if(v.owner)has.add("owner");else has.delete("owner");if(legacyDev)has.add("developer");if(v.owner)has.delete("admin");
+function html(v,legacyDev){const has=new Set(v.roles);if(v.owner)has.add("owner");else has.delete("owner");if(legacyDev)has.add("developer");
 return BADGES.filter(b=>has.has(b[0])).map(b=>`<span data-role="${b[0]}" style="color:${b[3]};border:1px solid ${b[3]};background:transparent;border-radius:6px;padding:1px 7px;font:700 11px system-ui;letter-spacing:.06em">${lci(b[2])} ${b[1]}</span>`).join("")}
 return{get,html,clear:()=>{c=null}}})();
 function openAcct(){let ov=$("#acct");if(!ov){ov=document.createElement("div");ov.id="acct";ov.style.cssText="position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.55);display:flex;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px calc(env(safe-area-inset-bottom,0px) + 16px);overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain";ov.onclick=e=>{if(e.target===ov)ov.remove()};document.body.appendChild(ov)}
