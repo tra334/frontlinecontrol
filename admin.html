@@ -24,7 +24,7 @@ body{background:var(--bg);color:var(--tx);font:15px/1.45 -apple-system,BlinkMacS
 button{font:inherit;color:inherit}
 header{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);border-bottom:1px solid var(--bd);padding:10px 16px;display:flex;align-items:center;gap:12px}
 .brand{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
-.logo{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--ac),#7c3aed);display:grid;place-items:center;color:#fff;font-weight:800;font-size:14px;flex:none}
+.logo{width:40px;height:40px;object-fit:contain;flex:none;display:block}
 .brand b{font-size:16px;letter-spacing:-.01em;display:block;line-height:1.1}.brand span{font-size:12px;color:var(--mu)}
 main{max-width:820px;margin:0 auto;padding:16px}
 .seg{display:flex;gap:4px;background:var(--card2);border:1px solid var(--bd);padding:3px;border-radius:11px}
@@ -78,8 +78,11 @@ h3{margin:20px 0 8px;font-size:12px;text-transform:uppercase;letter-spacing:.08e
 .pick:hover{border-color:var(--ac)}
 .chk{display:flex;gap:9px;align-items:center;margin-top:12px;font-size:14px;cursor:pointer}.chk input{width:18px;height:18px;flex:none;margin:0}
 #toast{position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#0f172a;color:#fff;border-radius:12px;padding:11px 18px;z-index:60;max-width:90%;display:none;box-shadow:0 8px 30px rgba(0,0,0,.35);font-size:14px}
-.login{max-width:380px;margin:9vh auto 0}
-.login .logo{width:48px;height:48px;border-radius:14px;font-size:20px;margin:0 auto 14px}
+.login{width:100%;max-width:380px;margin:0 auto}
+.login .logo{width:120px;height:120px;margin:0 auto 10px;display:block}
+[hidden]{display:none!important}
+body.logged-out header{display:none}
+body.logged-out main{max-width:none;min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px 16px}
 body.dev-view .admin-only{display:none!important}
 .tag.t-dev{background:var(--acs);color:var(--ac)}
 @media (max-width:640px){
@@ -108,7 +111,6 @@ body.dev-view .admin-only{display:none!important}
 :root{--r:16px;--ow:#f59e0b;--ows:rgba(245,158,11,.14);--dv:#8b5cf6;--dvs:rgba(139,92,246,.14)}
 body{background:radial-gradient(1100px 420px at 50% -120px,var(--acs),transparent 70%),var(--bg);background-attachment:fixed}
 header{padding:12px 18px}
-.logo{box-shadow:0 4px 12px rgba(37,99,235,.35)}
 main{padding:20px 16px 40px}
 .seg{border-radius:12px;padding:4px}
 .seg button{transition:background .15s,color .15s}
@@ -196,7 +198,7 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
 </head>
 <body>
 <header>
-  <div class="brand"><div class="logo">FC</div><div><b>Frontline Control</b><span>Admin dashboard</span></div></div>
+  <div class="brand"><img class="logo" src="logo.png" alt="Frontline Control" width="40" height="40"><div><b>Frontline Control</b><span>Admin dashboard</span></div></div>
   <div class="seg" id="tabs" hidden><button data-t="p" class="on">Players</button><button data-t="r">Rooms</button><button data-t="n">Announce</button><button data-t="b">Bonuses</button><button data-t="i">Incidents</button><button data-t="l">Log</button></div>
   <button class="btn sm" id="out" hidden>Sign out</button>
 </header>
@@ -273,9 +275,9 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
     return j;
   }
   function loginForm(err) {
-    $("#tabs").hidden = true; $("#out").hidden = true;
+    document.body.classList.add("logged-out"); $("#tabs").hidden = true; $("#out").hidden = true;
     $("#main").innerHTML = `<form class="card login" id="lf" style="padding:26px 22px">
-      <div class="logo">FC</div><div style="text-align:center;font-size:20px;font-weight:700;letter-spacing:-.01em">Admin sign-in</div><div class="mu" style="text-align:center;margin-bottom:18px">Admins only</div>
+      <img class="logo" src="logo.png" alt="Frontline Control" width="120" height="120"><div style="text-align:center;font-size:20px;font-weight:700;letter-spacing:-.01em">Admin sign-in</div><div class="mu" style="text-align:center;margin-bottom:18px">Admins only</div>
       <div style="margin-bottom:10px"><input id="em" type="email" placeholder="Email" autocomplete="username" required></div>
       <div style="margin-bottom:14px"><input id="pw" type="password" placeholder="Password" autocomplete="current-password" required></div>
       <button class="btn pri" id="go" style="width:100%;padding:12px">Sign in</button>
@@ -753,7 +755,7 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
     const staff = me.perms || [];
     document.body.classList.toggle("dev-view", !staff.includes("admin"));
     document.querySelectorAll("#tabs button").forEach(b => { if (["r", "n", "b", "i", "l"].includes(b.dataset.t)) b.hidden = !staff.includes("admin"); });
-    $("#tabs").hidden = false; $("#out").hidden = false; show();
+    document.body.classList.remove("logged-out"); $("#tabs").hidden = false; $("#out").hidden = false; show();
   }
   start();
 })();
