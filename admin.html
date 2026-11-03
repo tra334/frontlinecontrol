@@ -108,7 +108,7 @@ body.dev-view .admin-only{display:none!important}
 .pill.info{background:var(--acs);color:var(--ac)}
 
 /* ===== refreshed look ===== */
-:root{--r:16px;--ow:#f59e0b;--ows:rgba(245,158,11,.14);--dv:#8b5cf6;--dvs:rgba(139,92,246,.14)}
+:root{--r:16px;--ow:#8b5cf6;--ows:rgba(139,92,246,.14);--dv:#06b6d4;--dvs:rgba(6,182,212,.14)}
 body{background:radial-gradient(1100px 420px at 50% -120px,var(--acs),transparent 70%),var(--bg);background-attachment:fixed}
 header{padding:12px 18px}
 main{padding:20px 16px 40px}
@@ -232,7 +232,7 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>'
   };
   const badge = (k, txt) => `<span class="rb ${k}">${IC[k === "owner" ? "sshield" : k === "admin" ? "shield" : "code"]}${txt}</span>`;
-  const badges = u => (u.owner ? badge("owner", "SUPER ADMIN") : "") + (u.admin && !u.owner ? badge("admin", "ADMIN") : "") + ((u.roles || []).includes("developer") ? badge("dev", "DEV") : "");
+  const badges = u => (u.owner ? badge("owner", "MANAGER") : "") + ((u.roles || []).includes("admin") ? badge("admin", "ADMIN") : "") + ((u.roles || []).includes("developer") ? badge("dev", "DEV") : "");
   let tab = "p", q = "", page = 1, timer = 0, me = null, cur = null; // cur = {id, data, view}
 
   function toast(m) { const t = $("#toast"); t.textContent = m; t.style.display = "block"; clearTimeout(toast.t); toast.t = setTimeout(() => { t.style.display = "none"; }, 3600); }
@@ -727,14 +727,15 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
   function rolesCard(u) {
     const has = r => (u.roles || []).includes(r);
     const card = (cls, ico, name, desc, inner) => `<label class="role ${cls}">${inner}<span class="sym">${ico}</span><b>${name}</b><span class="d">${desc}</span><span class="tick">${IC.check}</span></label>`;
-    if (u.owner) return `<h3>Roles</h3><div class="roles"><div class="role fixed"><span class="sym">${IC.sshield}</span><b>Super Admin</b><span class="d">Full control, including roles. Set in ADMIN_IDS on the server, so it can't be changed here.</span></div></div>`;
+    // Manager = the IDs in ADMIN_IDS on the server. That level itself can't be changed here, but a Manager can add extra roles.
+    const mgr = u.owner ? `<div class="role fixed"><span class="sym">${IC.sshield}</span><b>Manager</b><span class="d">Full control, including roles. Set in ADMIN_IDS on the server.${me.owner ? " Tick any extra roles below to add them." : ""}</span></div>` : "";
     if (!me.owner) {
-      const list = [];
+      const list = mgr ? [mgr] : [];
       if (has("admin")) list.push('<div class="role admin" style="border-color:var(--c);cursor:default"><span class="sym">' + IC.shield + '</span><b>Admin</b><span class="d">Can do everything in this panel.</span></div>');
       if (has("developer")) list.push('<div class="role dev" style="border-color:var(--c);cursor:default"><span class="sym">' + IC.code + '</span><b>Developer</b><span class="d">Views games, gives credits, spawns test calls.</span></div>');
       return `<h3>Roles</h3>` + (list.length ? `<div class="roles">${list.join("")}</div>` : '<div class="card mu">No staff role</div>');
     }
-    return `<h3>Roles</h3><div class="roles">
+    return `<h3>Roles</h3><div class="roles">${mgr}
       ${card("admin", IC.shield, "Admin", "Can do everything in this panel.", `<input type="checkbox" id="rl_a" ${has("admin") ? "checked" : ""}>`)}
       ${card("dev", IC.code, "Developer", "View games, give credits, spawn test calls, reset or delete saved games.", `<input type="checkbox" id="rl_d" ${has("developer") ? "checked" : ""}>`)}
     </div><button class="btn pri" id="rl_s" style="width:100%;margin-top:12px">Save roles</button>`;
