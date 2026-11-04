@@ -138,7 +138,7 @@ async function doMove(la,lo){const m0=mv;if(!m0||m0.busy)return;const b=movB();i
 if(mv!==m0)return;const why=moveBlock(m0.t,b);if(why){toast(why);mv=null;paint();return}if(S.cr<MOVECOST){toast("Not enough credits – moving costs £"+fmt(MOVECOST));mv=null;paint();return}
 if(mv!==m0)return;
 S.cr-=MOVECOST;ldg("mv","Moved "+b.name,-MOVECOST);b.lat=p.la;b.lon=p.lo;delete b.ad;mv=null;log("📍 "+b.name+" relocated (-£"+fmt(MOVECOST)+")");toast(b.name+" moved. £"+fmt(MOVECOST)+" charged.");persist();$("#v").dataset.n="";$("#v").dataset.k="";paint();sync()}finally{m0.busy=0}}
-const skipH=m=>m.ans?`<div style="margin-top:6px"><button class="s" style="background:#92400e" onclick="event.stopPropagation();skipM(${m.id})">${lci("skip-forward")} Skip (£0)</button></div>`:"";
+const skipH=m=>m.ans&&!m.roomOwner?`<div style="margin-top:6px"><button class="s" style="background:#92400e" onclick="event.stopPropagation();skipM(${m.id})">${lci("skip-forward")} Skip (£0)</button></div>`:"";
 function skipM(id){const m=mm(id);if(!m||!m.ans)return;confirmDlg("Skip this call?","Are you sure you want to skip <b>"+T[m.k][1]+"</b>? It will be dropped with no reward (free, £0).","Skip call",()=>{const m2=mm(id);if(!m2||!m2.ans)return;log("⏭ Mission skipped: "+T[m2.k][1]+" (free)");recall(m2);persist();$("#v").dataset.k="";paint()},"#92400e")}
 function rwH(){const d=drState(),pend=rank()-(S.rcl||0);
 const cells=DR.map((v,i)=>{const dn=i+1,done=d.can?dn<d.day:dn<=d.day,cur=d.can&&dn===d.day;return `<div style="text-align:center;padding:6px 2px;border-radius:8px;border:2px solid ${cur?"var(--ac)":"var(--bd)"};${done?"background:var(--a);color:#fff;":""}font-size:11px"><b>Day ${dn}</b><br>£${v/1000}k</div>`}).join("");
