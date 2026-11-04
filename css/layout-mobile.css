@@ -25,3 +25,38 @@ main>*{max-width:760px;margin-left:auto;margin-right:auto}
 @media(max-width:999px){#bsr{bottom:calc(var(--nh,48px) + 118px)}}
 /* Mobile: hide the map +/- zoom buttons (Leaflet default control and the built-in fallback map). Pinch / double-tap still zoom. */
 @media(max-width:999px){.leaflet-control-zoom,.lm .lz{display:none!important}}
+
+/* ===== Account panel on mobile: same card look as desktop (profile card, rank card, stat tiles, button grid) ===== */
+@media(max-width:999px){
+#acct>div{max-width:520px!important;padding:52px 14px 16px!important;border-radius:16px!important}
+#acct .acL{display:flex;flex-direction:column;gap:10px}
+#acct .acH,#acct .acP{box-sizing:border-box;min-width:0;background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:12px 14px}
+#acct .acH{margin-bottom:0!important}
+#acct .acH>div>div:first-child{font-size:20px!important}
+#acct .acP{display:flex;flex-direction:column;justify-content:center}
+#acct .acPl{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin-bottom:8px}
+#acct .acP>div:nth-child(2){height:10px!important;border-radius:5px!important}
+#acct .acP>div:last-child{margin:8px 0 0!important;font-size:13px!important}
+
+/* stat tiles: two per row */
+#acct .acS{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+#acct .acr{box-sizing:border-box;min-width:0;flex-direction:column!important;justify-content:flex-start!important;align-items:stretch;gap:4px!important;padding:10px 12px!important;background:var(--bg);border:1px solid var(--bd)!important;border-radius:10px}
+#acct .acr .acl{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
+#acct .acr .acv{text-align:left!important;font-size:16px;line-height:1.25;overflow-wrap:anywhere}
+#acct .acr-rk{display:none!important}
+#acct .acr-dr{grid-column:1/-1;order:-1;flex-direction:row!important;align-items:center;justify-content:space-between!important;border:1px solid var(--a)!important}
+#acct .acr-dr .acv{font-size:14px}
+#acct #ac_pz{align-self:flex-start;font-size:13px!important;padding:5px 12px!important}
+
+/* actions: Ranks / Logs / Sign out in a row, the rest in a tidy grid */
+#acct .acA{margin-top:12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+#acct .acA>div:has(button){display:contents!important}
+#acct .acA button{width:auto!important;margin:0!important;flex:none!important;min-width:0;font-size:14px!important;padding:12px 8px!important}
+#acct #ac_rk{order:1}#acct #ac_lg{order:2}#acct #ac_rm{order:3}#acct #ac_st{order:4}#acct #ac_ex{order:5}#acct #ac_im{order:6}#acct #ac_so{order:7;grid-column:1/-1}
+#acct .acA:not(:has(#ac_im)) #ac_ex{grid-column:1/-1}
+#acct .acA>div:not(:has(button)){order:8;grid-column:1/-1;margin:0!important}
+
+/* dev tools and danger zone as cards */
+#acct .acD>div{background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:12px 14px!important;margin-top:14px!important;border-top:1px solid var(--bd)!important}
+#acct .acD>div:last-child{background:none;border:0!important;padding:0 2px!important}
+}

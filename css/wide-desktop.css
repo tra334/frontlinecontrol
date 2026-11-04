@@ -1,0 +1,126 @@
+/* ===== Wide desktop (1000px and up) =====
+   --ui scales with the screen: 13px on small desktops, growing smoothly to 19px on large screens.
+   Everything below is additive to layout-desktop.css and only applies from 1000px wide. Mobile is unchanged. */
+
+/* Close buttons: white X on a dark translucent circle (was solid red). Reads on both light and dark themes. */
+.cx,#xb,#toast .tx,.upop .ux{background:rgba(15,20,28,.78)!important;color:#fff!important;border:1px solid rgba(255,255,255,.35)!important}
+.cx:hover,#xb:hover,#toast .tx:hover,.upop .ux:hover{background:rgba(40,48,62,.95)!important}
+
+/* Mobile: the vehicle picker and the call-sheet Dispatch shortcut are wide-screen only. */
+.qpick{display:none}
+.acPl{display:none}
+
+@media(min-width:1000px){
+:root{--ui:clamp(13px,calc(.55vw + 4.5px),19px)}
+
+/* ---- text and controls scale with --ui ---- */
+body{font-size:var(--ui)}
+header b{font-size:calc(var(--ui)*1.2)}
+header small{font-size:calc(var(--ui)*.8)}
+#clk{font-size:calc(var(--ui)*1.5)}
+.dx>div{font:600 calc(var(--ui)*1.2)/1.1 ui-monospace,Menlo,Consolas,monospace;min-width:calc(var(--ui)*6)}
+.dx small{font-size:calc(var(--ui)*.62)}
+.ph{font-size:calc(var(--ui)*.85);padding:calc(var(--ui)*.45) calc(var(--ui)*.8)}
+.ir{padding:calc(var(--ui)*.6) calc(var(--ui)*.8)}
+.fr{grid-template-columns:calc(var(--ui)*4.2) 1fr auto;padding:calc(var(--ui)*.2) calc(var(--ui)*.8)}
+.age{font-size:calc(var(--ui)*.9)}
+.t{font-size:calc(var(--ui)*1.05)}
+.mu,.q,.u,.log,#rlb .logx{font-size:calc(var(--ui)*.9)}
+.st{font-size:calc(var(--ui)*.8)}
+.chip,.req{font-size:calc(var(--ui)*.85)}
+.gd{font-size:calc(var(--ui)*.9)}
+nav button{font-size:calc(var(--ui)*1.05);padding:calc(var(--ui)*.75) 4px}
+button.s{font-size:calc(var(--ui)*.85);padding:calc(var(--ui)*.4) calc(var(--ui)*.7)}
+button{padding:calc(var(--ui)*.6) calc(var(--ui)*.9)}
+#ctl{font-size:calc(var(--ui)*.9)}
+#bsl div{font-size:calc(var(--ui)*.9)}
+#toast{font-size:calc(var(--ui)*1)}
+
+/* ---- call sheet: two columns like the reference layout ---- */
+#sw{max-width:min(1240px,calc(100vw - 48px))!important}
+/* every sheet (account, settings, rooms, ...) uses the call panel's width and height */
+#sw{height:min(86vh,calc(100vh - var(--th,0px) - 36px))}
+#sheet{flex:1 1 auto}
+#sheet:has(.qL){display:grid;align-content:start;grid-template-rows:auto 1fr;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);column-gap:calc(var(--ui)*2);align-items:stretch}
+#sheet .qtop{grid-column:1/-1;padding-bottom:calc(var(--ui)*.6);border-bottom:1px solid var(--bd);margin-bottom:calc(var(--ui)*.6)}
+#sheet .qtop .t{font-size:calc(var(--ui)*1.35)!important}
+#sheet .qtop button{font-size:calc(var(--ui)*.95)!important;padding:calc(var(--ui)*.6) calc(var(--ui)*1.1)!important}
+#sheet .qL,#sheet .qR{min-width:0}
+/* questions are removed once units are sent (as before): the call log grows to fill the space beside the vehicles */
+#sheet .qL{display:flex;flex-direction:column}
+#sheet .qL>.clog{min-height:0}
+#sheet .qL:not(:has(.qq))>.clog{flex:1 1 auto;max-height:none;min-height:calc(var(--ui)*12)}
+#sheet .qR{border-left:1px solid var(--bd);padding-left:calc(var(--ui)*2)}
+#sheet .qL>div:first-child,#sheet .qR>div:first-child{margin-top:0!important;border-top:0!important;padding-top:0!important}
+#sheet .qmeta{display:flex;flex-wrap:wrap;gap:calc(var(--ui)*.5);align-items:stretch;margin-bottom:calc(var(--ui)*.6)}
+/* CAD, address, caller and pinged location each sit in their own block */
+#sheet .qmeta>div{margin:0!important;font-size:calc(var(--ui)*.9);background:var(--card);border:1px solid var(--bd);border-radius:calc(var(--ui)*.5);padding:calc(var(--ui)*.35) calc(var(--ui)*.75);line-height:1.3}
+#sheet .t{font-size:calc(var(--ui)*1.05)!important}
+#sheet .clog .msg{font-size:calc(var(--ui)*.95)}
+/* call log scrolls once it passes six messages (clog-long is added by drawQ) */
+#sheet .clog-long{max-height:calc(var(--ui)*17);overflow-y:auto;overscroll-behavior:contain;padding-right:6px}
+#sheet .qpick{display:block;margin-top:calc(var(--ui)*1.4);padding-top:calc(var(--ui)*.9);border-top:2px solid var(--bd)}
+#sheet .qpick .ur{font-size:calc(var(--ui)*.95)}
+#sheet .qpick .ur input{width:calc(var(--ui)*1.1);height:calc(var(--ui)*1.1)}
+#sheet .qpick .ur .mu{font-size:calc(var(--ui)*.85)}
+#sheet .qdsp{display:none}
+/* Auto and Dispatch in the vehicle list: large, coloured, easy to find */
+#sheet .qact{justify-content:flex-end!important;gap:calc(var(--ui)*.8)!important;margin-bottom:calc(var(--ui)*.9)!important}
+#sheet .qact button{font-size:calc(var(--ui)*1.1)!important;font-weight:800;letter-spacing:.02em;padding:calc(var(--ui)*.85) calc(var(--ui)*1.8)!important;border-radius:calc(var(--ui)*.6);border:0;cursor:pointer;transition:filter .15s,transform .05s}
+#sheet .qact button:hover:not(:disabled){filter:brightness(1.1)}
+#sheet .qact button:active:not(:disabled){transform:translateY(1px)}
+#sheet .qact button.g{background:#0f766e!important;color:#fff!important;box-shadow:0 3px 0 #094f49,0 6px 16px rgba(15,118,110,.35)}
+#sheet .qact button:not(.g){background:#16a34a!important;color:#fff!important;box-shadow:0 3px 0 #0b6b2f,0 6px 16px rgba(34,197,94,.35)}
+#sheet .qact button:not(.g):disabled{background:var(--bd)!important;color:var(--mu)!important;box-shadow:none;opacity:1}
+
+/* Account, Settings and Rooms panels: same size as the call panel */
+#setov>div,#acct>div,#room_ov>div,#room_ov.rm-in>div,#buildov>div,#msov>div,#joblogs>div,#dbgov>div{width:min(1240px,calc(100vw - 48px))!important;max-width:none!important;height:min(86vh,calc(100vh - var(--th,0px) - 36px))!important;max-height:none!important;box-sizing:border-box;margin:auto!important;overflow:auto}
+#room_ov>div{overflow:hidden}
+#setov,#acct,#room_ov,#buildov,#msov,#joblogs,#dbgov{padding:calc(var(--th,0px) + 39px) 16px 16px!important;box-sizing:border-box;align-items:center!important}
+
+/* Account panel: left = profile card, rank progress, stat tiles, actions, danger zone. Right = dev tools. */
+#acct>div{display:grid!important;grid-template-columns:minmax(0,2fr) minmax(0,1fr);grid-template-rows:auto 1fr;column-gap:calc(var(--ui)*2);align-content:start;padding:calc(var(--ui)*3.4) calc(var(--ui)*1.6) calc(var(--ui)*1.6)!important}
+#acct .acM{grid-column:1;grid-row:1;min-width:0}
+#acct .acD{display:contents}
+#acct .acD>div:first-child{grid-column:2;grid-row:1/3;min-width:0;border-left:1px solid var(--bd);padding-left:calc(var(--ui)*2);margin-top:0!important;border-top:0!important;padding-top:0!important}
+#acct .acD>div:last-child{grid-column:1;grid-row:2;align-self:start;min-width:0;margin-top:calc(var(--ui)*1.2)!important}
+
+/* profile card + rank progress card side by side, stat tiles underneath */
+#acct .acL{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:calc(var(--ui)*.9);align-items:stretch}
+#acct .acH,#acct .acP{box-sizing:border-box;min-width:0;background:var(--bg);border:1px solid var(--bd);border-radius:calc(var(--ui)*.8);padding:calc(var(--ui)*1) calc(var(--ui)*1.2)}
+#acct .acH{margin-bottom:0!important}
+#acct .acH>div>div:first-child{font-size:calc(var(--ui)*1.5)!important}
+#acct .acP{display:flex;flex-direction:column;justify-content:center}
+#acct .acPl{display:block;font-size:calc(var(--ui)*.72);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin-bottom:calc(var(--ui)*.7)}
+#acct .acP>div:nth-child(2){height:calc(var(--ui)*.8)!important;border-radius:calc(var(--ui)*.4)!important}
+#acct .acP>div:last-child{margin:calc(var(--ui)*.6) 0 0!important;font-size:calc(var(--ui)*.9)!important}
+
+#acct .acS{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:calc(var(--ui)*.7)}
+#acct .acr{box-sizing:border-box;min-width:0;flex-direction:column!important;justify-content:flex-start!important;align-items:stretch;gap:calc(var(--ui)*.45)!important;padding:calc(var(--ui)*.8) calc(var(--ui)*.95)!important;background:var(--bg);border:1px solid var(--bd)!important;border-radius:calc(var(--ui)*.7)}
+#acct .acr .acl{font-size:calc(var(--ui)*.72);font-weight:700;letter-spacing:.07em;text-transform:uppercase}
+#acct .acr .acv{text-align:left!important;font-size:calc(var(--ui)*1.35);line-height:1.2;overflow-wrap:anywhere}
+#acct .acr-rk{display:none!important}
+/* daily reward: full-width banner at the top of the tiles, only present when it can be claimed */
+#acct .acr-dr{grid-column:1/-1;order:-1;flex-direction:row!important;align-items:center;justify-content:space-between!important;border:1px solid var(--a)!important}
+#acct .acr-dr .acv{font-size:calc(var(--ui)*1.05)}
+#acct #ac_pz{align-self:flex-start;font-size:calc(var(--ui)*.95)!important;padding:calc(var(--ui)*.35) calc(var(--ui)*.8)!important}
+
+/* actions: tidy button grid */
+#acct .acA{margin-top:calc(var(--ui)*.9);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:calc(var(--ui)*.6)}
+#acct .acA>div:has(button){display:contents!important}
+#acct .acA button{width:auto!important;margin:0!important;flex:none!important;min-width:0;font-size:calc(var(--ui)*1.05)!important;padding:calc(var(--ui)*.8) calc(var(--ui)*.6)!important}
+#acct #ac_rk{order:1}#acct #ac_lg{order:2}#acct #ac_rm{order:3}#acct #ac_st{order:4}#acct #ac_ex{order:5}#acct #ac_im{order:6}#acct #ac_so{order:7}
+#acct .acA:has(#ac_im) #ac_so{grid-column:1/-1}
+#acct .acA>div:not(:has(button)){order:8;grid-column:1/-1;margin:0!important}
+
+/* danger zone: text on the left, button on the right */
+#acct div:has(>#ac_rs){display:flex!important;align-items:center;gap:calc(var(--ui)*1.5)}
+#acct div:has(>#ac_rs)>div{flex:1}
+#acct #ac_rs{width:auto!important;flex:none!important;margin:0!important;padding:calc(var(--ui)*.8) calc(var(--ui)*1.8)!important}
+}
+
+/* smaller desktops: three tiles per row, the Save tile takes two */
+@media(min-width:1000px) and (max-width:1199px){
+#acct .acS{grid-template-columns:repeat(3,minmax(0,1fr))}
+#acct .acr-w{grid-column:span 2}
+}
