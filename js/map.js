@@ -1,5 +1,22 @@
 // map
 const map=L.map("map",{preferCanvas:true}).setView([54.3,-2.6],6);
+/* mobile only: double-tap to zoom in on the tapped spot (mouse behaviour unchanged); ignores markers and buttons so they keep working */
+(function(){const c=document.getElementById("map");if(!c)return;
+const SKIP=".leaflet-marker-icon,.mk,.leaflet-control,.lz,button,a,input,select";
+let lt=0,lx=0,ly=0,dn=null,zt=0;const T=new Set();
+function zoomIn(x,y){const n=Date.now();if(n-zt<350)return;zt=n;
+if(map.setZoomAround){map.setZoomAround(L.point(x,y),Math.min(map.getZoom()+1,map.getMaxZoom()))}else if(map.zoomAt){map.zoomAt(1,x,y)}}
+const loc=e=>{const r=c.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]};
+c.addEventListener("pointerdown",e=>{const tc=e.pointerType==="touch";try{if(map.doubleClickZoom)tc?map.doubleClickZoom.disable():map.doubleClickZoom.enable()}catch(_){}if(!tc)return;T.add(e.pointerId);
+if(T.size>1){dn=null;lt=0;return}
+dn={x:e.clientX,y:e.clientY,t:Date.now(),ok:!(e.target.closest&&e.target.closest(SKIP))}},{passive:true});
+c.addEventListener("pointercancel",e=>{T.delete(e.pointerId);dn=null});
+c.addEventListener("pointerup",e=>{if(e.pointerType!=="touch")return;T.delete(e.pointerId);
+const d=dn;dn=null;if(!d||!d.ok)return;const now=Date.now();
+if(Math.hypot(e.clientX-d.x,e.clientY-d.y)>10||now-d.t>400){lt=0;return}
+if(lt&&now-lt<350&&Math.hypot(e.clientX-lx,e.clientY-ly)<40){lt=0;const[x,y]=loc(e);zoomIn(x,y)}
+else{lt=now;lx=e.clientX;ly=e.clientY}},{passive:true});
+})();
 const TP=[["https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,maxNativeZoom:19,attribution:"© OpenStreetMap contributors"}],
 ["https://tile.openstreetmap.de/{z}/{x}/{y}.png",{maxZoom:19,maxNativeZoom:18,attribution:"© OpenStreetMap contributors"}],
 ["https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png",{subdomains:"abc",maxZoom:19,maxNativeZoom:20,attribution:"© OpenStreetMap contributors"}]];
