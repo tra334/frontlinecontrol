@@ -21,6 +21,8 @@
     return String(a);
   };
   let _last = "", _lastAt = 0;
+  // keep the count on the account-menu "Debug log" button in sync (if the menu is open)
+  function updBtn() { try { const e = document.getElementById("ac_dbgn"); if (e) e.textContent = list.length ? " (" + list.length + ")" : ""; } catch (e) {} }
   function add(type, msg) {
     msg = clip(msg);
     const t = Date.now();
@@ -28,7 +30,7 @@
     _last = msg; _lastAt = t;
     list.push({ t, type, msg });
     if (list.length > MAX) list.shift();
-    save();
+    save(); updBtn();
   }
   const cleanUrl = u => { try { const x = new URL(u, location.href); return x.origin === location.origin ? x.pathname : x.origin + x.pathname; } catch (e) { return clip(u); } };
 
@@ -99,7 +101,7 @@
     const lines = list.map(l => ts(l.t) + " [" + l.type + "]" + (l.n > 1 ? " x" + l.n : "") + " " + l.msg);
     return "FrontlineControl debug log\n" + info() + "\n\n" + (lines.length ? lines.join("\n") : "(no problems logged)") + "\n";
   }
-  function clear() { list = []; _last = ""; try { localStorage.removeItem(KEY); } catch (e) {} }
+  function clear() { list = []; _last = ""; clearTimeout(saveT); try { localStorage.removeItem(KEY); } catch (e) {} updBtn(); }
 
   // ---- UI ----
   const COL = { error: "#ef4444", console: "#f97316", net: "#eab308", warn: "#a3a3a3", load: "#ef4444", slow: "#a3a3a3", info: "#60a5fa" };
