@@ -52,8 +52,8 @@ main>*{max-width:760px;margin-left:auto;margin-right:auto}
 #acct .acA{margin-top:12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 #acct .acA>div:has(button){display:contents!important}
 #acct .acA button{width:auto!important;margin:0!important;flex:none!important;min-width:0;font-size:14px!important;padding:12px 8px!important}
-#acct #ac_rk{order:1}#acct #ac_lg{order:2}#acct #ac_rm{order:3}#acct #ac_st{order:4}#acct #ac_ex{order:5}#acct #ac_im{order:6}#acct #ac_so{order:7;grid-column:1/-1}
-#acct .acA:not(:has(#ac_im)) #ac_ex{grid-column:1/-1}
+#acct #ac_lg{order:1}#acct #ac_st{order:2}#acct #ac_ex{order:3}#acct #ac_im{order:4}#acct #ac_so{order:5}
+#acct .acA:has(#ac_im) #ac_so{grid-column:1/-1}
 #acct .acA>div:not(:has(button)){order:8;grid-column:1/-1;margin:0!important}
 
 /* dev tools and danger zone as cards */

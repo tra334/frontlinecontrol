@@ -109,7 +109,8 @@ button{padding:calc(var(--ui)*.6) calc(var(--ui)*.9)}
 #acct .acA{margin-top:calc(var(--ui)*.9);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:calc(var(--ui)*.6)}
 #acct .acA>div:has(button){display:contents!important}
 #acct .acA button{width:auto!important;margin:0!important;flex:none!important;min-width:0;font-size:calc(var(--ui)*1.05)!important;padding:calc(var(--ui)*.8) calc(var(--ui)*.6)!important}
-#acct #ac_rk{order:1}#acct #ac_lg{order:2}#acct #ac_rm{order:3}#acct #ac_st{order:4}#acct #ac_ex{order:5}#acct #ac_im{order:6}#acct #ac_so{order:7}
+#acct .acA:not(:has(#ac_im)) #ac_so{grid-column:1/-1}
+#acct #ac_lg{order:2}#acct #ac_st{order:4}#acct #ac_ex{order:5}#acct #ac_im{order:6}#acct #ac_so{order:7}
 #acct .acA:has(#ac_im) #ac_so{grid-column:1/-1}
 #acct .acA>div:not(:has(button)){order:8;grid-column:1/-1;margin:0!important}
 
