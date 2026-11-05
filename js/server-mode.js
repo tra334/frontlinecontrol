@@ -73,7 +73,7 @@
     const uiTick = () => { try { if (si && !$("#modal").hidden && $("#sheet").dataset.k !== sk()) drawS(); const sh = $("#sheet"), qm = mm(curM); if (!$("#modal").hidden && sh.dataset.qk && qm && sh.dataset.qk !== qk(qm)) drawQ(); const re = document.getElementById("qrem"); if (re && qm && !$("#modal").hidden) re.innerHTML = remT(qm); paint(); } catch (e) {} };
     tick = uiTick;                       // (startGame schedules tick after this, so it picks up this version)
     catchUp = function () {};            // the server already caught the game up
-    spd = function () { return 1; };     // the server always runs at normal speed; a local speed setting would put markers in the wrong place
+    // vehicle speed: the server holds it (S.spd, set by developers/admins/managers only), so menus.js spd() reads it from the server state
     pushCloud = async function () {};    // never upload a browser save over the server's
     cloudSoon = function () {};
 
