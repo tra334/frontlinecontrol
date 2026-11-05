@@ -147,7 +147,11 @@
     claimStaff = () => fn("claimStaff", []);
     claimDev = () => { try { toast("The dev bonus isn't available in server mode."); } catch (e) {} };
     togglePause = () => fn("togglePause", []).then(() => { try { pzUp(); } catch (e) {} });
-    sfAsg = (xid, uid) => fn("sfAsg", [xid, uid || 0]).then(() => { try { sfRef(); } catch (e) {} });
+    sfAsg = (xid, uid) => {
+      const x = S.sf.find(v => v.id === xid), u = uid && S.un.find(v => v.id === uid);
+      if (x && u && !fits(x, u)) { toast(WHY); return; }              // quick feedback; the server enforces the same rule
+      return fn("sfAsg", [xid, uid || 0]).then(() => { try { sfRef(); } catch (e) {} });
+    };
     sfAuto = sid => fn("sfAuto", [sid]).then(() => { try { sfRef(); } catch (e) {} });
     sfAutoV = uid => fn("sfAutoV", [uid]).then(() => { try { sfRef(); } catch (e) {} });
     sfFire = xid => {
@@ -159,7 +163,8 @@
       const done = () => { try { if (sfv) sfv = sfv.back || sfv; sfRef(); } catch (e) {} };
       if (free) { fn("sfTrain", [xid, k, 1]).then(done); return; }
       if (S.cr < f) return;
-      confirmDlg("Confirm purchase", "Pay <b>£" + fmt(f) + "</b> for <b>" + esc(x.n) + "</b> to qualify in <b>" + TR[k][0] + "</b> immediately?<br><span style=\"font-size:13px\">Balance after purchase: £" + fmt(S.cr - f) + "</span>", "Purchase", () => { fn("sfTrain", [xid, k, 0]).then(done); }, "#16a34a");
+      const mv = trainMove(x, k); if (mv && mv.st !== "idle") { toast(mv.cs + " must be at its station."); return; }
+      confirmDlg("Confirm purchase", "Pay <b>£" + fmt(f) + "</b> for <b>" + esc(x.n) + "</b> to qualify in <b>" + TR[k][0] + "</b> immediately?<br><span style=\"font-size:13px\">Balance after purchase: £" + fmt(S.cr - f) + "</span>" + trainNote(x, k), "Purchase", () => { fn("sfTrain", [xid, k, 0]).then(done); }, "#16a34a");
     };
     sfBuy = sid => {
       const s = stn(sid), i = $("#sfq"); if (!s || !i) return;
