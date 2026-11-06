@@ -1,4 +1,4 @@
-const full=m=>{const t=T[m.k];return mrg(m.hid?mrg(t[3],m.hid.n):t[3],m.xn||{})},shown=m=>mrg(m.hid&&m.rev?mrg(T[m.k][3],m.hid.n):T[m.k][3],m.xn||{});
+const full=m=>{const t=T[m.k];return mrg(m.hid?mrg(t[3],m.hid.n):t[3],m.xn||{})},shown=m=>{const b=m.need||T[m.k][3];return mrg(m.hid&&m.rev?mrg(b,m.hid.n):b,m.xn||{})};
 const has=(u,k)=>k.startsWith("tr:")?(u.tr||[]).includes(k.slice(3)):u.ty===k,nm=k=>k.startsWith("tr:")?lci("graduation-cap")+" "+TR[k.slice(3)][0]:U[k][1],need=(nd,u)=>Object.keys(nd).some(k=>has(u,k))?1:0,kr=k=>k.startsWith("tr:")?TR[k.slice(3)][2]:U[k][3],ks=(k,t)=>k.startsWith("tr:")?t[0]:U[k][0];
 const cadGen=()=>{const d=new Date();return "CAD: "+(1000+Math.floor(Math.random()*9000))+String(d.getDate()).padStart(2,"0")+["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"][d.getMonth()]+String(d.getFullYear()).slice(-2)};
 const ringH=m=>{const d=T[m.k][4]*1000,p=wk(m)?Math.min(1,Math.max(0,1-(m.end-now())/d)):0,C=2*Math.PI*14.5,L=Math.round((1-p)*100)/100*C;return L<=0?"":`<svg viewBox="0 0 32 32" style="position:absolute;left:-3px;top:-3px;width:32px;height:32px;pointer-events:none"><circle cx="16" cy="16" r="14.5" fill="none" stroke="#22c55e" stroke-width="3" stroke-dasharray="${L.toFixed(2)} ${C.toFixed(2)}" transform="rotate(${(-90+360*p).toFixed(1)} 16 16)"/></svg>`};
@@ -20,15 +20,21 @@ let spb=0;
 // mission distance from its station: 1-8 km, 2-6 km most likely
 const KMW=[4,12,18,20,18,12,6,4];
 function offKm(b){let r=Math.random()*100,k=1;for(let i=0;i<8;i++){r-=KMW[i];if(r<0){k=i+1;break}}const a=Math.random()*Math.PI*2;return[b.lat+k*Math.cos(a)/111.32,b.lon+k*Math.sin(a)/(111.32*Math.cos(b.lat*Math.PI/180))]}
+/* a call asks only for the crewed vehicles you own. It is offered only if you own at least one of its vehicle types,
+   every ambulance call needs an ambulance, and calls listing 2+ ambulances need that many. Fixed when the call starts. */
+const ownN=ty=>S.un.filter(u=>u.ty===ty&&crewed(u)).length;
+const ownOK=t=>{if(t[0]==="a"&&ownN("dca")<1)return false;const dn=t[3].dca||0;if(dn>=2&&ownN("dca")<dn)return false;return Object.keys(t[3]).some(k=>!k.startsWith("tr:")&&ownN(k)>0)};
+const ownNeed=t=>{const o={};Object.entries(t[3]).forEach(([k,n])=>{if(k.startsWith("tr:")){o[k]=n;return}const c=ownN(k);if(c>0)o[k]=Math.min(n,c)});return o};
+const isShort=(t,nd)=>Object.entries(t[3]).some(([k,n])=>!k.startsWith("tr:")&&(nd[k]||0)<n);
 async function spawn(fk){if(spb)return;spb=1;if(fk===undefined)S.next=now()+rateMs();
 try{const svs=new Set(S.st.map(s=>s.sv)),rk=rank();
-const pool=T.filter(t=>Object.entries(t[3]).every(([k,n])=>kr(k)<=rk&&svs.has(ks(k,t))&&(!k.startsWith("tr:")||S.un.filter(u=>has(u,k)).length>=n)));if(fk===undefined&&!pool.length)return;
+const pool=T.filter(t=>Object.entries(t[3]).every(([k,n])=>kr(k)<=rk&&svs.has(ks(k,t))&&(!k.startsWith("tr:")||S.un.filter(u=>has(u,k)).length>=n))&&ownOK(t));if(fk===undefined&&!pool.length)return;if(fk!==undefined&&!ownOK(T[fk]))return;
 const t=fk===undefined?pick(pool):T[fk],k=T.indexOf(t),own=S.st.filter(x=>x.sv===t[0]),b=fk===undefined||!own.length?pick(S.st):pick(own);let la,lo,loc=null;{let po=typeof poiPick==="function"?poiPick(t,b):null;if(!po&&typeof prisonLookup==="function"&&typeof isPrisonT==="function"&&isPrisonT(t))po=await prisonLookup(b);if(po){la=po.la;lo=po.lo;loc=await addr(la,lo);if(po.nm)loc.s=po.nm+", "+loc.s}}
 for(let i=0;i<5&&!loc&&1;i++){[la,lo]=offKm(b);const sn=await snap(la,lo);if(sn&&sn.name&&sn.d<400){la=sn.la;lo=sn.lo;loc=await addr(la,lo,sn.name)}}
 if(!loc){const bl=land(b.lat,b.lon);for(let i=0;i<12;i++){[la,lo]=offKm(b);if(!bl||land(la,lo))break}if(bl&&!land(la,lo)){la=b.lat;lo=b.lon}loc={s:Math.ceil(R(1,98))+" "+pick(ROADS),t:near(la,lo),pc:fpc(la,lo),rd:"",fk:1}}
 const kd=t[0]==="a"||Math.random()<.5?"h":"w";let hn=kd==="h"||t[0]==="a"?(t[0]==="a"?{rrv:1}:{dca:1}):t[0]==="p"?{arv:1}:{icu:1};
-if(!Object.keys(hn).every(x=>U[x][3]<=rk))hn=null;if(t[1]==="Welfare check")hn=null;
-S.ms.push({id:S.nid++,k,la,lo,loc:loc.s+", "+loc.t+", "+loc.pc,adr:loc,adc:0,cn:pick(NM)+" "+pick(NS),ph:newPh(),cad:cadGen(),born:now(),ans:0,end:0,qa:[],hid:hn?{k:kd,n:hn}:null,rev:0});
+if(!Object.keys(hn).every(x=>U[x][3]<=rk))hn=null;if(hn){hn=Object.fromEntries(Object.entries(hn).filter(([x])=>ownN(x)>0));if(!Object.keys(hn).length)hn=null}if(t[1]==="Welfare check")hn=null;
+const NEED=ownNeed(t),SHORT=isShort(t,NEED);S.ms.push({id:S.nid++,k,la,lo,loc:loc.s+", "+loc.t+", "+loc.pc,adr:loc,adc:0,cn:pick(NM)+" "+pick(NS),ph:newPh(),cad:cadGen(),born:now(),ans:0,end:0,qa:[],hid:hn?{k:kd,n:hn}:null,rev:0,need:NEED,short:SHORT});
 log("📞 Incoming 999 call – answer it!",1);ctoast(S.ms[S.ms.length-1]);return 1}finally{spb=0}}
 const eta=(u,m)=>km(upos(u),mp(m))*(SP[u.ty]>=150?1:1.3)/(SP[u.ty]*spd())*3600;
 const dd=u=>(now()-u.t0)/3.6e6*SP[u.ty]*spd();
@@ -106,7 +112,7 @@ else if(u.st==="out"&&u.rt&&!u.half&&dd(u)>=u.rt.len*.5){u.half=1;if(mm(u.mid)){
 S.ms.slice().forEach(m=>{const tp=T[m.k];
 if(m.roomId&&window.Rooms&&Rooms.pending&&Rooms.pending())return;
 if(!m.ans){if(t-m.born>RING){log("❌ Missed 999 call");S.ms=S.ms.filter(x=>x!==m)}}
-else if(m.end&&!met(m)){if(m.pz==null){m.pz=Math.max(0,m.end-t);log("⏸ Paused: "+tp[1]+" – required units no longer on scene");dirty=true}m.end=t+m.pz}else if(m.end){if(m.pz!=null){m.pz=null;log("▶ Resumed: "+tp[1]);dirty=true}if(t>=m.end&&!holdTr(m)&&(!m.roomOwner||S.un.some(u=>u.mid===m.id))){if(m.roomOwner){log("✅ "+tp[1]+" resolved (shared room call).");dirty=true;recall(m)}else{const hb=S.hbp||0,xb=m.xb||0,pb=payOf(m.k,rank());S.hbp=0;S.cr+=pb+xb+hb;S.done++;S.jl=(S.jl||[]).filter(x=>x.t>now()-6048e5).slice(-499);S.jl.push({t:now(),k:"j",n:tp[1],e:pb+xb+hb,b:S.cr});const r0=rank();log("✅ "+tp[1]+" resolved. +£"+fmt(pb+xb+hb)+(xb?" (incl. £"+fmt(xb)+" multi-agency expansion)":"")+(hb?" (incl. £"+fmt(hb)+" hospital bonus)":""));recall(m);if(rank()>r0){log("🎖 Promoted to "+RKX()[rank()][0]+"! New vehicles unlocked. Claim your £50,000 bonus in the Ranks tab.",1);toast("Promoted to "+RKX()[rank()][0]+" – claim your £50,000 bonus in Ranks")}}}}
+else if(m.end&&!met(m)){if(m.pz==null){m.pz=Math.max(0,m.end-t);log("⏸ Paused: "+tp[1]+" – required units no longer on scene");dirty=true}m.end=t+m.pz}else if(m.end){if(m.pz!=null){m.pz=null;log("▶ Resumed: "+tp[1]);dirty=true}if(t>=m.end&&!holdTr(m)&&(!m.roomOwner||S.un.some(u=>u.mid===m.id))){if(m.roomOwner){log("✅ "+tp[1]+" resolved (shared room call).");dirty=true;recall(m)}else{const hb=S.hbp||0,xb=m.xb||0,pb=Math.round(payOf(m.k,rank())*(m.short?.8:1));S.hbp=0;S.cr+=pb+xb+hb;S.done++;S.jl=(S.jl||[]).filter(x=>x.t>now()-6048e5).slice(-499);S.jl.push({t:now(),k:"j",n:tp[1],e:pb+xb+hb,b:S.cr});const r0=rank();log("✅ "+tp[1]+" resolved. +£"+fmt(pb+xb+hb)+(xb?" (incl. £"+fmt(xb)+" multi-agency expansion)":"")+(hb?" (incl. £"+fmt(hb)+" hospital bonus)":""));recall(m);if(rank()>r0){log("🎖 Promoted to "+RKX()[rank()][0]+"! New vehicles unlocked. Claim your £50,000 bonus in the Ranks tab.",1);toast("Promoted to "+RKX()[rank()][0]+" – claim your £50,000 bonus in Ranks")}}}}
 else if(met(m)){m.end=t+tp[4]*1000;log("🛠 Working: "+tp[1])}
 else if(t-m.born>TIMEOUT){log("❌ Incident abandoned: "+tp[1]);recall(m,1)}});
 if(!S.un.length)S.next=Math.max(S.next,t+4000);if(t>=S.next&&S.un.length&&S.ms.length<10&&!S.pz)spawn();
