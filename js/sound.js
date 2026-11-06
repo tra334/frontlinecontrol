@@ -129,7 +129,9 @@
   /* ---------- turning a radio log line into something to say ---------- */
   const hash = s => { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); };
   const rx = s => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const spell = cs => String(cs).split("").filter(c => /[A-Za-z0-9]/.test(c)).join(" ");
+  const NATO = { A: "alpha", B: "bravo", C: "charlie", D: "delta", E: "echo", F: "foxtrot", G: "golf", H: "hotel", I: "india", J: "juliett", K: "kilo", L: "lima", M: "mike", N: "november", O: "oscar", P: "papa", Q: "quebec", R: "romeo", S: "sierra", T: "tango", U: "uniform", V: "victor", W: "whiskey", X: "x-ray", Y: "yankee", Z: "zulu" };
+  /* letters+digits callsigns: short letter groups (FP, AM, CTL) are spelled phonetically, a word of 4+ letters (Medic, Thunder) is said as a word, digits are said one by one */
+  const spell = cs => (String(cs).match(/[A-Za-z]+|\d+/g) || []).map(p => /^\d+$/.test(p) ? p.split("").join(" ") : (p.length >= 4 && /[aeiouy]/i.test(p)) ? p.toLowerCase() : p.split("").map(c => NATO[c.toUpperCase()] || c).join(" ")).join(" ");
 
   function clean(text, cs) {
     let t = String(text);
@@ -153,7 +155,8 @@
     }
     if ((x = /^(.+?): “([\s\S]*?)”?$/.exec(s))) {
       if (!/[A-Za-z0-9]/.test(x[1])) return null;
-      return { voice: "unit", kind: "unit", text: clean(x[2], x[1]), cs: x[1] };
+      const body = x[2].replace(/(showing in attendance at )([^,.]+)(,[^.]*)?\./, "$1$2.");
+      return { voice: "unit", kind: "unit", text: clean(body, x[1]), cs: x[1] };
     }
     return null;
   }
@@ -197,8 +200,27 @@
     setTimeout(() => speak(q.p).then(done, done), lead * 1000 + 60);
     setTimeout(done, 20000);   // last-resort safety net
   }
+  /* a dispatch to several units is logged once per unit: group them and speak "Control to <units>, <details>" once */
+  let grp = null, grpT = 0;
+  function flushGrp() {
+    if (!grp) return; const g = grp; grp = null; clearTimeout(grpT);
+    const text = "Control to " + g.cs.map(spell).join(", ") + ", " + clean(g.body);
+    queue.push({ p: { voice: "ctl", kind: g.urgent ? "urgent" : "ctl", text }, at: Date.now() });
+    while (queue.length > MAXQ) queue.shift();
+    next();
+  }
   function say(entry) {
     if (!cht() || !hasTTS()) return;
+    const s = String(entry.m).replace(/^📻\s*/, "").trim(); let x;
+    if ((x = /^Control → (?!all units)(.+?): “([\s\S]*?)”?$/.exec(s))) {
+      const body = x[2].replace(new RegExp("^" + rx(x[1]) + ",\\s*"), "");
+      if (grp && grp.body === body && Date.now() - grp.at < 3000) { grp.cs.push(x[1]); return; }
+      flushGrp();
+      grp = { body, cs: [x[1]], at: Date.now(), urgent: /, Grade [12], at /.test(body) || /blue lights/.test(body) };
+      grpT = setTimeout(flushGrp, 400);
+      return;
+    }
+    flushGrp();
     let p; try { p = plan(entry.m); } catch (e) { return; }
     if (!p || !p.text) return;
     queue.push({ p, at: Date.now() }); while (queue.length > MAXQ) queue.shift();
