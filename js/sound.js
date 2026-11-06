@@ -172,31 +172,36 @@
       let fin = false; const done = () => { if (fin) return; fin = true; res(); };
       u.onend = done; u.onerror = done;
       try { speechSynthesis.speak(u); } catch (e) { return done(); }
-      setTimeout(done, 25000);   // never get stuck (some browsers drop onend)
+      /* never get stuck (some browsers drop onend): give up after a time based on the line length, and cancel it */
+      setTimeout(() => { if (!fin) { try { speechSynthesis.cancel(); } catch (e) {} done(); } }, 6000 + p.text.length * 90);
     });
   }
 
   const queue = []; let speaking = false;
-  const MAXQ = 3;   // if chatter falls behind, drop the oldest lines so it stays close to real time
+  const MAXQ = 10;        // hard cap on waiting lines
+  const STALE = 25000;    // a line older than this (ms) is no longer "live" and is skipped if others are waiting
   function next() {
     if (speaking || !queue.length) return;
+    /* catching up: skip stale lines, but never the newest one */
+    while (queue.length > 1 && Date.now() - queue[0].at > STALE) queue.shift();
     const q = queue.shift(); speaking = true;
+    const behind = queue.length >= 3;   // behind: skip the key-up / end bips so the backlog clears faster
     let ended = false;
     const done = () => {
       if (ended) return; ended = true;
       speaking = false;
-      toneEnd();
-      setTimeout(next, 250);
+      if (!behind) toneEnd();
+      setTimeout(next, behind ? 60 : 250);
     };
-    const lead = keyTone(q.p.kind) || 0.05;
+    const lead = behind ? 0.05 : (keyTone(q.p.kind) || 0.05);
     setTimeout(() => speak(q.p).then(done, done), lead * 1000 + 60);
-    setTimeout(done, 30000);
+    setTimeout(done, 20000);   // last-resort safety net
   }
   function say(entry) {
     if (!cht() || !hasTTS()) return;
     let p; try { p = plan(entry.m); } catch (e) { return; }
     if (!p || !p.text) return;
-    queue.push({ p }); while (queue.length > MAXQ) queue.shift();
+    queue.push({ p, at: Date.now() }); while (queue.length > MAXQ) queue.shift();
     next();
   }
   function stopChatter() { queue.length = 0; try { speechSynthesis.cancel(); } catch (e) {} speaking = false; }
@@ -236,6 +241,9 @@
     } catch (err) {}
     return ret;
   };
+
+  /* Chrome can silently pause long speech; nudge it while a line is being spoken */
+  setInterval(() => { try { if (speaking && speechSynthesis.paused) speechSynthesis.resume(); } catch (e) {} }, 4000);
 
   /* keep ringing every 3 s while a 999 call is unanswered */
   setInterval(() => { try { if (S && S.ms.some(m => !m.ans)) ring(); } catch (e) {} }, 3000);
