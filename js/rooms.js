@@ -996,8 +996,8 @@
     toast("Room reward +£" + fmt(amount));
     try {
       if (typeof rank === "function" && rank() > r0) {
-        log("🎖 Promoted to " + RK[rank()][0] + "! New vehicles unlocked. Claim your £50,000 bonus in the Ranks tab.", 1);
-        toast("Promoted to " + RK[rank()][0] + " – claim your £50,000 bonus in Ranks");
+        log("🎖 Promoted to " + RKX()[rank()][0] + "! New vehicles unlocked. Claim your £50,000 bonus in the Ranks tab.", 1);
+        toast("Promoted to " + RKX()[rank()][0] + " – claim your £50,000 bonus in Ranks");
       }
     } catch (e) {}
     dirty = true;

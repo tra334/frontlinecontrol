@@ -8,7 +8,7 @@ const MINC={pump:4,rt:4,wc:2,alp:3,icu:3,fo:1,wf:2,hmu:3,usar:5,wru:3,
 irv:2,van:2,rp:2,dog:1,arv:2,sgt:1,mc:1,cid:2,po:4,hel:3,
 dca:2,rrv:1,ao:1,bike:1,hart:3,ccc:2,air:3,mci:2};
 const NEWREQ={icu:["incident"],mci:["incident"],cid:["detective"],hel:["aviation"]};
-const STC=1000,SFREE=2,TRMS=300000,SPB={f:4,p:3,a:3},SFIX={aa:24,ph:24},ALLC=new Set(["afo","tpac"]);
+const STC=1500,SFREE=1,TRMS=300000,SPB={f:4,p:3,a:3},SFIX={aa:24,ph:24},ALLC=new Set(["afo","tpac"]);
 const minCk=k=>MINC[k]||1,minC=u=>minCk(u.ty),maxC=u=>{const m=minC(u);return m+(m>=3?2:1)};
 const sgrp=s=>s.sv==="aa"?"a":s.sv==="ph"?"p":s.sv;
 const stCap=s=>SFIX[s.sv]||cap(s)*(SPB[s.sv]||3);
@@ -118,7 +118,7 @@ return `<div class="row"><span class="t" style="font-size:18px">${esc(u.cs)} · 
 function courseH(xid){const x=(S.sf||[]).find(v=>v.id===xid);if(!x)return"";const s=stn(x.sid),g=s?sgrp(s):"",u=x.uid&&S.un.find(v=>v.id===x.uid),L=Object.entries(TR).filter(([k,v])=>v[3].includes(g));
 return `<div class="row"><span class="t" style="font-size:18px">${lci("graduation-cap")} ${esc(x.n)}</span><button class="cx" aria-label="Close" onclick="sfClose()">${lci("x",16)}</button></div>`
 +`<div class="mu" style="margin:4px 0 8px">Pay the course fee for instant qualification, or train for free in 5 minutes${u?" (they'll come off "+esc(u.cs)+" while training)":""}. One course at a time. ${WHY}</div>`
-+L.map(([k,v])=>{const own=x.tr.includes(k),lk=v[2]>rank(),busy=!!x.tq,fl=u&&u.st!=="idle";return `<div class="u"><span>${v[0]}<br><span class="mu">${own?"Qualified":lk?lci("lock")+" Unlocks at "+RK[v[2]][0]:x.tq&&x.tq.k===k?"In training…":"Fee £"+fmt(v[1])+" or 5 min free"}</span><br><span class="mu" style="font-size:12px">${lci("car-front",12)} ${cvTxt(k)}</span></span>${own?'<span class="st idle">Qualified</span>':lk?`<button class="s g" disabled>${lci("lock")}</button>`:`<span style="display:flex;flex-direction:column;gap:4px"><button class="s" ${busy||S.cr<v[1]?"disabled":""} onclick="sfTrain(${x.id},'${k}',0)">£${fmt(v[1])}</button><button class="s g" ${busy||fl?"disabled":""} onclick="sfTrain(${x.id},'${k}',1)">Free · 5 min</button></span>`}</div>`}).join("")
++L.map(([k,v])=>{const own=x.tr.includes(k),lk=v[2]>rank(),busy=!!x.tq,fl=u&&u.st!=="idle";return `<div class="u"><span>${v[0]}<br><span class="mu">${own?"Qualified":lk?lci("lock")+" Unlocks at "+RKX()[v[2]][0]:x.tq&&x.tq.k===k?"In training…":"Fee £"+fmt(v[1])+" or 5 min free"}</span><br><span class="mu" style="font-size:12px">${lci("car-front",12)} ${cvTxt(k)}</span></span>${own?'<span class="st idle">Qualified</span>':lk?`<button class="s g" disabled>${lci("lock")}</button>`:`<span style="display:flex;flex-direction:column;gap:4px"><button class="s" ${busy||S.cr<v[1]?"disabled":""} onclick="sfTrain(${x.id},'${k}',0)">£${fmt(v[1])}</button><button class="s g" ${busy||fl?"disabled":""} onclick="sfTrain(${x.id},'${k}',1)">Free · 5 min</button></span>`}</div>`}).join("")
 +`<button class="s g" style="width:100%;margin-top:10px" onclick="sfv=sfv.back||null;drawSF()">Back</button>`}
 function drawSF(){if(!sfv){const o=$("#sfov");if(o)o.remove();return}
 if(sfv.m==="stn"&&!stn(sfv.id)||sfv.m==="veh"&&!S.un.find(u=>u.id===sfv.id)){sfClose();return}

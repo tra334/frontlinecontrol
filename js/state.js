@@ -15,8 +15,8 @@ const nearCoast=(la,lo,g)=>{const p=COAST_KM/111,pc=COAST_KM/(111*Math.cos(la*Ma
 const land=(la,lo)=>LANDS.some(g=>pip(la,lo,g)||nearCoast(la,lo,g));const OUTMSG="Frontline Control is based in the UK & Ireland. Please select a new location on the map.";
 const km=(a,b)=>{const dy=(a[0]-b[0])*111,dx=(a[1]-b[1])*111*Math.cos(a[0]*Math.PI/180);return Math.hypot(dx,dy)};
 const near=(la,lo)=>CITY.reduce((b,c)=>km([la,lo],[c[1],c[2]])<km([la,lo],[b[1],b[2]])?c:b)[0];
-const rank=()=>{if(S.rko!=null&&S.rko>=0&&S.rko<RK.length)return S.rko;let r=0;RK.forEach((x,i)=>{if(S.done>=x[1])r=i});return r};
-function fresh(){return{cr:1000000,done:0,nid:1,fb:{aa:0,ph:0},gf:{aa:0,ph:0},ts:now(),sf:[],sn:0,rq:1,next:now()+rateMs(),lg:[{t:now(),m:"Welcome, controller. You have £1,000,000. Open the Stations tab and build your first station on the map.",r:0}],ms:[],st:[],hs:[],un:[],rate:2,rcl:0,dr:{last:"",day:0}}}
+const rank=()=>{if(S.rko!=null&&S.rko>=0&&S.rko<RKX().length)return S.rko;let r=0;RKX().forEach((x,i)=>{if(S.done>=x[1])r=i});return r};
+function fresh(){return{cr:250000,ev:2,done:0,nid:1,fb:{aa:0,ph:0},gf:{aa:0,ph:0},ts:now(),sf:[],sn:0,rq:1,next:now()+rateMs(),lg:[{t:now(),m:"Welcome, controller. You have £250,000. Open the Stations tab and build your first station on the map.",r:0}],ms:[],st:[],hs:[],un:[],rate:2,rcl:0,dr:{last:"",day:0}}}
 var EXP=new Set(),hi=0,hTab=0;
 const mb=(n,k,xp,w)=>`<div style="margin:6px 0 10px"><button class="g s" onclick="${xp}('${k}')">Show ${n} more${w||""}</button></div>`;
 const lim=(a,k,fn,xp)=>{const ex=EXP.has(k);return (ex?a:a.slice(0,10)).map(fn).join("")+(!ex&&a.length>10?mb(a.length-10,k,xp):"")};
@@ -76,6 +76,6 @@ S.cr+=g2}}
 if(g1>0||jobs){const mins=Math.round(away/60000),net=(g1-cut)+g2;
 log("⏳ While you were away (~"+mins+" min): "+jobs+" extra job"+(jobs===1?"":"s")+" handled. Offline earnings reduced – net +£"+fmt(net)+".");
 toast("Welcome back – offline earnings +£"+fmt(net)+" (reduced rate)");
-if(rank()>r0)log("🎖 Promoted to "+RK[rank()][0]+"! New vehicles unlocked. Claim your £50,000 bonus in the Ranks tab.",1);
+if(rank()>r0)log("🎖 Promoted to "+RKX()[rank()][0]+"! New vehicles unlocked. Claim your £50,000 bonus in the Ranks tab.",1);
 persist()}}
 function persist(){S.ts=now();try{localStorage.setItem(curKey,JSON.stringify(S))}catch(e){}dirty=false;lastSave=now();cloudDirty=true}
