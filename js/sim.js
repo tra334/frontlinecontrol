@@ -101,8 +101,8 @@ function arrive(u,m){u.st="scene";const first=S.un.filter(x=>x.mid===m.id&&x.st=
 if(m.hid&&!m.rev){m.rev=1;r=u.cs+": “Control, situation is worse than reported — "+(hk(m)==="h"?"there are casualties":"there are hazards/weapons")+". Request "+Object.entries(m.hid.n).map(([k,n])=>n+" × "+U[k][1]).join(", ")+".”"}
 else if(first)r=u.cs+": “"+pick(FACT[T[m.k][0]])+"”";
 if(T[m.k][1]==="Welfare check"){const c=scn(m);
-if(!m.wst&&U[u.ty][0]==="p"){m.wst=1;if(c.wcNo){m.xn=mrg(m.xn||{},{pump:1});m.xb=(m.xb||0)+500;r=u.cs+": “Control, no response at the address after repeated knocking. Request a fire engine to gain entry.”"}else r=u.cs+": “Control, person came to the door — safe and well, just hadn’t been in contact. No further assistance required.”"}
-else if(m.wst===1&&U[u.ty][0]==="f"){m.wst=2;if(c.wcInj){m.xn=mrg(m.xn||{},{dca:1});m.xb=(m.xb||0)+600;r=u.cs+": “Control, entry gained. We have an injured person inside, conscious but unable to get up. Request an ambulance.”"}else r=u.cs+": “Control, entry gained. Person found safe and well, no injuries. No ambulance required.”"}
+if(!m.wst&&U[u.ty][0]==="p"){m.wst=1;if(c.wcNo){if(ownN("pump")>0){m.xn=mrg(m.xn||{},{pump:1});m.xb=(m.xb||0)+500}r=u.cs+": “Control, no response at the address after repeated knocking. Request a fire engine to gain entry.”"}else r=u.cs+": “Control, person came to the door — safe and well, just hadn’t been in contact. No further assistance required.”"}
+else if(m.wst===1&&U[u.ty][0]==="f"){m.wst=2;if(c.wcInj){if(ownN("dca")>0){m.xn=mrg(m.xn||{},{dca:1});m.xb=(m.xb||0)+600}r=u.cs+": “Control, entry gained. We have an injured person inside, conscious but unable to get up. Request an ambulance.”"}else r=u.cs+": “Control, entry gained. Person found safe and well, no injuries. No ambulance required.”"}
 else r=null}
 log("📻 "+u.cs+": “Control, "+u.cs+" showing in attendance at "+m.loc+".”",1,m.id);u.jobs=(u.jobs||0)+1;if(r)setTimeout(()=>{log("📻 "+r,1,m.id);rtoast(r)},1500)}
 function tick(){const t=now();
