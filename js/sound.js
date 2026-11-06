@@ -223,6 +223,35 @@
     next();
   }
 
+  /* ---------- server games: lines arrive inside the state, not through log() ----------
+     In server mode (server-mode.js) the SERVER runs the sim and the browser just replaces S with each reply, so radio
+     lines made there never pass through log() and the hook below never sees them. This scanner watches S.lg for new
+     radio lines instead, so chatter plays no matter where the line was created. Lines already handled by the hook are
+     remembered, and lines older than 45 s (e.g. after the tab was in the background) are not replayed. */
+  const seen = new Set(), keyOf = e => e.t + "|" + e.m;
+  let primed = false;
+  function scan() {
+    try {
+      if (!S || !Array.isArray(S.lg)) return;
+      const cur = S.lg;
+      if (!primed) { cur.forEach(e => seen.add(keyOf(e))); primed = true; return; }
+      const fresh = [];
+      for (let i = 0; i < cur.length; i++) {
+        const e = cur[i], k = keyOf(e);
+        if (seen.has(k)) continue;
+        seen.add(k);
+        if (String(e.m).startsWith("\u{1F4FB}")) fresh.push(e);
+      }
+      if (seen.size > 600) { const keep = cur.map(keyOf); seen.clear(); keep.forEach(k => seen.add(k)); }
+      fresh.reverse().forEach(e => {
+        if (now() - e.t > 45000) return;
+        if (cht() && hasTTS()) say(e);
+        else if (eff() && Date.now() - lastSq > 150) { lastSq = Date.now(); squelch(); }
+      });
+    } catch (err) {}
+  }
+  setInterval(scan, 400);
+
   /* ---------- hook log() ---------- */
   const _log = window.log;
   window.log = function (m) {
@@ -234,6 +263,7 @@
       else if (s.startsWith("📻")) {
         const e = S && S.lg && S.lg[0];
         if (e && e.m === m) {
+          seen.add(keyOf(e));
           if (cht() && hasTTS()) say(e);
           else if (eff() && Date.now() - lastSq > 150) { lastSq = Date.now(); squelch(); }
         }
