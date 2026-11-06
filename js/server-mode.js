@@ -168,10 +168,17 @@
     };
     sfBuy = sid => {
       const s = stn(sid), i = $("#sfq"); if (!s || !i) return;
-      const room = Math.max(0, stCap(s) - sfAt(sid).length); let n = Math.floor(+i.value || 0); n = Math.max(0, Math.min(room, n));
+      const room = Math.max(0, stCap(s) - sfAt(sid).length - hpend(sid)); let n = Math.floor(+i.value || 0); n = Math.max(0, Math.min(room, n));
       if (!n) { toast("Enter how many staff to recruit."); return; }
       const c = n * STC; if (S.cr < c) { toast("Not enough credits."); return; }
       confirmDlg("Recruit staff", "Recruit <b>" + n + "</b> staff member" + (n > 1 ? "s" : "") + " at <b>" + esc(s.name) + "</b> for <b>£" + fmt(c) + "</b>?<br><span style=\"font-size:13px\">Balance after: £" + fmt(S.cr - c) + "</span>", "Recruit", () => { act({ type: "recruit", sid, n }).then(() => { try { sfRef(); } catch (e) {} }); }, "#16a34a");
+    };
+    sfHire = sid => {
+      const s = stn(sid), i = $("#sfq"); if (!s || !i) return;
+      const room = Math.max(0, stCap(s) - sfAt(sid).length - hpend(sid)); let n = Math.floor(+i.value || 0); n = Math.max(0, Math.min(room, n));
+      if (!n) { toast("Enter how many staff to hire."); return; }
+      const c = n * HIRE_NOW; if (S.cr < c) { toast("Not enough credits."); return; }
+      confirmDlg("Hire now", "Hire <b>" + n + "</b> staff member" + (n > 1 ? "s" : "") + " at <b>" + esc(s.name) + "</b> for <b>£" + fmt(c) + "</b>? They join straight away.<br><span style=\"font-size:13px\">Balance after: £" + fmt(S.cr - c) + "</span>", "Hire now", () => { act({ type: "recruit", sid, n, now: true }).then(() => { try { sfRef(); } catch (e) {} }); }, "#16a34a");
     };
     spareGo = (sid, k, ids) => { const s = stn(sid); if (!s) return; fn("spareGo", [sid, k, (ids || []).map(Number)]); };
 
