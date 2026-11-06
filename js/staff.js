@@ -31,6 +31,12 @@ const crewTag=(u,l)=>{if(!S.sf)return"";const n=sfCrew(u).length,m=minC(u),ok=cr
 function recomputeTr(u){const t=(u.bt||[]).slice();sfCrew(u).forEach(x=>x.tr.forEach(k=>{if(!t.includes(k))t.push(k)}));u.tr=t}
 const mkStaff=(sid,uid,tr)=>{const x={id:S.sn=(S.sn||0)+1,n:sfName(sid),sid,uid:uid||0,tr:tr||[],tq:null};S.sf.push(x);return x};
 function hire(sid,n){for(let i=0;i<n;i++)mkStaff(sid)}
+/* starter vehicle: every new fire, police or ambulance station gets one free vehicle, crewed to its minimum. No refund. */
+const STARTER={f:"Fire engine",p:"Response car",a:"Ambulance"};
+function starterFor(sid,sv){const name=STARTER[sv];if(!name)return null;const ty=Object.keys(U).find(k=>U[k][1]===name);if(!ty)return null;
+const id=S.nid++;const u={id,ty,sid,cs:U[ty][4]+id,st:"idle",mid:0,tr:(U[ty][5]||[]).slice(),free:1};S.un.push(u);
+if(S.sf)for(let i=0;i<minC(u);i++)mkStaff(sid,u.id);
+log("🚒 Starter vehicle: "+u.cs+" "+U[ty][1]+" (free, crewed)");return u}
 /* recruits: a normal recruit joins after 5 minutes; "Hire now" joins at once at a higher price */
 const HIRE_Q=300000,HIRE_NOW=3500;
 const hpend=sid=>(S.hq||[]).filter(h=>h.sid===sid).reduce((a,h)=>a+h.n,0);

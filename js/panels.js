@@ -78,10 +78,10 @@ log("🚚 "+u.cs+" "+U[u.ty][1]+" relocating from "+o.name+" to "+d.name+".");to
 closeUI();persist();$("#v").dataset.n="";$("#v").dataset.k="";paint();if(si)drawS();sync()}
 /* Delete: frees the bay. Vehicles that cost £15,000+ get a 40% refund. */
 function delUC(id){const u=S.un.find(x=>x.id===id);if(!u)return;if(u.st!=="idle"){toast(u.cs+" must be back at its station before it can be deleted.");return}
-const r=vRefund(u.ty),c=U[u.ty][2],sn=stn(u.sid);
+const r=u.free?0:vRefund(u.ty),c=U[u.ty][2],sn=stn(u.sid);
 confirmDlg("Delete vehicle?","Delete <b>"+esc(u.cs)+"</b> ("+esc(U[u.ty][1])+")"+(sn?" from <b>"+esc(sn.name)+"</b>":"")+"? This frees up its bay and cannot be undone.<br><br>"+(r?"Purchase price £"+fmt(c)+" — you will be refunded <b>£"+fmt(r)+"</b> (40%).":"Purchase price £"+fmt(c)+" — vehicles under £"+fmt(VREF_MIN)+" are <b>not refunded</b>."),r?"Delete & refund £"+fmt(r):"Delete vehicle",()=>delU(id))}
 function delU(id){const u=S.un.find(x=>x.id===id);if(!u||u.st!=="idle")return;
-const r=vRefund(u.ty),sn=stn(u.sid);S.un=S.un.filter(x=>x.id!==id);if(r){S.cr+=r}ldg("de","Deleted "+u.cs+" "+U[u.ty][1],r);
+const r=u.free?0:vRefund(u.ty),sn=stn(u.sid);S.un=S.un.filter(x=>x.id!==id);if(r){S.cr+=r}ldg("de","Deleted "+u.cs+" "+U[u.ty][1],r);
 if(upop===id)upop=0;closeUI();
 log("🗑 "+u.cs+" "+U[u.ty][1]+" deleted"+(sn?" from "+sn.name+" (bay freed)":"")+(r?". Refund £"+fmt(r)+".":". No refund."));toast(u.cs+" deleted."+(r?" £"+fmt(r)+" refunded.":""));
 persist();$("#v").dataset.n="";$("#v").dataset.k="";paint();if(si)drawS();sync()}
