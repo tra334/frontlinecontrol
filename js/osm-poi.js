@@ -191,5 +191,5 @@ const free=d.filter(p=>{const r=km([b.lat,b.lon],[p[0],p[1]]);return r<=PRIS_KM&
 if(!free.length)return null;const p=pick(free);return{la:p[0],lo:p[1],nm:p[2]||"",osm:1}}
 (function(){const p0=poiPick;poiPick=function(t,b){if(isPrisonT(t)){const o=prisonSync(b);if(o)return o}return p0(t,b)}})();
 
-/* server games: no realistic-POI setting (calls use the server's UK & Ireland database), so the block is left out */
-{const _pso=poiSettingsH;poiSettingsH=function(){return(window.SRV&&window.SRV.on)?h0():_pso()}}
+/* server games: hide the realistic-POI section of Settings after it is drawn (the rest of the menu is untouched) */
+{const _pb=poiBind;poiBind=function(ov,draw){_pb(ov,draw);if(window.SRV&&window.SRV.on){try{const row=[...ov.querySelectorAll('div[style*="padding:12px 0"]')].find(d=>d.textContent.indexOf('Realistic POIs (OpenStreetMap)')>=0);if(row)row.style.display='none';const b=ov.querySelector('#set_osm');if(b)b.style.display='none'}catch(e){}}}}
