@@ -145,9 +145,9 @@ setInterval(osmShowSync,15000);setTimeout(osmShowSync,5000);
 /* ---------- pick a real place for mission template t near station b; null = normal random spawn ---------- */
 function osmPick(t,b){if(!osmOn())return null;
  const ids=missPoi(t).filter(id=>id in OSM_NOM);if(!ids.length)return null;
- const sts=b?[b]:(S.st||[]).filter(x=>x.sv===t[0]);if(!sts.length)return null;
+ const sts=b?[b]:(S.st||[]).filter(x=>x.sv===t[0]);if(!sts.length)return null;const allSt=(S.st||[]).filter(x=>x.sv===t[0]);
  /* try every station and every fitting place type (in random order) before giving up, and look at the neighbouring map areas too */
- const cand=[];sts.forEach(s=>ids.forEach(id=>cand.push([s,id])));
+ const cand=[];sts.forEach(s=>ids.forEach(id=>{if(id!=="major_stadium")cand.push([s,id])}));allSt.forEach(s=>{if(ids.indexOf("major_stadium")>=0)cand.push([s,"major_stadium"])});
  for(let i=cand.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const x=cand[i];cand[i]=cand[j];cand[j]=x}
 cand.sort((x,y)=>(y[1]==="major_stadium")-(x[1]==="major_stadium"));
  for(const [s,id] of cand.slice(0,40)){
