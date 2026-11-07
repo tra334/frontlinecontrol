@@ -187,9 +187,6 @@
     const osmSent = {}, osmPend = []; let osmBusy2 = false;
     function pushOsm() { try { if (!SRV.on) return; Object.keys(localStorage).filter(k => k.indexOf("flc_osm2_") === 0 && !osmSent[k] && osmPend.indexOf(k) < 0).forEach(k => osmPend.push(k)); } catch (e) {} }
     function osmDrain() { if (osmBusy2 || !SRV.on || !osmPend.length) return; const k = osmPend.shift(); let j = null; try { j = JSON.parse(localStorage.getItem(k)); } catch (e) {} if (!j || !Array.isArray(j.d)) return; osmBusy2 = true; osmSent[k] = 1; act({ type: "osmcache", k, d: j.d.slice(0, 120) }).finally(() => { osmBusy2 = false; }); }
-    setTimeout(pushOsm, 4000); setInterval(pushOsm, 60000); setInterval(osmDrain, 2500);
-    // scan every station area as soon as the server game is open, then keep the cache topped up
-    setTimeout(() => { try { osmWarm(); } catch (e) {} }, 3000); setInterval(() => { try { osmWarm(); } catch (e) {} }, 20000);
     setInterval(() => { for (const k in osmSent) delete osmSent[k]; }, 600000); // the server forgets map data on restart, so resend every 10 minutes                       // rooms.js uses this to ask the server to share a call
 
     // 3) pick up what the server is doing (calls arriving, units moving, jobs paid)

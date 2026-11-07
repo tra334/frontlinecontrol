@@ -16,6 +16,9 @@ const osmWide=()=>getSet().osmWide===true,osmRad=id=>OSM_RAD[id]||(osmWide()?730
 const osmCell=v=>Math.round(v/OSM_CELL)*OSM_CELL,osmWait=ms=>new Promise(r=>setTimeout(r,ms));
 const osmKey=(id,la,lo)=>OSM_PFX+id+"_"+osmCell(la).toFixed(2)+"_"+osmCell(lo).toFixed(2);
 function osmGet(id,la,lo){const k=osmKey(id,la,lo);if(osmMem[k])return osmMem[k];
+/* on the server the places come from the UK/Ireland database (osmServerDB); empty means "none here", so nothing is scanned */
+try{if(typeof osmServerDB==="function"){const r=osmServerDB(id,la,lo);if(r)return r}}catch(e){}
+
 try{const j=JSON.parse(localStorage.getItem(k));if(j&&Date.now()-j.t<OSM_TTL){osmMem[k]=j.d;return j.d}}catch(e){}return null}
 function osmTrim(){try{const ks=Object.keys(localStorage).filter(x=>x.indexOf(OSM_PFX)===0);let tot=0;const a=ks.map(k=>{const v=localStorage.getItem(k)||"";tot+=v.length;let t=0;try{t=JSON.parse(v).t}catch(e){}return{k,t,n:v.length}});
 if(tot<=OSM_CACHE_CAP)return;a.sort((x,y)=>x.t-y.t);for(const x of a){if(tot<=OSM_CACHE_CAP*.7)break;localStorage.removeItem(x.k);tot-=x.n}}catch(e){}}
