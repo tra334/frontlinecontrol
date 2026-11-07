@@ -127,7 +127,7 @@ setInterval(()=>{try{if(osmSt.busy&&document.getElementById("set_osmr"))refreshS
 /* ---------- optional map markers for the cached POIs (Map filter button -> "Realistic POIs (OSM)", off by default) ---------- */
 const OSMM={},OSM_SHOWCAP=1500,OSM_NOBND=500,osmShown=()=>getSet().osmShow===true,osmHidT=()=>Array.isArray(getSet().osmHide)?getSet().osmHide:[];
 function osmShowSync(){try{
-if(!osmShown()||!osmOn()||typeof S==="undefined"||!S.st){for(const k in OSMM){map.removeLayer(OSMM[k]);delete OSMM[k]}return}
+if((window.SRV&&window.SRV.on)||!osmShown()||!osmOn()||typeof S==="undefined"||!S.st){for(const k in OSMM){map.removeLayer(OSMM[k]);delete OSMM[k]}return}
 const want={},hd=osmHidT();let n=0,bd=null,cap=OSM_NOBND;
 try{if(!L.shim&&map.getBounds){if(map.getZoom()<12){for(const k in OSMM){map.removeLayer(OSMM[k]);delete OSMM[k]}return}bd=map.getBounds().pad(.25);cap=OSM_SHOWCAP}}catch(e){bd=null}
 S.st.forEach(s=>{for(const id in OSM_NOM){if(hd.indexOf(id)>=0)continue;const d=osmGet(id,s.lat,s.lon);if(!d)continue;d.forEach(p=>{const k=id+p[0]+","+p[1];if(n>=cap||want[k])return;if(bd&&!bd.contains([p[0],p[1]]))return;want[k]=[id,p];n++})}});
@@ -191,5 +191,5 @@ const free=d.filter(p=>{const r=km([b.lat,b.lon],[p[0],p[1]]);return r<=PRIS_KM&
 if(!free.length)return null;const p=pick(free);return{la:p[0],lo:p[1],nm:p[2]||"",osm:1}}
 (function(){const p0=poiPick;poiPick=function(t,b){if(isPrisonT(t)){const o=prisonSync(b);if(o)return o}return p0(t,b)}})();
 
-/* server games: the realistic-POI setting has no effect (calls use the server's UK & Ireland database), so show it greyed out */
-{const _pso=poiSettingsH;poiSettingsH=function(){let h=_pso();if(window.SRV&&window.SRV.on&&h.indexOf('<button id="set_osm"')>=0){h=h.replace('<button id="set_osm"','<div style="margin-top:8px;color:var(--mu);font-size:12px">Server games use the UK &amp; Ireland place database, so this setting has no effect here.</div><button id="set_osm" disabled aria-disabled="true" style="opacity:.4;pointer-events:none"')}return h}}
+/* server games: no realistic-POI setting (calls use the server's UK & Ireland database), so the block is left out */
+{const _pso=poiSettingsH;poiSettingsH=function(){return(window.SRV&&window.SRV.on)?h0():_pso()}}
