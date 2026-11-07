@@ -45,7 +45,7 @@ const T=[
 ["p","Missing child","“My daughter’s six, she was in the park a minute ago…”",{irv:2,dog:1},90,1100,["woods","station","shop","rec","attraction"]],
 ["p","Armed robbery","“A man with a gun’s walked into the Co-op!”",{irv:2,"tr:afo":2},80,2200,["supermarket","petrol","services"]],
 ["p","Stolen vehicle pursuit","“That’s my van going down the bypass!”",{rp:2,irv:1},70,900,["road","car_park"]],
-["p","Football disorder","“Rival fans throwing bottles near the ground.”",{irv:3,van:2,dog:1,"tr:pubord":2},100,1800,["stadium","station","pub","rec"]],
+["p","Football disorder","“Rival fans throwing bottles near the ground.”",{irv:3,van:2,dog:1,"tr:pubord":2},100,1800,["major_stadium","stadium","station","pub","rec"]],
 ["p","Anti-social behaviour","“Kids on mopeds tearing round the estate.”",{irv:1},25,180,["school","station","woods","rec"]],
 ["p","Fatal collision","“Car’s hit a lorry, driver’s not moving.”",{rp:2,irv:1,dca:1},90,1300,["road"]],
 ["p","Cannabis farm raid","“Strong smell and lights on all night at number 14.”",{van:2,irv:2,dog:1},90,1400,["home","industrial"]],
@@ -128,7 +128,7 @@ const T=[
 ["p","Marauding attack","“A man’s attacking people in the street with a blade, loads running!”",{arv:4,irv:3,hel:1,po:1,sgt:1,cid:2},150,6200,["station","shop","pub","attraction","airport"]],
 ["p","Hostage situation","“He’s got two staff hostage in the bank and a gun!”",{arv:3,hel:1,sgt:1,cid:2,irv:2},150,5500,["office","shop","services"]],
 ["p","Prison disturbance","“Inmates have taken control of a wing!”",{po:2,irv:3,dog:2,"tr:pubord":2,sgt:1},140,4600,["prison"]],
-["a","Major incident – stadium crush","“There’s been a crush at the gates, people are down everywhere!”",{dca:5,hart:1,mci:1,ao:2,rrv:2,air:1},150,6000,["stadium"]],
+["a","Major incident – stadium crush","“There’s been a crush at the gates, people are down everywhere!”",{dca:5,hart:1,mci:1,ao:2,rrv:2,air:1},150,6000,["major_stadium","stadium"]],
 ["a","Cat 1 – multi-casualty fire","“Hotel fire, lots of people overcome by smoke!”",{dca:3,hart:1,ao:1,rrv:2,mci:1,pump:4,rt:1,alp:1},130,4500,["hotel","high"]],
 ["a","Cat 1 – air ambulance critical","“Hiker in a fall off a cliff, needs a doctor with them!”",{air:1,dca:1,ccc:1},110,3400,["high","woods","coast"]]
 ];
