@@ -152,6 +152,7 @@ function osmPick(t,b){if(!osmOn())return null;
 cand.sort((x,y)=>(y[1]==="major_stadium")-(x[1]==="major_stadium"));
  for(const [s,id] of cand.slice(0,40)){
   const mx=Math.min(id==="prison"?40:8,osmRad(id)/1000);let all=[];
+  if(id==="major_stadium"&&typeof osmServerBox==="function"){try{all=osmServerBox(id,s.lat,s.lon,0.08,0.13)||[]}catch(e){all=[]}}else
   for(const dl of [-OSM_CELL,0,OSM_CELL])for(const dn of [-OSM_CELL,0,OSM_CELL]){const la=s.lat+dl,lo=s.lon+dn,d=osmGet(id,la,lo);if(!d){osmEnq(id,la,lo,1);continue}all=all.concat(d)}
   const free=all.filter(p=>{const r=km([s.lat,s.lon],[p[0],p[1]]);return r>=.2&&r<=mx&&!S.ms.some(m=>km([m.la,m.lo],[p[0],p[1]])<POI_BUSY_KM)});
   if(free.length){const p=pick(free);return{la:p[0],lo:p[1],nm:p[2]||"",osm:1}}
