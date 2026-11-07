@@ -59,7 +59,7 @@ class PL extends Ev{constructor(p,o,g){super();this.p=p.map(ll);this.o=o||{};thi
 addTo(m){this.m=m;const e=this.el=document.createElementNS(NS,"path"),o=this.o;e.setAttribute("stroke",o.color||"#3388ff");e.setAttribute("stroke-width",o.weight||3);e.setAttribute("stroke-opacity",o.opacity==null?1:o.opacity);e.setAttribute("stroke-linejoin","round");e.setAttribute("stroke-linecap","round");
 e.setAttribute("fill",this.g?(o.fillColor||o.color||"#3388ff"):"none");if(this.g)e.setAttribute("fill-opacity",o.fillOpacity==null?.2:o.fillOpacity);
 (o.pane==="bg"?m.bgS:m.fgS).appendChild(e);m.layers.add(this);this._draw(m);return this}
-setLatLngs(p){this.p=p.map(ll);this.m&&this._draw(this.m);return this}
-_draw(m){let d="",lx=1e9,ly=1e9;const n=this.p.length;for(let i=0;i<n;i++){const q=m.pt(this.p[i]),x=Math.round(q[0]),y=Math.round(q[1]);if(i>0&&i<n-1&&Math.abs(x-lx)<2&&Math.abs(y-ly)<2)continue;d+=(d?"L":"M")+x+" "+y;lx=x;ly=y}this.el.setAttribute("d",d+(this.g?"Z":""))}
+trim(i,h){this.i=i;this.h=ll(h);this.m&&this._draw(this.m);return this}
+_draw(m){let d="",lx=1e9,ly=1e9;const n=this.p.length,s=this.i||0;if(s&&this.h){const q=m.pt(this.h);d="M"+Math.round(q[0])+" "+Math.round(q[1])}for(let i=0;i<n;i++){const q=m.pt(this.p[i]),x=Math.round(q[0]),y=Math.round(q[1]);if(i>0&&i<n-1&&Math.abs(x-lx)<2&&Math.abs(y-ly)<2)continue;lx=x;ly=y;if(i<s)continue;d+=(d?"L":"M")+x+" "+y}this.el.setAttribute("d",d+(this.g?"Z":""))}
 _rm(){this.el&&this.el.remove()}}
 window.L={shim:1,map:id=>new M(id),tileLayer:(u,o)=>new TL(u,o),marker:(a,o)=>new MK(a,o),divIcon:o=>o,polyline:(p,o)=>new PL(p,o,0),polygon:(p,o)=>new PL(p,o,1)}})();
