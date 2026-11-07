@@ -185,8 +185,10 @@
     SRV.act = act;
     // the browser's realistic map locations (OSM POIs, cached in this browser) go to the server, so server-spawned calls can use them
     const osmSent = {};
-    function pushOsm() { try { if (!SRV.on) return; let n = 0; Object.keys(localStorage).filter(k => k.indexOf("flc_osm2_") === 0).forEach(k => { if (osmSent[k] || n >= 20) return; let j = null; try { j = JSON.parse(localStorage.getItem(k)); } catch (e) {} if (!j || !Array.isArray(j.d)) return; osmSent[k] = 1; n++; act({ type: "osmcache", k, d: j.d.slice(0, 150) }); }); } catch (e) {} }
-    setTimeout(pushOsm, 4000); setInterval(pushOsm, 30000); setInterval(() => { for (const k in osmSent) delete osmSent[k]; }, 600000); // the server forgets map data on restart, so resend every 10 minutes                       // rooms.js uses this to ask the server to share a call
+    function pushOsm() { try { if (!SRV.on) return; let n = 0; Object.keys(localStorage).filter(k => k.indexOf("flc_osm2_") === 0).forEach(k => { if (osmSent[k]) return; let j = null; try { j = JSON.parse(localStorage.getItem(k)); } catch (e) {} if (!j || !Array.isArray(j.d)) return; osmSent[k] = 1; n++; act({ type: "osmcache", k, d: j.d.slice(0, 150) }); }); } catch (e) {} }
+    setTimeout(pushOsm, 4000); setInterval(pushOsm, 30000);
+    // scan every station area as soon as the server game is open, then keep the cache topped up
+    setTimeout(() => { try { osmWarm(); } catch (e) {} }, 3000); setInterval(() => { try { osmWarm(); } catch (e) {} }, 20000); setInterval(() => { for (const k in osmSent) delete osmSent[k]; }, 600000); // the server forgets map data on restart, so resend every 10 minutes                       // rooms.js uses this to ask the server to share a call
 
     // 3) pick up what the server is doing (calls arriving, units moving, jobs paid)
     const poll = () => { busy = busy.then(async () => { try { const j = await call("/api/state"); if (j.ok) apply(j); } catch (e) {} }); };

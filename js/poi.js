@@ -1,5 +1,5 @@
 /* ===== user Points of Interest (POIs): placed in Settings, always boost matching mission spawns. Hiding them on the map is done from the map filter (js/map-filter.js) and never affects spawning. ===== */
-const POI_MAX=50,POI_CHANCE=.6,POI_BUSY_KM=.06;
+const POI_MAX=50,POI_CHANCE=1,POI_BUSY_KM=.06;
 const POI_TYPES=[
 {id:"pub",n:"Pub / bar",e:"🍺",m:"Pub brawls, drink driving, nightlife incidents"},
 {id:"restaurant",n:"Restaurant / takeaway",e:"🍔",m:"Choking, allergic reactions, abdominal pain, bin fires, seizures"},
