@@ -118,7 +118,8 @@ async function osmRun(){if(osmBusy)return;osmBusy=1;osmSt.busy=1;
 try{while(osmQ.length){const x=osmQ.shift();if(osmMem[x.k])continue;let d=null;try{d=await osmFetch(x.id,x.la,x.lo)}catch(e){osmSt.err=String(e.message||e).slice(0,60)}
 if(d){if(!osmMem[x.k])osmPut(x.k,d);osmSt.ok++;osmSt.err="";osmShowSync()}else{osmFail[x.k]=Date.now()+12e4;osmSt.fail++;console.warn("POI load failed:",x.id,osmSt.err)}}}
 finally{osmBusy=0;osmSt.busy=0}}
-function osmWarm(){if(!osmOn()||typeof S==="undefined"||!S.st||osmQ.length>=4)return;
+function osmWarm(){if(window.SRV&&window.SRV.on)return; /* server games read the server database, so the browser does not scan */
+if(!osmOn()||typeof S==="undefined"||!S.st||osmQ.length>=4)return;
 S.st.forEach(s=>(OSM_WARM[s.sv]||[]).forEach(id=>{if(osmQ.length<4)osmEnq(id,s.lat,s.lon)}))}
 setInterval(()=>{try{osmWarm()}catch(e){}},20000);setTimeout(()=>{try{osmWarm()}catch(e){}},4000);
 setInterval(()=>{try{if(osmSt.busy&&document.getElementById("set_osmr"))refreshSettings()}catch(e){}},3000);
@@ -189,3 +190,6 @@ if(d&&d.length)osmPut(k,d);else{osmFail[k]=Date.now()+12e4;return null}}
 const free=d.filter(p=>{const r=km([b.lat,b.lon],[p[0],p[1]]);return r<=PRIS_KM&&!prisBusy(p[0],p[1])});
 if(!free.length)return null;const p=pick(free);return{la:p[0],lo:p[1],nm:p[2]||"",osm:1}}
 (function(){const p0=poiPick;poiPick=function(t,b){if(isPrisonT(t)){const o=prisonSync(b);if(o)return o}return p0(t,b)}})();
+
+/* server games: the realistic-POI setting has no effect (calls use the server's UK & Ireland database), so show it greyed out */
+{const _pso=poiSettingsH;poiSettingsH=function(){let h=_pso();if(window.SRV&&window.SRV.on&&h.indexOf('<button id="set_osm"')>=0){h=h.replace('<button id="set_osm"','<div style="margin-top:8px;color:var(--mu);font-size:12px">Server games use the UK &amp; Ireland place database, so this setting has no effect here.</div><button id="set_osm" disabled aria-disabled="true" style="opacity:.4;pointer-events:none"')}return h}}
