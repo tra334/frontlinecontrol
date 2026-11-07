@@ -124,6 +124,7 @@
     buyT = (sid, ty) => fn("buyT", [sid, ty]);
     buyCells = id => fn("buyCells", [id]);
     setOOS = (id, v) => fn("setOOS", [id, v ? 1 : 0]);
+    buyAtp = k => fn("buyAtp", [k]);
     mvUGo = (id, sid) => { fn("mvUGo", [id, sid]); try { closeUI(); } catch (e) {} };
     delU = id => { fn("delU", [id]); try { closeUI(); } catch (e) {} };
     delS = id => {

@@ -25,7 +25,7 @@ function offKm(b){let r=Math.random()*100,k=1;for(let i=0;i<8;i++){r-=KMW[i];if(
 const ownN=ty=>S.un.filter(u=>u.ty===ty&&crewed(u)).length;
 const ownOK=t=>{if(t[0]==="a"&&ownN("dca")<1)return false;const dn=t[3].dca||0;if(dn>=2&&ownN("dca")<dn)return false;return Object.keys(t[3]).some(k=>!k.startsWith("tr:")&&ownN(k)>0)};
 const ownNeed=t=>{const o={};Object.entries(t[3]).forEach(([k,n])=>{if(k.startsWith("tr:")){o[k]=n;return}const c=ownN(k);if(c>0)o[k]=Math.min(n,c)});return o};
-const noAmb=m=>T[m.k][0]==="a"&&ownN("dca")<1;
+const noAmb=m=>!m.roomId&&T[m.k][0]==="a"&&ownN("dca")<1;
 const isShort=(t,nd)=>Object.entries(t[3]).some(([k,n])=>!k.startsWith("tr:")&&(nd[k]||0)<n);
 async function spawn(fk){if(spb)return;spb=1;if(fk===undefined)S.next=now()+rateMs();
 try{const svs=new Set(S.st.map(s=>s.sv)),rk=rank();
@@ -70,11 +70,24 @@ log("📻 "+u.cs+": “Control, "+u.cs+", conveying one prisoner to "+h.name+", 
 /* ===== chosen transport destination (per call): m.td = "auto" (default) | "none" | building id ===== */
 const tdKind=m=>{const t=T[m.k];return t[0]==="a"||(m.xn&&m.xn.dca)?"h":(t[0]==="p"&&!NOPRIS.has(t[1])?"p":null)};
 const tdOk=(d,k)=>!!d&&(k==="h"?(!d.sv&&d.ty!=="pn"&&hbusy(d)<HBEDS[d.ty]):((d.sv==="p"&&d.cl)||d.ty==="pn")&&hbusy(d)<dcap(d));
-function tdSel(m,k){const v=m.td;if(!v||v==="auto")return 0;if(v==="none")return -1;const d=dst(+v);if(tdOk(d,k))return d;if(!m._w){m._w=1;log("📍 Chosen "+(k==="h"?"hospital":"destination")+" is full or no longer available – using the nearest one instead.",1,m.id)}return 0}
+function atpAny(m,k){const pool=k==="h"?S.hs.filter(x=>x.ty!=="pn"):S.hs.filter(x=>x.ty==="pn").concat(S.st.filter(x=>x.sv==="p"&&x.cl));return pool.some(d=>tdOk(d,k)&&km([m.la,m.lo],[d.lat,d.lon])<=HMAX)}
+function tdSel(m,k){const v=m.td;if(v==="auto"&&m.atpA&&!atpAny(m,k))return -1;if(!v||v==="auto")return 0;if(v==="none")return -1;const d=dst(+v);if(tdOk(d,k))return d;if(!m._w){m._w=1;log("📍 Chosen "+(k==="h"?"hospital":"destination")+" is full or no longer available – using the nearest one instead.",1,m.id)}return 0}
 const needTr=m=>{const k=tdKind(m);if(!k)return false;const on=S.un.filter(u=>u.mid===m.id&&u.st==="scene");
 if(k==="h")return on.some(u=>u.ty==="dca"||u.ty==="air")&&S.hs.some(x=>x.ty!=="pn"&&hbusy(x)<HBEDS[x.ty]);
 return on.some(u=>PT.has(u.ty))&&(S.hs.some(x=>x.ty==="pn"&&hbusy(x)<HBEDS.pn)||S.st.some(x=>x.cl&&hbusy(x)<CELLCAP))};
-function holdTr(m){if(m.td||window._sim||!needTr(m))return false;if(!m._h){m._h=1;dirty=true;const k=tdKind(m),x="⏸ "+T[m.k][1]+" complete – select where to take the "+(k==="h"?"patient":"prisoner")+" to close the call.";log(x,1,m.id);rtoast(x)}return true}
+/* one-time transport passes: with a pass, a patient (ambulance) or prisoner (police) goes to the nearest place with space automatically */
+const ATP_COST=100000;
+const atpOwned=k=>!!(S.atp&&S.atp[k]);
+const ATP_NAME={h:"Auto ambulance transport",p:"Auto police transport"};
+function atpNeeds(k){return k==="h"?S.hs.some(x=>x.ty!=="pn"):(S.hs.some(x=>x.ty==="pn")||S.st.some(x=>x.sv==="p"&&x.cl))}
+const atpLockTxt=k=>k==="h"?"Locked – build a hospital first":"Locked – build a prison, or add cells to a police station first";
+function buyAtp(k){if(k!=="h"&&k!=="p")return;if(atpOwned(k)){toast("Already owned");return}if(!atpNeeds(k)){toast(atpLockTxt(k).replace("Locked – ",""));return}if(S.cr<ATP_COST){toast("Not enough credits.");return}
+S.cr-=ATP_COST;S.atp=Object.assign({},S.atp||{},{[k]:1});ldg("bn",ATP_NAME[k]+" bought",-ATP_COST);log("⚙ "+ATP_NAME[k]+" bought (-£"+fmt(ATP_COST)+")");toast(ATP_NAME[k]+" bought");dirty=true;persist()}
+function atpH(){const rows=[["h","Auto ambulance transport","Patients go to the nearest hospital with space, without you choosing."],["p","Auto police transport","Prisoners go to the nearest prison with space, without you choosing."]];
+return `<div class="card" style="border-left-color:var(--ac)"><div class="row"><span class="t">Upgrades</span><span class="mu">One-time purchase</span></div>`+rows.map(([k,n,d])=>`<div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--bd)"><div class="row"><span style="font-weight:600">${n}</span>${atpOwned(k)?`<span class="mu">Owned</span>`:`<span style="font-weight:700">£${fmt(ATP_COST)}</span>`}</div><div class="mu" style="margin:4px 0 8px">${d}</div>${atpOwned(k)?"":atpNeeds(k)?`<button onclick="buyAtp('${k}')">Buy for £${fmt(ATP_COST)}</button>`:`<div class="mu">${atpLockTxt(k)}</div>`}</div>`).join("")+`</div>`}
+function holdTr(m){if(m.td||window._sim||!needTr(m))return false;
+{const ak=tdKind(m);if(ak&&atpOwned(ak)){m.td="auto";m.atpA=1;dirty=true;return false}}
+if(!m._h){m._h=1;dirty=true;const k=tdKind(m),x="⏸ "+T[m.k][1]+" complete – select where to take the "+(k==="h"?"patient":"prisoner")+" to close the call.";log(x,1,m.id);rtoast(x)}return true}
 const remT=m=>{if(!wk(m))return"";if(m._h&&!m.td&&!m.hold0)return"";const l=Math.max(0,Math.ceil((m.end-now())/1000));return lci("timer")+" "+Math.floor(l/60)+":"+String(l%60).padStart(2,"0")+" until call completion"};
 const trqH=m=>m._h&&!m.td&&wk(m)?`<div class="trq" onclick="event.stopPropagation();openQ(${m.id})">${lci("siren")} TRANSPORT REQUIRED<span>Tap to choose destination</span></div>`:"";
 const remH=m=>wk(m)?`<div class="mu" style="font-size:12px;margin-top:3px;font-variant-numeric:tabular-nums">${remT(m)}</div>`:"";
@@ -101,8 +114,8 @@ function arrive(u,m){u.st="scene";const first=S.un.filter(x=>x.mid===m.id&&x.st=
 if(m.hid&&!m.rev){m.rev=1;r=u.cs+": “Control, situation is worse than reported — "+(hk(m)==="h"?"there are casualties":"there are hazards/weapons")+". Request "+Object.entries(m.hid.n).map(([k,n])=>n+" × "+U[k][1]).join(", ")+".”"}
 else if(first)r=u.cs+": “"+pick(FACT[T[m.k][0]])+"”";
 if(T[m.k][1]==="Welfare check"){const c=scn(m);
-if(!m.wst&&U[u.ty][0]==="p"){m.wst=1;if(c.wcNo){if(ownN("pump")>0){m.xn=mrg(m.xn||{},{pump:1});m.xb=(m.xb||0)+500}r=u.cs+": “Control, no response at the address after repeated knocking. Request a fire engine to gain entry.”"}else r=u.cs+": “Control, person came to the door — safe and well, just hadn’t been in contact. No further assistance required.”"}
-else if(m.wst===1&&U[u.ty][0]==="f"){m.wst=2;if(c.wcInj){if(ownN("dca")>0){m.xn=mrg(m.xn||{},{dca:1});m.xb=(m.xb||0)+600}r=u.cs+": “Control, entry gained. We have an injured person inside, conscious but unable to get up. Request an ambulance.”"}else r=u.cs+": “Control, entry gained. Person found safe and well, no injuries. No ambulance required.”"}
+if(!m.wst&&U[u.ty][0]==="p"){m.wst=1;if(c.wcNo){if(m.roomId||ownN("pump")>0){m.xn=mrg(m.xn||{},{pump:1});m.xb=(m.xb||0)+500}r=u.cs+": “Control, no response at the address after repeated knocking. Request a fire engine to gain entry.”"}else r=u.cs+": “Control, person came to the door — safe and well, just hadn’t been in contact. No further assistance required.”"}
+else if(m.wst===1&&U[u.ty][0]==="f"){m.wst=2;if(c.wcInj){if(m.roomId||ownN("dca")>0){m.xn=mrg(m.xn||{},{dca:1});m.xb=(m.xb||0)+600}r=u.cs+": “Control, entry gained. We have an injured person inside, conscious but unable to get up. Request an ambulance.”"}else r=u.cs+": “Control, entry gained. Person found safe and well, no injuries. No ambulance required.”"}
 else r=null}
 log("📻 "+u.cs+": “Control, "+u.cs+" showing in attendance at "+m.loc+".”",1,m.id);u.jobs=(u.jobs||0)+1;if(r)setTimeout(()=>{log("📻 "+r,1,m.id);rtoast(r)},1500)}
 function tick(){const t=now();
