@@ -54,6 +54,12 @@ label.ur{display:flex;gap:10px;align-items:center;padding:9px 6px;border-bottom:
 .sm.pin>.pi>img{border-radius:0!important}
 .mk>.sm.pin{transform:translate(-50%,-40px)}
 .mk:has(>.sm.pin){filter:drop-shadow(0 2px 3px rgba(0,0,0,.55))}
+/* cheaper pins: a vector clip-path instead of two image masks + a per-marker drop-shadow filter (no shadow now) (those made markers lag on phones). Browsers without clip-path:path() keep the old rules above. */
+@supports (clip-path:path("M0 0H1V1Z")){
+.sm.pin{-webkit-mask:none;mask:none;clip-path:path("M 10.39 0.00 H 23.61 A 10.39 10.39 0 0 1 34.00 10.39 V 23.61 A 10.39 10.39 0 0 1 23.61 34.00 H 22.67 L 18.51 40.23 Q 17.00 42.12 15.49 40.23 L 11.33 34.00 H 10.39 A 10.39 10.39 0 0 1 0.00 23.61 V 10.39 A 10.39 10.39 0 0 1 10.39 0.00 Z")}
+.sm.pin::before{-webkit-mask:none;mask:none;clip-path:path(evenodd,"M 10.39 0.00 H 23.61 A 10.39 10.39 0 0 1 34.00 10.39 V 23.61 A 10.39 10.39 0 0 1 23.61 34.00 H 22.67 L 18.51 40.23 Q 17.00 42.12 15.49 40.23 L 11.33 34.00 H 10.39 A 10.39 10.39 0 0 1 0.00 23.61 V 10.39 A 10.39 10.39 0 0 1 10.39 0.00 Z M 10.39 2.36 H 23.61 A 8.03 8.03 0 0 1 31.64 10.39 V 23.61 A 8.03 8.03 0 0 1 23.61 31.64 H 21.40 L 17.95 36.80 Q 17.00 38.16 16.05 36.80 L 12.60 31.64 H 10.39 A 8.03 8.03 0 0 1 2.36 23.61 V 10.39 A 8.03 8.03 0 0 1 10.39 2.36 Z")}
+.mk:has(>.sm.pin){filter:none}
+}
 .cw{width:32px;height:32px}.im{width:32px;height:32px;box-sizing:border-box;border-radius:50%;border:3px solid #fff;color:#fff;font:700 15px/26px system-ui;text-align:center;box-shadow:inset 0 0 0 2px rgba(255,255,255,.9),0 3px 10px rgba(0,0,0,.45)}.im.rs{box-shadow:inset 0 0 0 2px rgba(255,255,255,.9),0 0 0 4px rgba(253,224,71,.4),0 3px 10px rgba(0,0,0,.45)}
 .cw .im{position:absolute;inset:0;transform:none}.ni{position:absolute;right:-12px;top:-8px;transform:none;width:17px;height:17px;border-radius:50%;background:#ef4444;border:2px solid #fff;color:#fff;font:italic 700 12px/13px Georgia,serif;text-align:center;box-shadow:0 2px 6px rgba(0,0,0,.5);animation:ni .8s infinite}@keyframes ni{0%,49%{opacity:1}50%,100%{opacity:.2}}
 .vi{color:#fff;font:700 10px/12px system-ui;padding:2px 8px;border-radius:999px;border:2px solid #2563eb;animation:bl .6s infinite;box-shadow:0 2px 8px rgba(0,0,0,.5)}
