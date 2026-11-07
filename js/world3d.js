@@ -251,7 +251,7 @@ function vehicleLayer(){return{id:"veh3d",type:"custom",renderingMode:"3d",
    const sid=u.st==="idle"?u.sid:0;const i=sid?(idx[sid]=(idx[sid]||0)+1)-1:0,p=posOf(u,i),m=mercOf(p[0],p[1]);
    const hd=headingOf(u);if(hd!=null)V.h=V.h==null?hd:angLerp(V.h,hd,Math.min(1,dt*6));else if(V.h==null)V.h=(u.id%8)*Math.PI/4;
    const air=u.ty==="hel"||u.ty==="air",tgt=air&&(u.st==="out"||u.st==="back"||u.st==="hosp")?45:0;V.alt+=(tgt-V.alt)*Math.min(1,dt*1.5);
-   V.ll=p;V.root.position.set((m.x-mc.x)/s,V.alt,(m.y-mc.y)/s);V.root.rotation.y=-V.h;V.root.scale.setScalar(vm);V.root.visible=u.st!=="hand";
+   V.ll=p;V.root.position.set((m.x-mc.x)/s,V.alt,(m.y-mc.y)/s);V.root.rotation.y=-V.h;V.root.scale.setScalar(vm);V.root.visible=u.st!=="hand"&&u.st!=="idle";/* vehicles parked at their station are hidden */
    if(V.rotor&&u.st!=="idle")V.rotor.rotation.y+=dt*35;
    const lit=isLit(u);
    if(lit){const k=Math.floor(t*8+V.ph)%8,L=k===0||k===2,R=k===4||k===6;
@@ -297,7 +297,7 @@ function syncPin(){if(!map3)return;
   pin3.on("dragstart",stopFollow)}
  else if(!pin3.isDragging||!pin3.isDragging()){const p=pin3.getLngLat();if(Math.abs(p.lat-bll[0])>1e-9||Math.abs(p.lng-bll[1])>1e-9)pin3.setLngLat([bll[1],bll[0]])}}
 function syncLabels(){if(!map3||!S)return;const z=map3.getZoom();
- S.un.forEach(u=>{let o=vlb[u.id];const V=fleet[u.id],show=V&&u.st!=="hand"&&(z>=16||(z>=13.5&&u.st!=="idle"));
+ S.un.forEach(u=>{let o=vlb[u.id];const V=fleet[u.id],show=V&&u.st!=="hand"&&u.st!=="idle"&&z>=13.5;
   if(!show){if(o)o.mk.getElement().style.display="none";return}
   if(!o){const e=document.createElement("div");e.className="w3u";e.textContent=u.cs;e.style.setProperty("--c",SC[U[u.ty][0]]);e.onclick=ev=>{ev.stopPropagation();try{openUI(u.id)}catch(x){}};e.onpointerdown=ev=>ev.stopPropagation();
    o=vlb[u.id]={mk:new maplibregl.Marker({element:e,anchor:"bottom",offset:[0,-16]}).setLngLat([0,0]).addTo(map3)}}
