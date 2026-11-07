@@ -48,7 +48,7 @@ const free=pool.filter(p=>!S.ms.some(m=>km([m.la,m.lo],[p.la,p.lo])<POI_BUSY_KM)
 var POIM={};
 function poiSync(){const seen={};poiL().forEach(p=>{seen[p.id]=1;const ty=poiT(p.t);if(!ty)return;let o=POIM[p.id];if(!o){o=POIM[p.id]=L.marker([p.la,p.lo],{zIndexOffset:-500,icon:ic('<div data-f="poi" style="width:24px;height:24px;border-radius:50%;background:#7c3aed;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 1px 4px rgba(0,0,0,.5)">'+ty.e+'</div>')}).addTo(map);o.on("click",()=>poiDel(p.id))}else o.setLatLng([p.la,p.lo])});
 for(const id in POIM)if(!seen[id]){map.removeLayer(POIM[id]);delete POIM[id]}}
-function poiDel(id){const p=poiL().find(x=>x.id===id);if(!p)return;if(pm)return;if(!confirm("Remove this "+(poiT(p.t)||{n:"POI"}).n+" POI?"))return;S.poi=poiL().filter(x=>x.id!==id);persist();poiSync();refreshSettings()}
+function poiDel(id){const p=poiL().find(x=>x.id===id);if(!p)return;if(pm)return;if(!confirm("Remove this "+(poiT(p.t)||{n:"POI"}).n+" POI?"))return;if(window.SRV&&SRV.on){SRV.act({type:"poidel",id}).then(()=>{poiSync();refreshSettings()});return}S.poi=poiL().filter(x=>x.id!==id);persist();poiSync();refreshSettings()}
 /* ---- settings section ---- */
 var poiOpen=false;
 function poiSettingsH(){const tot=poiL().length;
@@ -66,6 +66,7 @@ function pmBanner(){const t=poiT(pm.t),c=poiCnt(pm.t);
 return `<div style="font-weight:700">${t.e} Place POI: <b>${t.n}</b> · ${c}/${POI_MAX}${pm.n?" · "+pm.n+" added":""}</div><div class="mu" style="margin:2px 0 6px;font-size:12px">Drag the pin or tap the map, then press Place POI.<span id="bpn"></span></div><select onchange="poiType(this.value)" style="width:100%;padding:8px;margin-bottom:8px;border-radius:8px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font:600 13px system-ui" aria-label="POI type">${POI_TYPES.map(x=>`<option value="${x.id}"${x.id===pm.t?" selected":""}>${x.e} ${x.n} (${poiCnt(x.id)}/${POI_MAX})</option>`).join("")}</select><div style="display:flex;gap:8px"><button class="s g" style="flex:1" onclick="poiExit()">Exit</button><button class="s" style="flex:2;background:#7c3aed" ${c>=POI_MAX?"disabled":""} onclick="poiConfirm()">${lci("plus")} Place POI</button></div>`}
 function poiConfirm(){if(!pm||!bll)return;const t=poiT(pm.t);if(poiCnt(pm.t)>=POI_MAX){toast("Maximum of "+POI_MAX+" "+t.n+" POIs reached.");return}
 if(!land(bll[0],bll[1])){toast(OUTMSG);return}
+if(window.SRV&&SRV.on){SRV.act({type:"poiadd",t:pm.t,la:bll[0],lo:bll[1]}).then(()=>{poiSync();paint()});return}
 S.poiN=(S.poiN||0)+1;poiL().push({id:S.poiN,t:pm.t,la:+bll[0].toFixed(5),lo:+bll[1].toFixed(5)});pm.n++;persist();poiSync();toast(t.e+" "+t.n+" POI placed ("+poiCnt(pm.t)+"/"+POI_MAX+"). Move the pin to add another, switch type, or press Exit.");paint()}
 /* keep markers in step with the normal map sync */
 (function(){const s0=sync;sync=function(){s0.apply(this,arguments);try{poiSync()}catch(e){}}})();
