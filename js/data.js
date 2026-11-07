@@ -56,7 +56,7 @@ const T=[
 ["a","Cat 1 – choking","“My toddler’s choking on a grape!”",{rrv:1,dca:1},40,700,["home","restaurant"]],
 ["a","Cat 2 – stroke","“Her face has dropped and speech is slurred.”",{dca:1,rrv:1},50,650,["home","church","care_home"]],
 ["a","Cat 1 – major trauma RTC","“Motorbike versus van, rider’s unconscious.”",{dca:2,"tr:trauma":1,rrv:1},100,2500,["road","bridge"]],
-["a","Cat 1 – childbirth","“Her waters broke, baby’s coming now!”",{dca:1,rrv:1},60,800,["home","hospital"]],
+["a","Cat 1 – childbirth","“Her waters broke, baby’s coming now!”",{dca:1,rrv:1},60,800,["home","station","shop","supermarket","restaurant","pub","hotel","office","car_park"]],
 ["a","Mass casualty – coach crash","“Coach has rolled over, loads hurt!”",{dca:4,hart:1,rrv:2,ao:1,mci:1},120,4000,["road","bridge"]],
 ["f","Chemical spill","“There’s a tanker leaking and a strange smell!”",{pump:1,"tr:hazmat":1},80,1200,["industrial","petrol"]],
 ["f","Person in river","“Someone’s fallen in the river and is being swept away!”",{pump:1,wru:1,dca:1},70,1300,["water","bridge","harbour","lake"]],
