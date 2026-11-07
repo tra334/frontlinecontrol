@@ -139,11 +139,19 @@ let osmMvT=0;try{map.on("moveend",()=>{clearTimeout(osmMvT);osmMvT=setTimeout(os
 function osmSetShow(v){setSet("osmShow",!!v);if(v){osmShowAll()}osmShowSync()}
 setInterval(osmShowSync,15000);setTimeout(osmShowSync,5000);
 /* ---------- pick a real place for mission template t near station b; null = normal random spawn ---------- */
-function osmPick(t,b){if(!osmOn()||Math.random()>OSM_CHANCE)return null;if(!b){const o=(S.st||[]).filter(x=>x.sv===t[0]);if(!o.length)return null;b=pick(o)}
-const ids=missPoi(t).filter(id=>id in OSM_NOM);if(!ids.length)return null;
-const id=pick(ids),d=osmGet(id,b.lat,b.lon);if(!d){osmEnq(id,b.lat,b.lon,1);return null}
-const mx=Math.min(id==="prison"?40:8,osmRad(id)/1000),free=d.filter(p=>{const r=km([b.lat,b.lon],[p[0],p[1]]);return r>=.2&&r<=mx&&!S.ms.some(m=>km([m.la,m.lo],[p[0],p[1]])<POI_BUSY_KM)});
-if(!free.length)return null;const p=pick(free);return{la:p[0],lo:p[1],nm:p[2]||"",osm:1}}
+function osmPick(t,b){if(!osmOn())return null;
+ const ids=missPoi(t).filter(id=>id in OSM_NOM);if(!ids.length)return null;
+ const sts=b?[b]:(S.st||[]).filter(x=>x.sv===t[0]);if(!sts.length)return null;
+ /* try every station and every fitting place type (in random order) before giving up, and look at the neighbouring map areas too */
+ const cand=[];sts.forEach(s=>ids.forEach(id=>cand.push([s,id])));
+ for(let i=cand.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));const x=cand[i];cand[i]=cand[j];cand[j]=x}
+ for(const [s,id] of cand.slice(0,40)){
+  const mx=Math.min(id==="prison"?40:8,osmRad(id)/1000);let all=[];
+  for(const dl of [-OSM_CELL,0,OSM_CELL])for(const dn of [-OSM_CELL,0,OSM_CELL]){const la=s.lat+dl,lo=s.lon+dn,d=osmGet(id,la,lo);if(!d){osmEnq(id,la,lo,1);continue}all=all.concat(d)}
+  const free=all.filter(p=>{const r=km([s.lat,s.lon],[p[0],p[1]]);return r>=.2&&r<=mx&&!S.ms.some(m=>km([m.la,m.lo],[p[0],p[1]])<POI_BUSY_KM)});
+  if(free.length){const p=pick(free);return{la:p[0],lo:p[1],nm:p[2]||"",osm:1}}
+ }
+ return null}
 (function(){const p0=poiPick;poiPick=function(t,b){const u=p0(t);if(u)return u;try{return osmPick(t,b)}catch(e){return null}}})();
 /* settings toggle, appended under the custom POI section */
 (function(){const h0=poiSettingsH,b0=poiBind;
