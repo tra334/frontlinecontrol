@@ -34,7 +34,7 @@ const t=fk===undefined?pick(pool):T[fk],k=T.indexOf(t),own=S.st.filter(x=>x.sv==
 for(let i=0;i<5&&!loc&&1;i++){[la,lo]=offKm(b);const sn=await snap(la,lo);if(sn&&sn.name&&sn.d<400){la=sn.la;lo=sn.lo;loc=await addr(la,lo,sn.name)}}
 if(!loc){const bl=land(b.lat,b.lon);for(let i=0;i<12;i++){[la,lo]=offKm(b);if(!bl||land(la,lo))break}if(bl&&!land(la,lo)){la=b.lat;lo=b.lon}loc={s:Math.ceil(R(1,98))+" "+pick(ROADS),t:near(la,lo),pc:fpc(la,lo),rd:"",fk:1}}
 const kd=t[0]==="a"||Math.random()<.5?"h":"w";let hn=kd==="h"||t[0]==="a"?(t[0]==="a"?{rrv:1}:{dca:1}):t[0]==="p"?{arv:1}:{icu:1};
-if(!Object.keys(hn).every(x=>U[x][3]<=rk))hn=null;if(hn){hn=Object.fromEntries(Object.entries(hn).filter(([x])=>ownN(x)>0));if(!Object.keys(hn).length)hn=null}if(t[1]==="Welfare check")hn=null;
+if(!Object.keys(hn).every(x=>U[x][3]<=rk))hn=null;if(hn){hn=Object.fromEntries(Object.entries(hn).filter(([x])=>ownN(x)>0));if(!Object.keys(hn).length)hn=null}if(t[1]==="Welfare check"||(t.qa&&t.qa.length))hn=null;
 const NEED=ownNeed(t),SHORT=isShort(t,NEED);S.ms.push({id:S.nid++,k,la,lo,loc:loc.s+", "+loc.t+", "+loc.pc,adr:loc,adc:0,cn:pick(NM)+" "+pick(NS),ph:newPh(),cad:cadGen(),born:now(),ans:0,end:0,qa:[],hid:hn?{k:kd,n:hn}:null,rev:0,need:NEED,short:SHORT});
 log("📞 Incoming 999 call – answer it!",1);ctoast(S.ms[S.ms.length-1]);return 1}finally{spb=0}}
 const eta=(u,m)=>km(upos(u),mp(m))*(SP[u.ty]>=150?1:1.3)/(SP[u.ty]*spd())*3600;
