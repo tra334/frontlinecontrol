@@ -657,9 +657,10 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
   // ---------- custom missions (added to the game's mission list) ----------
   // Draft missions are only visible here. Publishing assigns a permanent position in the game's list, so after that
   // only Retire / Restore is allowed: to change a live mission, duplicate it, publish the copy and retire the old one.
-  const MS_VEH = [["pump","f","Fire engine"],["rt","f","Rescue tender"],["wc","f","Water carrier"],["alp","f","Aerial ladder platform"],["icu","f","Incident command unit"],["fo","f","Fire officer car"],["wf","f","Wildfire 4x4"],["wru","f","Water rescue unit"],["hmu","f","Hazmat unit"],["usar","f","Urban search & rescue"],["irv","p","Response car"],["van","p","Police van"],["rp","p","Roads policing"],["dog","p","Dog unit"],["arv","p","Armed response"],["sgt","p","Patrol sergeant car"],["mc","p","Police motorcycle"],["cid","p","CID detectives"],["po","p","Public order carrier"],["hel","p","Police helicopter"],["dca","a","Ambulance"],["rrv","a","Rapid response car"],["ao","a","Ambulance officer"],["bike","a","Paramedic motorbike"],["hart","a","HART team"],["ccc","a","Critical care car"],["air","a","Air ambulance"],["mci","a","Major incident unit"]], MS_PLACES = ["pub","restaurant","hotel","supermarket","shop","services","home","care_home","high","school","college","civic","attraction","stadium","major_stadium","rec","leisure","hospital","church","station","road","car_park","petrol","office","airport","industrial","farm","water","lake","harbour","coast","woods","cemetery","bridge","prison"], MS_SV = { f: "Fire", p: "Police", a: "Ambulance" };
+  const MS_VEH = [["pump","f","Fire engine"],["rt","f","Rescue tender"],["wc","f","Water carrier"],["alp","f","Aerial ladder platform"],["icu","f","Incident command unit"],["fo","f","Fire officer car"],["wf","f","Wildfire 4x4"],["wru","f","Water rescue unit"],["hmu","f","Hazmat unit"],["usar","f","Urban search & rescue"],["irv","p","Response car"],["van","p","Police van"],["rp","p","Roads policing"],["dog","p","Dog unit"],["arv","p","Armed response"],["sgt","p","Patrol sergeant car"],["mc","p","Police motorcycle"],["cid","p","CID detectives"],["po","p","Public order carrier"],["hel","p","Police helicopter"],["dca","a","Ambulance"],["rrv","a","Rapid response car"],["ao","a","Ambulance officer"],["bike","a","Paramedic motorbike"],["hart","a","HART team"],["ccc","a","Critical care car"],["air","a","Air ambulance"],["mci","a","Major incident unit"]], MS_PLACES = ["pub","restaurant","hotel","supermarket","shop","services","home","care_home","high","school","college","civic","attraction","stadium","major_stadium","rec","leisure","hospital","church","station","road","car_park","petrol","office","airport","industrial","farm","water","lake","harbour","coast","woods","cemetery","bridge","prison"], MS_SV = { f: "Fire", p: "Police", a: "Ambulance" },
+    MS_STD = ["What\u2019s happened?", "Is anyone hurt?", "Any weapons or dangers?", "How many people are involved?", "Is it still happening?", "Nearest landmark or junction?", "Are you in a safe place right now?", "Is the patient breathing and conscious?", "Description of anyone involved?", "Is anyone still inside or trapped?", "Can you see flames or smoke?", "Is the fire spreading?", "Is there any bleeding?", "How old is the patient?", "Did they leave in a vehicle?", "Are the offenders still at the scene?"];
   let msList = [], msEdit = null;
-  const msNew = () => ({ id: null, status: "draft", svc: "f", name: "", caller: "", needs: {}, secs: 60, pay: 500, places: ["road"] });
+  const msNew = () => ({ id: null, status: "draft", svc: "f", name: "", caller: "", needs: {}, secs: 60, pay: 500, places: ["road"], g: 0, qa: [] });
   async function showMissions() {
     msEdit = null;
     $("#main").innerHTML = `<div class="row" style="justify-content:space-between;margin:4px 0 10px"><h3 style="margin:0">Missions</h3><button class="btn pri" id="ms_new">+ New mission</button></div><div id="ms_form"></div><div class="card" id="ms_list"><div class="mu">Loading…</div></div>`;
@@ -691,36 +692,82 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
   }
   function msForm() {
     const m = msEdit, box = $("#ms_form"); if (!box) return;
-    const vehOpts = sv => MS_VEH.filter(v => v[1] === sv).map(v => `<option value="${v[0]}">${esc(v[2])}</option>`).join("");
+    const vehOpts = () => ["f", "p", "a"].map(sv => `<optgroup label="${MS_SV[sv]}">` + MS_VEH.filter(v => v[1] === sv).map(v => `<option value="${v[0]}">${esc(v[2])}</option>`).join("") + "</optgroup>").join("");
+    m.qa = Array.isArray(m.qa) ? m.qa : []; m.g = [1, 2, 3, 4].includes(+m.g) ? +m.g : 0;
     box.innerHTML = `<div class="card"><h3 style="margin-top:0">${m.id ? "Edit draft" : "New mission"}</h3>
       <div class="row"><select id="ms_sv"><option value="f">Fire</option><option value="p">Police</option><option value="a">Ambulance</option></select><input id="ms_n" placeholder="Mission name, e.g. Substation fire" maxlength="60"></div>
       <input id="ms_c" placeholder="What the caller says" maxlength="160" style="margin-top:8px;width:100%">
-      <div class="mu" style="margin:12px 0 4px">Vehicles needed</div><div id="ms_v"></div>
+      <div class="mu" style="margin:12px 0 4px">Vehicles needed <span style="opacity:.7">(any service can be mixed, e.g. a fire call that also needs an ambulance)</span></div><div id="ms_v"></div>
       <div class="row" style="margin-top:6px"><select id="ms_vs"></select><input id="ms_vn" type="number" min="1" max="10" value="1" style="width:70px"><button class="btn sm" id="ms_va">Add</button></div>
-      <div class="row" style="margin-top:12px"><label class="mu">Seconds on scene <input id="ms_t" type="number" min="20" max="1200" style="width:90px"></label><label class="mu">Payout (£) <input id="ms_p" type="number" min="50" max="20000" style="width:100px"></label></div>
+      <div class="row" style="margin-top:12px"><label class="mu">Seconds on scene <input id="ms_t" type="number" min="20" max="1200" style="width:90px"></label><label class="mu">Payout (£) <input id="ms_p" type="number" min="50" max="20000" style="width:100px"></label><label class="mu">Grade <select id="ms_g"><option value="0">Auto (from payout)</option><option value="1">G1 – life threatening</option><option value="2">G2 – urgent</option><option value="3">G3 – standard</option><option value="4">G4 – low priority</option></select></label></div>
       <div class="mu" style="margin:12px 0 4px">Can spawn at</div><div id="ms_pl" style="display:flex;flex-wrap:wrap;gap:6px"></div>
-      <div class="mu" style="margin-top:10px">The minimum rank comes from the vehicles chosen, and the call grade from the payout. Players hear generic caller answers for custom missions.</div>
+      <div class="mu" style="margin:14px 0 4px">Caller questions &amp; answers <span style="opacity:.7">(optional, up to 12)</span></div>
+      <div class="mu" style="margin-bottom:6px">Shown to players as buttons when they question the caller. Use the exact wording of a standard question (pick one from the suggestions) to replace its generic answer for this mission only; any other wording becomes an extra question. An answer can reveal extra vehicles the call needs, added once the player has asked it.</div>
+      <div id="ms_qa"></div><button type="button" class="btn sm" id="ms_qa_add">+ Add question</button>
+      <datalist id="ms_std">${MS_STD.map(q => `<option value="${esc(q)}">`).join("")}</datalist>
+      <div class="mu" style="margin-top:10px">The minimum rank comes from the vehicles chosen. The grade is Auto (from the payout) unless you pick one. Questions you don't write use the generic caller answers.</div>
       <div id="ms_err" style="color:var(--rd);margin-top:8px"></div>
       <div class="row" style="margin-top:10px"><button class="btn pri" id="ms_save">Save draft</button><button class="btn" id="ms_x">Cancel</button></div></div>`;
-    $("#ms_sv").value = m.svc; $("#ms_n").value = m.name; $("#ms_c").value = m.caller; $("#ms_t").value = m.secs; $("#ms_p").value = m.pay;
+    $("#ms_sv").value = m.svc; $("#ms_n").value = m.name; $("#ms_c").value = m.caller; $("#ms_t").value = m.secs; $("#ms_p").value = m.pay; $("#ms_g").value = String(m.g);
     const drawV = () => {
-      $("#ms_vs").innerHTML = vehOpts($("#ms_sv").value);
+      $("#ms_vs").innerHTML = vehOpts();
       $("#ms_v").innerHTML = Object.keys(m.needs).map(k => `<span class="tag t-idle" style="margin:0 6px 6px 0">${m.needs[k]} × ${esc((MS_VEH.find(v => v[0] === k) || [])[2] || k)} <a href="#" data-x="${k}" aria-label="Remove">×</a></span>`).join("") || '<span class="mu">None yet</span>';
       $("#ms_v").querySelectorAll("[data-x]").forEach(a => a.onclick = e => { e.preventDefault(); delete m.needs[a.dataset.x]; drawV(); });
     };
     const drawP = () => { $("#ms_pl").innerHTML = MS_PLACES.map(p => `<button type="button" class="btn sm ${m.places.includes(p) ? "gha" : ""}" data-pl="${p}" aria-pressed="${m.places.includes(p)}">${p.replace("_", " ")}</button>`).join(""); $("#ms_pl").querySelectorAll("[data-pl]").forEach(b => b.onclick = () => { const i = m.places.indexOf(b.dataset.pl); if (i >= 0) m.places.splice(i, 1); else if (m.places.length < 6) m.places.push(b.dataset.pl); drawP(); }); };
-    $("#ms_sv").onchange = () => { m.svc = $("#ms_sv").value; m.needs = {}; drawV(); };
+    $("#ms_sv").onchange = () => { m.svc = $("#ms_sv").value; };
     $("#ms_va").onclick = () => { const k = $("#ms_vs").value, n = Math.max(1, Math.min(10, +$("#ms_vn").value || 1)); if (k) { m.needs[k] = n; drawV(); } };
+    const vName = k => (MS_VEH.find(v => v[0] === k) || [])[2] || k;
+    const drawQA = () => {
+      const box2 = $("#ms_qa");
+      box2.innerHTML = m.qa.map((p, i) => `<div class="card" style="margin:0 0 8px;padding:10px" data-i="${i}">
+        <input data-q placeholder="Question the player asks, e.g. Is anyone trapped?" maxlength="80" list="ms_std" style="width:100%">
+        <textarea data-a rows="2" maxlength="240" placeholder="What the caller answers" style="width:100%;margin-top:6px"></textarea>
+        <div class="mu" style="margin:6px 0 4px">Vehicles this answer reveals</div><div data-chips></div>
+        <div class="row" style="margin-top:4px"><select data-vs>${vehOpts()}</select><input data-vn type="number" min="1" max="5" value="1" style="width:60px"><button type="button" class="btn sm" data-va>Add</button><button type="button" class="btn sm ghr" data-rm>Remove question</button></div></div>`).join("");
+      box2.querySelectorAll("[data-i]").forEach(el => {
+        const i = +el.dataset.i, p = m.qa[i];
+        el.querySelector("[data-q]").value = p.q || ""; el.querySelector("[data-a]").value = p.a || "";
+        el.querySelector("[data-q]").oninput = e => { p.q = e.target.value; };
+        el.querySelector("[data-a]").oninput = e => { p.a = e.target.value; };
+        const chips = () => {
+          const c = el.querySelector("[data-chips]"), ks = Object.keys(p.veh || {});
+          c.innerHTML = ks.map(k => `<span class="tag t-idle" style="margin:0 6px 6px 0">${p.veh[k]} × ${esc(vName(k))} <a href="#" data-x="${k}" aria-label="Remove">×</a></span>`).join("") || '<span class="mu">None</span>';
+          c.querySelectorAll("[data-x]").forEach(a => a.onclick = e => { e.preventDefault(); delete p.veh[a.dataset.x]; if (!Object.keys(p.veh).length) delete p.veh; chips(); });
+        };
+        el.querySelector("[data-va]").onclick = () => {
+          const k = el.querySelector("[data-vs]").value, n = Math.max(1, Math.min(5, +el.querySelector("[data-vn]").value || 1));
+          p.veh = p.veh || {};
+          if (!p.veh[k] && Object.keys(p.veh).length >= 4) { toast("Up to 4 vehicle types per answer"); return; }
+          p.veh[k] = n; chips();
+        };
+        el.querySelector("[data-rm]").onclick = () => { m.qa.splice(i, 1); drawQA(); };
+        chips();
+      });
+      $("#ms_qa_add").hidden = m.qa.length >= 12;
+    };
+    $("#ms_qa_add").onclick = () => { if (m.qa.length < 12) { m.qa.push({ q: "", a: "" }); drawQA(); } };
     $("#ms_x").onclick = () => { msEdit = null; box.innerHTML = ""; };
     $("#ms_save").onclick = async () => {
-      m.name = $("#ms_n").value.trim(); m.caller = $("#ms_c").value.trim(); m.secs = +$("#ms_t").value; m.pay = +$("#ms_p").value; m.svc = $("#ms_sv").value;
-      const err = !(m.name.length >= 3) ? "Name needs at least 3 characters" : !(m.caller.length >= 5) ? "Write what the caller says" : !Object.keys(m.needs).length ? "Add at least one vehicle"
-        : !(m.secs >= 20 && m.secs <= 1200) ? "Seconds on scene must be 20 to 1200" : !(m.pay >= 50 && m.pay <= 20000) ? "Payout must be £50 to £20,000" : !m.places.length ? "Pick at least one place type" : "";
+      m.name = $("#ms_n").value.trim(); m.caller = $("#ms_c").value.trim(); m.secs = +$("#ms_t").value; m.pay = +$("#ms_p").value; m.svc = $("#ms_sv").value; m.g = +$("#ms_g").value || 0;
+      m.qa = m.qa.map(p => ({ q: (p.q || "").trim(), a: (p.a || "").trim(), veh: p.veh })).filter(p => p.q || p.a || p.veh).map(p => { if (!p.veh || !Object.keys(p.veh).length) delete p.veh; return p; });
+      const nq = t => t.toLowerCase().replace(/'/g, "\u2019"), seen = new Set();
+      let qerr = "";
+      m.qa.forEach((p, i) => {
+        if (qerr) return;
+        if (p.q.length < 3 || p.q.length > 80) qerr = "Question " + (i + 1) + " needs 3 to 80 characters";
+        else if (p.a.length < 2 || p.a.length > 240) qerr = "Answer " + (i + 1) + " needs 2 to 240 characters";
+        else if (seen.has(nq(p.q))) qerr = "Question " + (i + 1) + " is a duplicate";
+        else if (/address of the emergency/i.test(p.q)) qerr = "The address question can't be changed";
+        seen.add(nq(p.q));
+      });
+      const err = qerr || (!(m.name.length >= 3) ? "Name needs at least 3 characters" : !(m.caller.length >= 5) ? "Write what the caller says" : !Object.keys(m.needs).length ? "Add at least one vehicle"
+        : !(m.secs >= 20 && m.secs <= 1200) ? "Seconds on scene must be 20 to 1200" : !(m.pay >= 50 && m.pay <= 20000) ? "Payout must be £50 to £20,000" : !m.places.length ? "Pick at least one place type" : "");
       $("#ms_err").textContent = err; if (err) return;
-      try { await api("/api/admin/mission", { id: m.id, svc: m.svc, name: m.name, caller: m.caller, needs: m.needs, secs: m.secs, pay: m.pay, places: m.places }); toast("Draft saved"); msEdit = null; box.innerHTML = ""; msLoad(); }
+      try { await api("/api/admin/mission", { id: m.id, svc: m.svc, name: m.name, caller: m.caller, needs: m.needs, secs: m.secs, pay: m.pay, places: m.places, g: m.g || null, qa: m.qa }); toast("Draft saved"); msEdit = null; box.innerHTML = ""; msLoad(); }
       catch (e) { $("#ms_err").textContent = e.message; }
     };
-    drawV(); drawP();
+    drawV(); drawP(); drawQA();
   }
 
   // ---------- global bonuses (every player can claim each one once, from the Ranks tab) ----------
