@@ -251,7 +251,8 @@ function vehicleLayer(){return{id:"veh3d",type:"custom",renderingMode:"3d",
   const idx={};let anyVis=false,chg=false;keepGoing=false;
   /* only draw vehicles that are on screen (+15% margin): each one is ~100+ meshes, so off-screen ones are pure waste */
   const B=map3.getBounds(),bw=B.getWest(),be=B.getEast(),bs=B.getSouth(),bn=B.getNorth(),mx=(be-bw)*.15,my=(bn-bs)*.15;
-  for(const id in fleet){const V=fleet[id],u=V.u;if(!S||!S.un.includes(u)){continue}
+  for(const id in fleet){const V=fleet[id],u=V.u;if(!S)continue;
+   if(u.st==="idle"||u.st==="hand"){if(V.root.visible){V.root.visible=false;chg=true}continue}/* parked: hidden, skip all the maths */
    const sid=u.st==="idle"?u.sid:0;const i=sid?(idx[sid]=(idx[sid]||0)+1)-1:0,p=posOf(u,i),m=mercOf(p[0],p[1]);
    const hd=headingOf(u);if(hd!=null)V.h=V.h==null?hd:angLerp(V.h,hd,Math.min(1,dt*6));else if(V.h==null)V.h=(u.id%8)*Math.PI/4;
    const air=u.ty==="hel"||u.ty==="air",tgt=air&&(u.st==="out"||u.st==="back"||u.st==="hosp")?45:0;V.alt+=(tgt-V.alt)*Math.min(1,dt*1.5);
@@ -273,9 +274,15 @@ function vehicleLayer(){return{id:"veh3d",type:"custom",renderingMode:"3d",
 function kick(){if(map3&&!rpT&&S&&S.un.some(u=>u.st!=="idle"&&u.st!=="hand"))map3.triggerRepaint()}
 
 /* reconcile 3D models with the game's units */
+function disposeV(V){try{V.root.traverse(o=>{if(o.geometry&&o.geometry!==BOX&&o.geometry!==CYL&&o.geometry!==SPH&&o.geometry!==CIR&&o.geometry!==PLN)o.geometry.dispose();if(o.isSprite&&o.material)o.material.dispose()});V.lm[0].concat(V.lm[1]).forEach(m=>m.dispose())}catch(e){}}
 function syncFleet(){if(!scene||!S)return;const seen={};
- S.un.forEach(u=>{seen[u.id]=1;let V=fleet[u.id];if(!V||V.u!==u){try{if(V)scene.remove(V.root);V=fleet[u.id]=buildVehicle(u);scene.add(V.root)}catch(e){seen[u.id]=1;if(!W3.err){W3.err='model '+u.ty+': '+(e&&e.message||e);console.error(e);toast('3D model error: '+W3.err)}}}});
- for(const id in fleet)if(!seen[id]){scene.remove(fleet[id].root);fleet[id].lm[0].concat(fleet[id].lm[1]).forEach(m=>m.dispose());delete fleet[id]}}
+ S.un.forEach(u=>{seen[u.id]=1;let V=fleet[u.id];
+  /* server games swap in brand-new unit objects every poll: keep the existing model and just re-point it (only rebuild if the vehicle type changed) */
+  if(V&&V.u!==u){if(V.u.ty===u.ty)V.u=u;else{scene.remove(V.root);disposeV(V);delete fleet[u.id];V=null}}
+  /* parked units are hidden, so no model is built until a unit first leaves its station */
+  if(!V){if(u.st==="idle"||u.st==="hand")return;
+   try{V=fleet[u.id]=buildVehicle(u);scene.add(V.root)}catch(e){if(!W3.err){W3.err='model '+u.ty+': '+(e&&e.message||e);console.error(e);toast('3D model error: '+W3.err)}}}});
+ for(const id in fleet)if(!seen[id]){scene.remove(fleet[id].root);disposeV(fleet[id]);delete fleet[id]}}
 
 /* DOM markers: stations, hospitals/custody, calls + unit callsign chips */
 function mkEl(cls,c,inner,label,onClick){const e=document.createElement("div");e.className="w3m "+cls;e.style.setProperty("--c",c);
@@ -310,7 +317,7 @@ function syncLabels(){if(!map3||!S)return;const z=map3.getZoom();
   if(!o){const e=document.createElement("div");e.className="w3u";e.textContent=u.cs;e.style.setProperty("--c",SC[U[u.ty][0]]);e.onclick=ev=>{ev.stopPropagation();try{openUI(u.id)}catch(x){}};e.onpointerdown=ev=>ev.stopPropagation();
    o=vlb[u.id]={mk:new maplibregl.Marker({element:e,anchor:"bottom",offset:[0,-16]}).setLngLat([0,0]).addTo(map3)}}
   const el=o.mk.getElement();el.style.display="";el.classList.toggle("w3rs",isLit(u));const p=V.ll||upos(u);if(o.la!==p[0]||o.lo!==p[1]){o.la=p[0];o.lo=p[1];o.mk.setLngLat([p[1],p[0]])}});
- for(const id in vlb)if(!S.un.some(u=>String(u.id)===id)){vlb[id].mk.remove();delete vlb[id]}}
+ const ids=new Set(S.un.map(u=>String(u.id)));for(const id in vlb)if(!ids.has(id)){vlb[id].mk.remove();delete vlb[id]}}
 
 /* blue route lines for responding units */
 function syncRoutes(){if(!map3||!map3.getSource("routes")||!S)return;const f=[];
