@@ -18,7 +18,8 @@
     for (const p of list) {
       if (!p || !str(p.q, 3, 80) || !str(p.a, 2, 240)) return null;
       const key = p.q.trim().toLowerCase().replace(/'/g, "\u2019");
-      if (seen.has(key) || /address of the emergency/.test(key)) return null;
+      if (/address of the emergency|name and phone number|nearest landmark or junction/.test(key)) continue; /* fixed questions: their answers can't be set, so an old pair is ignored rather than breaking the call */
+      if (seen.has(key)) return null;
       seen.add(key);
       const e = { q: p.q.trim(), a: p.a.trim() };
       if (p.veh != null) {
