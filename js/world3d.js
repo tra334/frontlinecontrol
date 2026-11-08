@@ -12,6 +12,8 @@ const MODE_KEY="fc_mode",STYLE_URL="https://tiles.openfreemap.org/styles/liberty
 let asked=false,active=false,busy=false,libs=null;
 const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}},lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
 const hasGL=()=>{try{const c=document.createElement("canvas");return!!(c.getContext("webgl2")||c.getContext("webgl"))}catch(e){return false}};
+/* phones/tablets get slightly simpler vehicle models and smaller decal textures */
+const LOW=(()=>{try{return/iPhone|iPad|iPod|Android|Mobi/i.test(navigator.userAgent)||(navigator.maxTouchPoints>1&&/Mac/.test(navigator.platform))||matchMedia("(pointer:coarse)").matches}catch(e){return false}})();
 const esc2=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
 /* ---------- styles ---------- */
@@ -77,7 +79,7 @@ const ON=0x6aa8ff,OFF=0x0d1b45,GLASS="#0e1a28",PI=Math.PI;
 const LV={pol:{body:"#f7f9fc",a:"#1d4ed8",b:"#f0ea1c",tx:"#1d4ed8",w:"POLICE"},
  fir:{body:"#c8161d",a:"#c8161d",b:"#f4e20a",tx:"#ffffff",w:"FIRE"},
  amb:{body:"#f2dc2e",a:"#17703a",b:"#a8d83c",tx:"#17703a",w:"AMBULANCE"}};
-function initShared(){if(BOX)return;T3=window.THREE;BOX=new T3.BoxGeometry(1,1,1);CYL=new T3.CylinderGeometry(1,1,1,16);SPH=new T3.SphereGeometry(1,16,12);CIR=new T3.CircleGeometry(1,24);PLN=new T3.PlaneGeometry(1,1);
+function initShared(){if(BOX)return;T3=window.THREE;BOX=new T3.BoxGeometry(1,1,1);CYL=new T3.CylinderGeometry(1,1,1,LOW?10:16);SPH=new T3.SphereGeometry(1,LOW?10:16,LOW?8:12);CIR=new T3.CircleGeometry(1,24);PLN=new T3.PlaneGeometry(1,1);
  const c=document.createElement("canvas");c.width=c.height=64;const x=c.getContext("2d"),g=x.createRadialGradient(32,32,0,32,32,32);g.addColorStop(0,"rgba(255,255,255,1)");g.addColorStop(.25,"rgba(120,180,255,.7)");g.addColorStop(1,"rgba(40,100,255,0)");x.fillStyle=g;x.fillRect(0,0,64,64);GLOW=new T3.CanvasTexture(c)}
 const mat=c=>MATS[c]||(MATS[c]=new T3.MeshLambertMaterial({color:new T3.Color(c),side:T3.DoubleSide}));
 const bmat=c=>MATS["b"+c]||(MATS["b"+c]=new T3.MeshBasicMaterial({color:new T3.Color(c)}));
@@ -85,20 +87,20 @@ function box(p,w,h,l,c,x,y,z){const m=new T3.Mesh(BOX,typeof c==="object"?c:mat(
 function cyl(p,rx,len,rz,c,x,y,z,ax){const m=new T3.Mesh(CYL,typeof c==="object"?c:mat(c));if(ax==="z")m.rotation.x=PI/2;else if(ax==="x")m.rotation.z=PI/2;m.scale.set(rx,len,rz);m.position.set(x,y,z);p.add(m);return m}
 /* extruded side profile (pts are [x forward, y up] in metres) -> solid body, optionally bevelled */
 function prof(g,pts,W,c,bv){const sh=new T3.Shape();pts.forEach((p,i)=>i?sh.lineTo(p[0],p[1]):sh.moveTo(p[0],p[1]));
- const geo=new T3.ExtrudeGeometry(sh,bv?{depth:W-2*bv,bevelEnabled:true,bevelThickness:bv,bevelSize:bv,bevelSegments:3}:{depth:W,bevelEnabled:false});
+ const geo=new T3.ExtrudeGeometry(sh,bv?{depth:W-2*bv,bevelEnabled:true,bevelThickness:bv,bevelSize:bv,bevelSegments:LOW?1:3}:{depth:W,bevelEnabled:false});
  geo.translate(0,0,-(bv?W-2*bv:W)/2);const m=new T3.Mesh(geo,typeof c==="object"?c:mat(c));m.rotation.y=PI/2;g.add(m);return m}
 /* sloped glass pane between two profile points (windscreens / rear windows) */
 function gp(g,W,x1,y1,x2,y2,o){o=o||.03;const z1=-x1,z2=-x2,dz=z2-z1,dy=y2-y1,len=Math.hypot(dz,dy);let nz=-dy/len,ny=dz/len;if(ny<0){nz=-nz;ny=-ny}
  const m=box(g,W,.04,len,GLASS,0,(y1+y2)/2+ny*o,(z1+z2)/2+nz*o);m.rotation.x=Math.atan2(-dy,dz)}
 /* decals */
 function tmat(key,w,h,f,rep,tr){let m=MATS[key];if(!m){const c=document.createElement("canvas");c.width=w;c.height=h;f(c.getContext("2d"),w,h);const t=new T3.CanvasTexture(c);
- if(T3.SRGBColorSpace)t.colorSpace=T3.SRGBColorSpace;else if(T3.sRGBEncoding)t.encoding=T3.sRGBEncoding;t.anisotropy=4;if(rep){t.wrapS=t.wrapT=T3.RepeatWrapping;t.repeat.set(rep,1)}
+ if(T3.SRGBColorSpace)t.colorSpace=T3.SRGBColorSpace;else if(T3.sRGBEncoding)t.encoding=T3.sRGBEncoding;t.anisotropy=LOW?1:4;if(rep){t.wrapS=t.wrapT=T3.RepeatWrapping;t.repeat.set(rep,1)}
  m=MATS[key]=new T3.MeshLambertMaterial({map:t,transparent:!!tr,depthWrite:!tr,side:T3.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2})}return m}
 const battM=(a,b,n)=>tmat("bt"+a+b+n,64,32,(c,w,h)=>{c.fillStyle=a;c.fillRect(0,0,w,h);c.fillStyle=b;c.fillRect(w/2,0,w/2,h/2);c.fillRect(0,h/2,w/2,h/2)},n);
 const chevM=(a,b)=>tmat("cv"+a+b,64,64,(c,w,h)=>{c.fillStyle=a;c.fillRect(0,0,w,h);c.fillStyle=b;for(let i=-1;i<5;i++){const y=i*16;c.beginPath();c.moveTo(0,y);c.lineTo(w/2,y+16);c.lineTo(w,y);c.lineTo(w,y+8);c.lineTo(w/2,y+24);c.lineTo(0,y+8);c.fill()}});
 const shutM=()=>tmat("shut",64,64,(c,w,h)=>{c.fillStyle="#aab2bd";c.fillRect(0,0,w,h);c.fillStyle="#7d8794";for(let y=0;y<h;y+=6)c.fillRect(0,y,w,2);c.strokeStyle="#4b5563";c.lineWidth=3;c.strokeRect(1,1,w-2,h-2)});
-function tm(text,col,mir){return tmat("t|"+text+col+(mir?1:0),512,96,(c,w,h)=>{let fs=68;c.font="bold "+fs+"px Arial,Helvetica,sans-serif";while(c.measureText(text).width>w-20&&fs>16){fs-=4;c.font="bold "+fs+"px Arial,Helvetica,sans-serif"}
- c.fillStyle=col;c.textAlign="center";c.textBaseline="middle";if(mir){c.translate(w,0);c.scale(-1,1)}c.fillText(text,w/2,h/2+3)},0,true)}
+function tm(text,col,mir){return tmat("t|"+text+col+(mir?1:0),LOW?256:512,LOW?48:96,(c,w,h)=>{const k=w/512;let fs=68*k;c.font="bold "+fs+"px Arial,Helvetica,sans-serif";while(c.measureText(text).width>w-20*k&&fs>16*k){fs-=4*k;c.font="bold "+fs+"px Arial,Helvetica,sans-serif"}
+ c.fillStyle=col;c.textAlign="center";c.textBaseline="middle";if(mir){c.translate(w,0);c.scale(-1,1)}c.fillText(text,w/2,h/2+3*k)},0,true)}
 function side(g,m,w,h,x,y,z){[1,-1].forEach(s=>{const p=new T3.Mesh(PLN,m);p.scale.set(w,h,1);p.position.set(s*x,y,z);p.rotation.y=s*PI/2;g.add(p)})}
 function face(g,m,w,h,x,y,z,front){const p=new T3.Mesh(PLN,m);p.scale.set(w,h,1);p.position.set(x,y,z);p.rotation.y=front?PI:0;g.add(p)}
 function txt(g,text,col,w,x,y,z,mode,mir){const m=tm(text,col,mir),h=w*96/512;if(mode==="side")side(g,m,w,h,x,y,z);else face(g,m,w,h,x,y,z,mode==="front")}
@@ -111,7 +113,7 @@ function fl(g,V,y,z,sp,sc){[0,1].forEach(i=>{const m=new T3.MeshBasicMaterial({c
  const q=new T3.Sprite(new T3.SpriteMaterial({map:GLOW,color:0x3b82ff,transparent:true,depthWrite:false,blending:T3.AdditiveBlending,opacity:0}));q.scale.set(sc||2.6,sc||2.6,1);q.position.set(s*sp,y,z-.1);g.add(q);V.sp[i].push(q)})}
 function lamps(g,W,yh,yt,zf,zr,yp){[-1,1].forEach(s=>{box(g,.32,.14,.06,bmat("#fffbe6"),s*W*.36,yh,zf);box(g,.28,.16,.06,bmat("#ff2a2a"),s*W*.38,yt,zr)});
  box(g,.52,.12,.04,bmat("#f4f4f4"),0,yp,zf-.01);box(g,.52,.12,.04,bmat("#f6d100"),0,yp,zr+.01)}
-function wheels(g,W,zs,r,w){w=w||.32;zs.forEach(z=>[-1,1].forEach(s=>{cyl(g,r*1.2,.12,r*1.2,"#0a0e14",s*(W/2-.05),r,z,"x");cyl(g,r,w,r,"#14181f",s*(W/2+.04-w/2),r,z,"x");cyl(g,r*.55,.05,r*.55,"#c4ccd6",s*(W/2+.045),r,z,"x")}))}
+function wheels(g,W,zs,r,w){w=w||.32;zs.forEach(z=>[-1,1].forEach(s=>{cyl(g,r*1.2,.12,r*1.2,"#0a0e14",s*(W/2-.05),r,z,"x");cyl(g,r,w,r,"#14181f",s*(W/2+.04-w/2),r,z,"x");if(!LOW)cyl(g,r*.55,.05,r*.55,"#c4ccd6",s*(W/2+.045),r,z,"x")}))}
 function mirrors(g,W,y,z,c){[-1,1].forEach(s=>box(g,.14,.22,.1,c||"#1b2430",s*(W/2+.1),y,z))}
 
 /* ----- cars: Astra/Focus/Corolla-style hatch, estate, saloon, SUV (profile fractions of length / height) ----- */
@@ -222,7 +224,6 @@ const KIND={
 function cfgFor(ty){if(KIND[ty])return KIND[ty];const sv=U[ty]&&U[ty][0];return sv==="f"?KIND.pump:sv==="p"?KIND.irv:KIND.dca}
 function buildVehicle(u){const c=cfgFor(u.ty),V={u,lm:[[],[]],sp:[[],[]],ph:Math.random()*8,h:null,alt:0,rotor:null,on:false};
  const g=c.k==="heli"?heli(c,V):c.k==="bike"?bike(c,V):c.k==="car"?car(c,V):c.k==="van"?van(c,V):c.k==="pickup"?pickup(c,V):truck(Object.assign({kind:c.k},c),V);
- const w=new T3.Mesh(CIR,new T3.MeshBasicMaterial({color:0x2563eb,transparent:true,opacity:0,depthWrite:false,blending:T3.AdditiveBlending}));w.rotation.x=-Math.PI/2;w.scale.set(c.k==="heli"?7:10,10,1);w.position.y=.15;g.add(w);V.wash=w;
  const root=new T3.Group();root.add(g);root.traverse(o=>{o.frustumCulled=false});V.g=g;V.root=root;return V}
 
 /* ---------- 3D world ---------- */
@@ -248,17 +249,19 @@ function vehicleLayer(){return{id:"veh3d",type:"custom",renderingMode:"3d",
   const c=map3.getCenter(),mc=mercOf(c.lat,c.lng),s=(mc.meterInMercatorCoordinateUnits||mc.meterInMercatorUnits).call(mc),z=map3.getZoom();
   const mpp=78271.517*Math.cos(c.lat*D2R)/Math.pow(2,z),vm=clamp(34*mpp/5,1,70);
   const idx={};let anyVis=false,chg=false;keepGoing=false;
+  /* only draw vehicles that are on screen (+15% margin): each one is ~100+ meshes, so off-screen ones are pure waste */
+  const B=map3.getBounds(),bw=B.getWest(),be=B.getEast(),bs=B.getSouth(),bn=B.getNorth(),mx=(be-bw)*.15,my=(bn-bs)*.15;
   for(const id in fleet){const V=fleet[id],u=V.u;if(!S||!S.un.includes(u)){continue}
    const sid=u.st==="idle"?u.sid:0;const i=sid?(idx[sid]=(idx[sid]||0)+1)-1:0,p=posOf(u,i),m=mercOf(p[0],p[1]);
    const hd=headingOf(u);if(hd!=null)V.h=V.h==null?hd:angLerp(V.h,hd,Math.min(1,dt*6));else if(V.h==null)V.h=(u.id%8)*Math.PI/4;
    const air=u.ty==="hel"||u.ty==="air",tgt=air&&(u.st==="out"||u.st==="back"||u.st==="hosp")?45:0;V.alt+=(tgt-V.alt)*Math.min(1,dt*1.5);
-   V.ll=p;V.root.position.set((m.x-mc.x)/s,V.alt,(m.y-mc.y)/s);V.root.rotation.y=-V.h;V.root.scale.setScalar(vm);{const vis=u.st!=="hand"&&u.st!=="idle";if(vis!==V.root.visible)chg=true;if(vis)anyVis=true;V.root.visible=vis}/* vehicles parked at their station are hidden */
+   V.ll=p;V.root.position.set((m.x-mc.x)/s,V.alt,(m.y-mc.y)/s);V.root.rotation.y=-V.h;V.root.scale.setScalar(vm);{const vis=u.st!=="hand"&&u.st!=="idle"&&p[1]>bw-mx&&p[1]<be+mx&&p[0]>bs-my&&p[0]<bn+my;if(vis!==V.root.visible)chg=true;if(vis)anyVis=true;V.root.visible=vis}/* vehicles parked at their station are hidden */
    if(V.rotor&&u.st!=="idle")V.rotor.rotation.y+=dt*35;
    const lit=isLit(u);
    if(lit){const k=Math.floor(t*8+V.ph)%8,L=k===0||k===2,R=k===4||k===6;
     V.lm[0].forEach(x=>x.color.setHex(L?ON:OFF));V.lm[1].forEach(x=>x.color.setHex(R?ON:OFF));
-    V.sp[0].forEach(x=>x.material.opacity=L?.95:0);V.sp[1].forEach(x=>x.material.opacity=R?.95:0);V.wash.material.opacity=(L||R)?.4:.06;V.on=true}
-   else if(V.on){V.lm[0].concat(V.lm[1]).forEach(x=>x.color.setHex(OFF));V.sp[0].concat(V.sp[1]).forEach(x=>x.material.opacity=0);V.wash.material.opacity=0;V.on=false}}
+    V.sp[0].forEach(x=>x.material.opacity=L?.95:0);V.sp[1].forEach(x=>x.material.opacity=R?.95:0);V.on=true}
+   else if(V.on){V.lm[0].concat(V.lm[1]).forEach(x=>x.color.setHex(OFF));V.sp[0].concat(V.sp[1]).forEach(x=>x.material.opacity=0);V.on=false}}
   TMP.a.makeTranslation(mc.x,mc.y,0).scale(TMP.v.set(s,-s,s)).multiply(TMP.b.makeRotationX(Math.PI/2));
   camera.projectionMatrix.fromArray(arr).multiply(TMP.a);
   keepGoing=anyVis||chg||!!follow;
@@ -374,11 +377,15 @@ function exit3D(silent){timers.forEach(clearInterval);timers=[];clearTimeout(rpT
  let c=null;if(map3){try{c=map3.getCenter();map3.remove()}catch(e){}map3=null}
  try{renderer&&renderer.dispose()}catch(e){}renderer=scene=camera=null;
  const el=$("#map3d");if(el)el.style.display="none";const m2=$("#map");if(m2)m2.style.display="";
- showHud(false);active=false;busy=false;try{map.invalidateSize();if(c)map.setView([c.lat,c.lng],map.getZoom())}catch(e){}
+ showHud(false);active=false;busy=false;try{origSync()}catch(e){}try{map.invalidateSize();if(c)map.setView([c.lat,c.lng],map.getZoom())}catch(e){}
  setTog();if(!silent)lsSet(MODE_KEY,"2d")}
 
 function setTog(){let b=$("#w3tog");const w=$("#mapw");if(!w)return;if(!b){b=document.createElement("button");b.id="w3tog";b.type="button";b.onclick=()=>active?exit3D():enter3D();w.appendChild(b)}
  b.textContent=active?"🗺️ 2D":"🏙️ 3D";b.title=active?"Back to the classic map":"Switch to the 3D world";b.hidden=!hasGL()}
+
+/* the hidden classic (Leaflet) map is still synced twice a second by the game loop; skip that while the 3D world is showing */
+const origSync=sync;
+sync=function(){if(active&&map3)return;return origSync.apply(this,arguments)};
 
 /* ---------- hook into start-up ---------- */
 const origStart=startGame;
