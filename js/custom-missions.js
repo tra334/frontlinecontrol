@@ -11,6 +11,28 @@
   const str = (s, a, b) => typeof s === "string" && s.trim().length >= a && s.trim().length <= b;
   const num = (n, a, b) => Number.isInteger(n) && n >= a && n <= b;
 
+  /* caller questions: [{q, a, veh?}] up to 12. veh = extra vehicles the answer reveals ({type: 1..5}, up to 4 types). Returns a clean copy or null */
+  function cleanQA(list) {
+    if (!Array.isArray(list) || list.length > 12) return null;
+    const out = [], seen = new Set();
+    for (const p of list) {
+      if (!p || !str(p.q, 3, 80) || !str(p.a, 2, 240)) return null;
+      const key = p.q.trim().toLowerCase().replace(/'/g, "\u2019");
+      if (seen.has(key) || /address of the emergency/.test(key)) return null;
+      seen.add(key);
+      const e = { q: p.q.trim(), a: p.a.trim() };
+      if (p.veh != null) {
+        if (typeof p.veh !== "object") return null;
+        const vk = Object.keys(p.veh);
+        if (vk.length > 4) return null;
+        for (const k of vk) if (!Object.prototype.hasOwnProperty.call(U, k) || !num(p.veh[k], 1, 5)) return null;
+        if (vk.length) e.veh = Object.assign({}, p.veh);
+      }
+      out.push(e);
+    }
+    return out;
+  }
+
   /* returns a mission tuple [service, name, caller, needs, seconds, payout, places] or null if it is not safe to use */
   function build(m) {
     try {
@@ -23,7 +45,10 @@
       for (const k of ks) if (!Object.prototype.hasOwnProperty.call(U, k) || !num(m.needs[k], 1, 10)) return null;
       if (!num(m.secs, 20, 1200) || !num(m.pay, 50, 20000)) return null;
       if (!Array.isArray(m.places) || !m.places.length || m.places.length > 6 || !m.places.every(p => PLACES.has(p))) return null;
-      return [m.svc, m.name.trim(), m.caller.trim(), Object.assign({}, m.needs), m.secs, m.pay, m.places.slice()];
+      const t = [m.svc, m.name.trim(), m.caller.trim(), Object.assign({}, m.needs), m.secs, m.pay, m.places.slice()];
+      if (m.g != null && m.g !== 0) { if (!num(m.g, 1, 4)) return null; t.g = m.g; } /* call grade; absent = worked out from the payout */
+      if (m.qa != null) { const qa = cleanQA(m.qa); if (!qa) return null; if (qa.length) t.qa = qa; }
+      return t;
     } catch (e) { return null; }
   }
 
@@ -38,6 +63,7 @@
       if (t[1].indexOf("(unavailable)") === 0) t.off = true; else t.off = !!m.retired;
       T.push(t);
     }
+    if (typeof cqSync === "function") cqSync(); /* scenarios.js: turn the new missions' caller questions into buttons */
   }
 
   async function load() {

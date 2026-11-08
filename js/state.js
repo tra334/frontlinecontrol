@@ -1,5 +1,5 @@
 const GC=["","#dc2626","#f97316","#eab308","#64748b"],GO={"Burglary in progress":2,"Domestic disturbance":2,"Drink driver":2,"Missing child":1,"House fire":1,"Armed robbery":1,"Fatal collision":1,"Stolen vehicle pursuit":2,"Chemical spill":1,"Person in river":1,"Mental health crisis":2,"Suspicious death":2,"Car fire":3,"Welfare check":3};
-const gr=k=>{const t=T[k],c=/^Cat (\d)/.exec(t[1]);return c?+c[1]:GO[t[1]]||(t[5]>=2000?1:t[5]>=1000?2:t[5]>=450?3:4)},gch=g=>`<span class="gd" style="background:${GC[g]};color:${g===3?"#000":"#fff"}">G${g}</span>`;
+const gr=k=>{const t=T[k],c=/^Cat (\d)/.exec(t[1]);return t.g>=1&&t.g<=4?t.g:c?+c[1]:GO[t[1]]||(t[5]>=2000?1:t[5]>=1000?2:t[5]>=450?3:4)},gch=g=>`<span class="gd" style="background:${GC[g]};color:${g===3?"#000":"#fff"}">G${g}</span>`;
 const locT=m=>m.adc?lci("map-pin")+" "+m.loc:lci("map-pin")+" Address not taken yet"+(m.adr&&m.adr.t?" – near "+m.adr.t:"");
 const RING=45000,TIMEOUT=1500000,KEY="ukdispatch_v2";
 const rateMs=()=>Math.round(R(30,150)*1000);
