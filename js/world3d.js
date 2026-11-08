@@ -29,7 +29,7 @@ const css=document.createElement("style");css.textContent=`
 #w3ov .cd b{font-size:17px}#w3ov .cd span{font-size:13px;opacity:.75;line-height:1.35}#w3ov .cd i{font-style:normal;font-size:26px}
 #w3ov .tip{margin-top:14px;font-size:12px;opacity:.55}
 #map3d{position:absolute;inset:0;z-index:2;background:#0b0f14}
-.w3hud{position:absolute;z-index:1300;left:10px;top:10px;display:flex;flex-direction:column;gap:6px}
+.w3hud{position:absolute;z-index:1300;left:10px;top:calc(var(--hh,52px) + 8px);max-height:calc(100% - var(--hh,52px) - 90px);overflow:auto;display:flex;flex-direction:column;gap:6px}
 .w3hud button,#w3tog{border:0;border-radius:10px;padding:8px 11px;font:700 13px system-ui;background:#0f172ae6;color:#fff;box-shadow:0 2px 8px #0006;cursor:pointer}
 .w3hud button.on{background:#2563eb}
 #w3tog{position:absolute;z-index:1300;right:56px;top:10px}
@@ -227,13 +227,30 @@ function buildVehicle(u){const c=cfgFor(u.ty),V={u,lm:[[],[]],sp:[[],[]],ph:Math
  const root=new T3.Group();root.add(g);root.traverse(o=>{o.frustumCulled=false});V.g=g;V.root=root;return V}
 
 /* ---------- 3D world ---------- */
-const W3={frames:0,err:null,adds:0};let map3=null,scene,camera,renderer,fleet={},mk={s:{},h:{},m:{},u:{}},vlb={},timers=[],hud=null,follow=null,lastT=0,lastLb=0,rt0=0,rpT=0,keepGoing=false,routesEmpty=true,TMP=null;
+const W3={frames:0,err:null,adds:0};const VM_MAX=70; /* largest scale vehicles are drawn at when zoomed out (keeps them readable) */
+let VM=1,map3=null,scene,camera,renderer,fleet={},mk={s:{},h:{},m:{},u:{}},vlb={},timers=[],hud=null,follow=null,radLock=false,lastT=0,lastLb=0,rt0=0,rpT=0,keepGoing=false,routesEmpty=true,TMP=null;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),D2R=Math.PI/180;
 const mercOf=(lat,lon)=>maplibregl.MercatorCoordinate.fromLngLat({lng:lon,lat:lat},0);
 function angLerp(a,b,f){let d=((b-a+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;return a+d*f}
-function headingOf(u){if(!u.rt||!u.rt.d||!(u.st==="out"||u.st==="back"||u.st==="hosp"))return null;
- const d0=dd(u),a=along(u.rt,d0),b=along(u.rt,d0+.03),dy=b[0]-a[0],dx=(b[1]-a[1])*Math.cos(a[0]*D2R);
+function headingOf(u){if(!u.rt||!u.rt.d||!(u.st==="out"||u.st==="back"||u.st==="hosp"))return null;return headingAt(u,dd(u))}
+function headingAt(u,d0){
+ const a=along(u.rt,Math.max(0,d0-.015)),b=along(u.rt,d0+.015),dy=b[0]-a[0],dx=(b[1]-a[1])*Math.cos(a[0]*D2R);
  return Math.abs(dx)+Math.abs(dy)<1e-9?null:Math.atan2(dx,dy)}
+/* on-scene units: the order they arrived in, per call (first arrival parks nearest the call) */
+function scnSlots(){const g={};S.un.forEach(x=>{if(x.st==="scene"&&x.mid)(g[x.mid]=g[x.mid]||[]).push(x)});
+ for(const k in g)g[k].sort((a,b)=>((a.arr||0)-(b.arr||0))||(a.id-b.id));return g}
+/* walk the parked trail (anchor first) to distance w metres from the anchor */
+function walkT(T,w){for(let i=0;i<T.length-1;i++){const s=km(T[i],T[i+1])*1000;if(w<=s||i===T.length-2)return{a:T[i],b:T[i+1],f:s>0?w/s:0};w-=s}return null}
+/* kerb spot for an on-scene unit: nose to tail along the road it came in on, 3.5 m in from the nearside (left, UK) kerb, facing the way it drove */
+function parkOf(u,slots){if(!u.app||u.st!=="scene")return null;const list=slots[u.mid]||[u];const k=Math.max(0,list.findIndex(x=>x.id===u.id));
+ const sg=walkT(u.app,3+k*10);if(!sg)return null;
+ const de=(sg.b[1]-sg.a[1])*111320*Math.cos(sg.a[0]*D2R),dn=(sg.b[0]-sg.a[0])*111320;
+ const tl=Math.hypot(de,dn);if(tl<1e-9)return null;
+ const te=-de/tl,tn=-dn/tl;                       /* travel direction: towards the call */
+ const cx=sg.a[1]+(sg.b[1]-sg.a[1])*sg.f,cy=sg.a[0]+(sg.b[0]-sg.a[0])*sg.f;
+ /* nearside = left of travel: (east,north) offset is (-tn,te) */
+ const lat=cy+(te*3.5)/111320;
+ return{p:[lat,cx+(-tn*3.5)/(111320*Math.cos(lat*D2R))],h:Math.atan2(te,tn)}}
 /* where a unit is drawn, plus the spot offset so parked / on-scene units don't stack */
 function posOf(u,i){const p=upos(u);let ox=0,oy=0;
  if(u.st==="idle"){const k=i%8,r=Math.floor(i/8);ox=((k%4)-1.5)*9;oy=20+r*12+(k>=4?10:0)}
@@ -241,28 +258,66 @@ function posOf(u,i){const p=upos(u);let ox=0,oy=0;
  return[p[0]+oy/111320,p[1]+ox/(111320*Math.cos(p[0]*D2R))]}
 const isLit=u=>u.st==="out"||u.st==="hosp"||u.st==="scene";
 
+/* helicopters: cruise high enough to clear most rooftops (was 45 m, which clipped buildings) */
+const HEL_ALT=200,HEL_GAP=25;
+const isHel=u=>u.ty==="hel";
+/* a helicopter on scene puts down on the open road or green space nearest the call, never on a building.
+   returns [lat,lon], null if nothing suitable within ~150 m, or undefined if the map tiles aren't in yet (try again next tick) */
+function landSpot(u,taken){if(!map3||!map3.areTilesLoaded||!map3.areTilesLoaded())return undefined;
+ const ll=upos(u),z=map3.getZoom(),mpp=78271.517*Math.cos(ll[0]*D2R)/Math.pow(2,z);
+ let P;try{P=map3.project([ll[1],ll[0]])}catch(e){return null}
+ const ok=(x,y)=>{let road=false,green=false;let f=[];try{f=map3.queryRenderedFeatures([[x-3,y-3],[x+3,y+3]])}catch(e){}
+  for(const q of f){const sl=q.sourceLayer||"",cl=String((q.properties&&q.properties.class)||"");
+   if(sl==="building")return false;
+   if(sl==="transportation"){if(!/rail|transit|path|track|busway|raceway/i.test(cl))road=true}
+   else if(/^(park|landcover|landuse)$/.test(sl)&&/park|grass|wood|scrub|farm|meadow|recreation|pitch|golf|garden|cemetery|sand/i.test(cl))green=true}
+  return road||green};
+ for(let d=0;d<=150;d+=15){const n=d?Math.max(8,Math.round(2*Math.PI*d/15)):1;
+  for(let k=0;k<n;k++){const a=k/n*2*Math.PI,x=P.x+Math.cos(a)*d/mpp,y=P.y+Math.sin(a)*d/mpp;
+   let g;try{g=map3.unproject([x,y])}catch(e){continue}
+   const la=g.lat,lo=g.lng;
+   if(taken.some(t=>km(t,[la,lo])<HEL_GAP/1000))continue;
+   if(ok(x,y))return[la,lo]}}
+ return null}
 function vehicleLayer(){return{id:"veh3d",type:"custom",renderingMode:"3d",
  onAdd(m,gl){W3.adds++;scene=new T3.Scene();camera=new T3.Camera();TMP={a:new T3.Matrix4(),b:new T3.Matrix4(),v:new T3.Vector3()};const k=(parseInt(T3.REVISION,10)>=155)?Math.PI:1;scene.add(new T3.AmbientLight(0xffffff,.8*k));const sun=new T3.DirectionalLight(0xffffff,.55*k);sun.position.set(.4,1,.3);scene.add(sun);
   renderer=new T3.WebGLRenderer({canvas:m.getCanvas(),context:gl,antialias:true});renderer.autoClear=false},
  render(gl,a){if(!map3||!renderer)return;try{const arr=Array.isArray(a)||(a&&a.length===16)?a:(a&&a.defaultProjectionData&&a.defaultProjectionData.mainMatrix);if(!arr)return;
   const t=performance.now()/1000,dt=Math.min(.1,t-(lastT||t));lastT=t;
   const c=map3.getCenter(),mc=mercOf(c.lat,c.lng),s=(mc.meterInMercatorCoordinateUnits||mc.meterInMercatorUnits).call(mc),z=map3.getZoom();
-  const mpp=78271.517*Math.cos(c.lat*D2R)/Math.pow(2,z),vm=clamp(34*mpp/5,1,70);
-  const idx={};let anyVis=false,chg=false;keepGoing=false;
+  const mpp=78271.517*Math.cos(c.lat*D2R)/Math.pow(2,z),vm=clamp(34*mpp/5,1,VM_MAX);VM=vm;
+  const idx={};let anyVis=false,chg=false;keepGoing=false;const slots=scnSlots();
   /* only draw vehicles that are on screen (+15% margin): each one is ~100+ meshes, so off-screen ones are pure waste */
   const B=map3.getBounds(),bw=B.getWest(),be=B.getEast(),bs=B.getSouth(),bn=B.getNorth(),mx=(be-bw)*.15,my=(bn-bs)*.15;
   for(const id in fleet){const V=fleet[id],u=V.u;if(!S)continue;
    if(u.st==="idle"||u.st==="hand"){if(V.root.visible){V.root.visible=false;chg=true}continue}/* parked: hidden, skip all the maths */
-   const sid=u.st==="idle"?u.sid:0;const i=sid?(idx[sid]=(idx[sid]||0)+1)-1:0,p=posOf(u,i),m=mercOf(p[0],p[1]);
-   const hd=headingOf(u);if(hd!=null)V.h=V.h==null?hd:angLerp(V.h,hd,Math.min(1,dt*6));else if(V.h==null)V.h=(u.id%8)*Math.PI/4;
-   const air=u.ty==="hel"||u.ty==="air",tgt=air&&(u.st==="out"||u.st==="back"||u.st==="hosp")?45:0;V.alt+=(tgt-V.alt)*Math.min(1,dt*1.5);
-   V.ll=p;V.root.position.set((m.x-mc.x)/s,V.alt,(m.y-mc.y)/s);V.root.rotation.y=-V.h;V.root.scale.setScalar(vm);{const vis=u.st!=="hand"&&u.st!=="idle"&&p[1]>bw-mx&&p[1]<be+mx&&p[0]>bs-my&&p[0]<bn+my;if(vis!==V.root.visible)chg=true;if(vis)anyVis=true;V.root.visible=vis}/* vehicles parked at their station are hidden */
+   const sid=u.st==="idle"?u.sid:0;const i=sid?(idx[sid]=(idx[sid]||0)+1)-1:0,pk=parkOf(u,slots);const lagOn=!pk&&!!u.rt&&!!u.rt.d&&(u.st==="out"||u.st==="back"||u.st==="hosp");const lg=lagOn?clamp(V.lag||0,-dd(u),Math.max(0,u.rt.len-dd(u))):0;
+   const p=pk?pk.p:lagOn?along(u.rt,dd(u)+lg):(u.st==="scene"&&V.land?V.land:posOf(u,i)),m=mercOf(p[0],p[1]);
+   const hd=pk?pk.h:lagOn?headingAt(u,dd(u)+lg):headingOf(u);if(hd!=null)V.h=V.h==null?hd:angLerp(V.h,hd,Math.min(1,dt*2.5));else if(V.h==null)V.h=(u.id%8)*Math.PI/4;
+   const air=u.ty==="hel"||u.ty==="air",tgt=air&&(u.st==="out"||u.st==="back"||u.st==="hosp")?HEL_ALT:0;V.alt+=(tgt-V.alt)*Math.min(1,dt*1.5);
+   V.ll=p;const bx=(m.x-mc.x)/s,bz=(m.y-mc.y)/s;V.bx=bx;V.bz=bz;V.root.position.set(bx,V.alt,bz);V.root.rotation.y=-V.h;V.root.scale.setScalar(vm);{const vis=u.st!=="hand"&&u.st!=="idle"&&p[1]>bw-mx&&p[1]<be+mx&&p[0]>bs-my&&p[0]<bn+my;if(vis!==V.root.visible)chg=true;if(vis)anyVis=true;V.root.visible=vis}/* vehicles parked at their station are hidden */
    if(V.rotor&&u.st!=="idle")V.rotor.rotation.y+=dt*35;
    const lit=isLit(u);
    if(lit){const k=Math.floor(t*8+V.ph)%8,L=k===0||k===2,R=k===4||k===6;
     V.lm[0].forEach(x=>x.color.setHex(L?ON:OFF));V.lm[1].forEach(x=>x.color.setHex(R?ON:OFF));
     V.sp[0].forEach(x=>x.material.opacity=L?.95:0);V.sp[1].forEach(x=>x.material.opacity=R?.95:0);V.on=true}
    else if(V.on){V.lm[0].concat(V.lm[1]).forEach(x=>x.color.setHex(OFF));V.sp[0].concat(V.sp[1]).forEach(x=>x.material.opacity=0);V.on=false}}
+  /* stop vehicles driving or parking through each other. A moving vehicle slides back or forward along its own route (V.lag, km),
+     so a convoy queues single file and each car reaches a bend at its own time. Parked-on-scene vehicles stay put. */
+  const sep=[];for(const id in fleet){const V=fleet[id];if(!V.root.visible||V.alt>1||V.bx==null){V.lag=0;continue}const c=cfgFor(V.u.ty);const mv=!!V.u.rt&&!!V.u.rt.d&&(V.u.st==="out"||V.u.st==="back"||V.u.st==="hosp");sep.push({V,r:Math.max(c.L||4.5,c.W||2)/2,fix:!mv})}
+  const kk=Math.min(1,dt*10),dec=Math.min(1,dt*.15),gap=2;
+  for(let it=0;it<8;it++)for(let i=0;i<sep.length;i++)for(let j=i+1;j<sep.length;j++){
+   const A=sep[i],B=sep[j],wi=A.fix?0:1,wj=B.fix?0:1;if(!wi&&!wj)continue;
+   const M=wi?A:B,O=wi?B:A,mv=M.V,ov=O.V;
+   const h=mv.h||0,fx=Math.sin(h),fz=-Math.cos(h),sx=Math.cos(h),sz=Math.sin(h);
+   const rx=ov.bx-mv.bx,rz=ov.bz-mv.bz;
+   const sl=rx*fx+rz*fz,ln=rx*sx+rz*sz,minD=A.r+B.r+gap;
+   if(Math.abs(ln)>=1.9||Math.abs(sl)>=minD)continue; /* only vehicles about one car-width apart sideways share a lane */
+   const sg=sl>=0?1:-1,halfM=(minD-Math.abs(sl))*.5*kk,mM=O.fix?2*halfM:halfM;
+   mv.bx-=sg*fx*mM;mv.bz-=sg*fz*mM;mv.lag=(mv.lag||0)-sg*mM/1000;
+   if(!O.fix){ov.bx+=sg*fx*halfM;ov.bz+=sg*fz*halfM;ov.lag=(ov.lag||0)+sg*halfM/1000}
+  }
+  for(const o of sep){const V=o.V;V.lag=o.fix?0:clamp((V.lag||0)*(1-dec),-.08,.08);V.root.position.x=V.bx;V.root.position.z=V.bz}
   TMP.a.makeTranslation(mc.x,mc.y,0).scale(TMP.v.set(s,-s,s)).multiply(TMP.b.makeRotationX(Math.PI/2));
   camera.projectionMatrix.fromArray(arr).multiply(TMP.a);
   keepGoing=anyVis||chg||!!follow;
@@ -279,10 +334,20 @@ function syncFleet(){if(!scene||!S)return;const seen={};
  S.un.forEach(u=>{seen[u.id]=1;let V=fleet[u.id];
   /* server games swap in brand-new unit objects every poll: keep the existing model and just re-point it (only rebuild if the vehicle type changed) */
   if(V&&V.u!==u){if(V.u.ty===u.ty)V.u=u;else{scene.remove(V.root);disposeV(V);delete fleet[u.id];V=null}}
+  /* server games send a fresh unit object every poll and never run the arrival on this device, so take the road a unit drove in on
+     from its previous poll, and the arrival time for queue order. Helicopters are left alone (they land instead). */
+  if(V){const hel=(SP[u.ty]||0)>=150;
+   if(u.st==="scene"){if(V.arr==null)V.arr=now();u.arr=V.arr;
+    if(!u.app&&!hel&&V.lastRt&&u.b){const L=V.lastRt.p,e=L[L.length-1];if(e&&km(e,u.b)<.05)u.app=parkTrail(L,u.b,V.lastRt.tl)}}
+   else V.arr=null;
+   if((u.st==="out"||u.st==="back"||u.st==="hosp")&&u.rt&&u.rt.p)V.lastRt={p:u.rt.p,tl:u.rt.tl};else if(u.st!=="scene")V.lastRt=null}
   /* parked units are hidden, so no model is built until a unit first leaves its station */
   if(!V){if(u.st==="idle"||u.st==="hand")return;
    try{V=fleet[u.id]=buildVehicle(u);scene.add(V.root)}catch(e){if(!W3.err){W3.err='model '+u.ty+': '+(e&&e.message||e);console.error(e);toast('3D model error: '+W3.err)}}}});
- for(const id in fleet)if(!seen[id]){scene.remove(fleet[id].root);disposeV(fleet[id]);delete fleet[id]}}
+ for(const id in fleet)if(!seen[id]){scene.remove(fleet[id].root);disposeV(fleet[id]);delete fleet[id]}
+ /* helicopters on scene: choose their landing spot once, when they arrive (kept while they stay on scene) */
+ const taken=[];for(const id in fleet){const V=fleet[id];if(V.u.st!=="scene"){V.land=null;continue}if(V.land)taken.push(V.land)}
+ for(const id in fleet){const V=fleet[id];if(V.u.st!=="scene"||!isHel(V.u)||V.land)continue;const r=landSpot(V.u,taken);if(r!==undefined){V.land=r||upos(V.u);taken.push(V.land)}}}
 
 /* DOM markers: stations, hospitals/custody, calls + unit callsign chips */
 function mkEl(cls,c,inner,label,onClick){const e=document.createElement("div");e.className="w3m "+cls;e.style.setProperty("--c",c);
@@ -333,11 +398,12 @@ function addExtrusions(gl){try{if(gl.getLayer("ofm-3d"))return;const st=gl.getSt
  gl.addLayer({id:"ofm-3d",type:"fill-extrusion",source:src,"source-layer":"building",minzoom:13,paint:{"fill-extrusion-color":["interpolate",["linear"],["coalesce",["get","render_height"],0],0,"#e4e1da",60,"#c9c5bb",200,"#a9a59b"],"fill-extrusion-height":["coalesce",["get","render_height"],4],"fill-extrusion-base":["coalesce",["get","render_min_height"],0],"fill-extrusion-opacity":1}},lab&&lab.id)}catch(e){console.warn("3D buildings unavailable",e)}}
 
 function showHud(on){if(hud){hud.remove();hud=null}if(!on)return;
- hud=document.createElement("div");hud.className="w3hud";hud.innerHTML=`<button data-a="reset">⟲ Reset view</button><button data-a="follow">🚨 Follow responder</button><button data-a="tilt">⬍ Tilt</button>`;
+ hud=document.createElement("div");hud.className="w3hud";hud.innerHTML=`<button data-a="reset">⟲ Reset view</button><button data-a="follow">🚨 Follow responder</button><button data-a="radio">📻 Radio follow</button><button data-a="tilt">⬍ Tilt</button>`;
  hud.onclick=e=>{const a=e.target.dataset&&e.target.dataset.a;if(!a)return;
   if(a==="reset"){stopFollow();const b=bounds();map3.fitBounds(b,{padding:70,maxZoom:16,pitch:62,bearing:-20,duration:900})}
   else if(a==="tilt"){map3.easeTo({pitch:map3.getPitch()>45?0:65,duration:600})}
-  else if(a==="follow")startFollow()};
+  else if(a==="follow")startFollow();
+  else if(a==="radio")radioFollowToggle()};
  $("#mapw").appendChild(hud)}
 function bounds(){const b=new maplibregl.LngLatBounds();let n=0;S.st.forEach(s=>{b.extend([s.lon,s.lat]);n++});S.hs.forEach(h=>{b.extend([h.lon,h.lat]);n++});
  if(!n){const c=map.getCenter();b.extend([c.lng-.01,c.lat-.01]);b.extend([c.lng+.01,c.lat+.01])}return b}
@@ -345,9 +411,22 @@ function bounds(){const b=new maplibregl.LngLatBounds();let n=0;S.st.forEach(s=>
 /* chase camera on a responding unit */
 let fi=-1,fTimer=0;
 function startFollow(){const list=S.un.filter(u=>u.st==="out"||u.st==="hosp");if(!list.length){toast("No units are responding right now");return}
- fi=(fi+1)%list.length;follow=list[fi].id;toast("Following "+list[fi].cs);const p=upos(list[fi]);map3.easeTo({center:[p[1],p[0]],zoom:17.2,pitch:70,duration:800});hud&&hud.querySelector('[data-a="follow"]').classList.add("on")}
-function stopFollow(){follow=null;hud&&hud.querySelector('[data-a="follow"]')&&hud.querySelector('[data-a="follow"]').classList.remove("on")}
-function followTick(){if(!follow||!map3)return;const u=S.un.find(x=>x.id===follow);if(!u||!(u.st==="out"||u.st==="hosp"||u.st==="scene")){stopFollow();return}
+ radLockOff();fi=(fi+1)%list.length;follow=list[fi].id;toast("Following "+list[fi].cs);const p=upos(list[fi]);map3.easeTo({center:[p[1],p[0]],zoom:17.2,pitch:70,duration:800});hud&&hud.querySelector('[data-a="follow"]').classList.add("on")}
+function stopFollow(){follow=null;radLock=false;hud&&hud.querySelector('[data-a="radio"]')&&hud.querySelector('[data-a="radio"]').classList.remove("on");hud&&hud.querySelector('[data-a="follow"]')&&hud.querySelector('[data-a="follow"]').classList.remove("on")}
+/* the unit most recently on the radio (it transmitted, or control spoke to it) */
+/* S.lg is newest-first */
+function radioUnitId(){for(let i=0;i<S.lg.length;i++){const l=S.lg[i];if(!isRad(l))continue;const r=radParse(l);if(!r.unit||!r.cs)continue;const u=S.un.find(x=>x.cs===r.cs);if(u)return u.id}return null}
+function radLockOff(){radLock=false;hud&&hud.querySelector('[data-a="radio"]')&&hud.querySelector('[data-a="radio"]').classList.remove("on")}
+function radioFollowToggle(){if(radLock){stopFollow();return}
+ const id=radioUnitId();if(!id){toast("No unit has been on the radio yet");return}
+ radLock=true;follow=id;const u=S.un.find(x=>x.id===id);toast("📻 Radio lock: "+u.cs);
+ const p=upos(u);map3.easeTo({center:[p[1],p[0]],zoom:17.2,pitch:70,duration:800});
+ hud&&hud.querySelector('[data-a="radio"]').classList.add("on")}
+function followTick(){if(!map3)return;
+ /* radio lock: jump to whichever unit speaks next, and stay on the last one heard when it isn't responding */
+ if(radLock){const t=radioUnitId();if(t&&t!==follow){follow=t;const cu=S.un.find(x=>x.id===t);if(cu)toast("📻 Radio lock: "+cu.cs)}}
+ if(!follow)return;const u=S.un.find(x=>x.id===follow);if(!u){stopFollow();return}
+ if(!(u.st==="out"||u.st==="hosp"||u.st==="scene")){if(radLock)return;stopFollow();return}
  const p=upos(u),c=map3.getCenter(),V=fleet[u.id];let o={center:[c.lng+(p[1]-c.lng)*.25,c.lat+(p[0]-c.lat)*.25]};
  if(V&&V.h!=null){const b=map3.getBearing()*D2R;o.bearing=angLerp(b,V.h,.03)/D2R}map3.jumpTo(o)}
 
