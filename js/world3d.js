@@ -575,12 +575,12 @@ function clearAt(la,lo){if(!map3)return false;
  const c=sc(la,lo);if(!c)return false;
  return kind(c[0],c[1])!=="b"}
 /* in Pick mode, a tap on the map sends the nearest air ambulance hovering over the scene to that spot, if the spot is clear */
-function landPickClick(e){if(!S)return;
+function landPickClick(e){if(!S)return;try{if(typeof mv!=="undefined"&&(mv||bm||pm))return}catch(x){}
  const la=e.lngLat.lat,lo=e.lngLat.lng,onScene=[];
  for(const id in fleet){const V=fleet[id];if(V.u.st==="scene"&&isAmb(V.u))onScene.push(V)}
- if(!onScene.length){toast("No air ambulance is on scene");return}
+ if(!onScene.length)return;
  const hover=onScene.filter(V=>V.alt>.5&&!V.land);
- if(!hover.length){toast(onScene.some(V=>V.land)?"It is already coming in to land":"Wait until the air ambulance is hovering over the scene");return}
+ if(!hover.length){if(onScene.some(V=>!V.land))toast("Wait until the air ambulance is hovering over the scene");return}
  hover.sort((x,y)=>km(x.ll||upos(x.u),[la,lo])-km(y.ll||upos(y.u),[la,lo]));
  const V=hover[0],others=[];
  for(const id in fleet){const W=fleet[id];if(W!==V&&W.u.st==="scene"&&W.land)others.push(W.land)}
@@ -591,7 +591,7 @@ const landMks={};
 /* true while an air ambulance is on scene but still in the air (not yet touched down) */
 function landingNow(u){const V=fleet[u.id];return !!(V&&u.st==="scene"&&isAmb(u)&&V.alt>.5)}
 function syncLandMarks(){if(!map3)return;const seen={};
- for(const id in fleet){const V=fleet[id];if(V.u.st!=="scene"||!isAmb(V.u)||!V.land)continue;seen[id]=1;
+ for(const id in fleet){const V=fleet[id];if(V.u.st!=="scene"||!isAmb(V.u)||!V.land||V.alt<=.5)continue;seen[id]=1;
   if(!landMks[id]){const e=document.createElement("div");e.style.cssText="width:26px;height:26px;border-radius:50%;background:#16a34a;color:#fff;border:2px solid #fff;font:800 13px system-ui;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:5";e.textContent="H";
    landMks[id]=new maplibregl.Marker({element:e,anchor:"center"}).setLngLat([V.land[1],V.land[0]]).addTo(map3)}
   else landMks[id].setLngLat([V.land[1],V.land[0]])}
