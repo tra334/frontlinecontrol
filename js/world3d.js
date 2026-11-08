@@ -43,7 +43,7 @@ const css=document.createElement("style");css.textContent=`
 .w3m.w3call .w3b{animation:w3p 1.2s infinite}.w3m.w3rs .w3b{border-color:#fde047}
 @keyframes w3p{0%{box-shadow:0 0 0 0 var(--c)}100%{box-shadow:0 0 0 16px transparent}}
 .w3u{background:#0b1220e6;color:#fff;font:700 10px system-ui;padding:1px 5px;border-radius:5px;border:1px solid var(--c);cursor:pointer;white-space:nowrap;pointer-events:auto}
-.w3u.w3rs{border-color:#60a5fa;box-shadow:0 0 8px #3b82f6}
+.w3u.w3rs{border-color:#60a5fa}
 `;document.head.appendChild(css);
 
 /* ---------- library loading ---------- */
@@ -222,9 +222,33 @@ const KIND={
  rrv:{k:"car",p:"estate",liv:"amb",L:4.5,W:1.85,H:1.5},ao:{k:"car",p:"estate",liv:"amb",L:4.7,W:1.9,H:1.5},ccc:{k:"car",p:"suv",liv:"amb",L:4.8,W:1.95,H:1.65},
  bike:{k:"bike",liv:"amb"},air:{k:"heli",liv:"amb"}};
 function cfgFor(ty){if(KIND[ty])return KIND[ty];const sv=U[ty]&&U[ty][0];return sv==="f"?KIND.pump:sv==="p"?KIND.irv:KIND.dca}
+/* merge a model's static parts: one mesh (one draw call) per material, instead of one per part (a vehicle is ~100 parts).
+   Parts that move or animate stay separate: the helicopter rotor (V.rotor). Lights keep their own materials, so their colour still
+   changes, and their glow sprites are not meshes, so they are left alone. */
+function mergeStatic(g,V){
+ g.updateMatrixWorld(true);const inv=new T3.Matrix4().copy(g.matrixWorld).invert(),rotor=V.rotor,groups=new Map(),drop=[];
+ g.traverse(o=>{if(!o.isMesh||o===g||o.isSprite)return;
+  for(let p=o;p;p=p.parent)if(p===rotor)return;
+  const rel=new T3.Matrix4().multiplyMatrices(inv,o.matrixWorld),key=o.material.uuid;
+  if(!groups.has(key))groups.set(key,{mat:o.material,parts:[]});
+  groups.get(key).parts.push({geo:o.geometry,m:rel});drop.push(o)});
+ if(drop.length<2)return;
+ for(const grp of groups.values()){
+  const geos=grp.parts.map(it=>{const geo=it.geo.index?it.geo.toNonIndexed():it.geo.clone();geo.applyMatrix4(it.m);return geo});
+  let n=0;geos.forEach(geo=>n+=geo.attributes.position.count);
+  const out=new T3.BufferGeometry();
+  ["position","normal","uv"].forEach(nm=>{if(!geos.every(geo=>geo.attributes[nm]))return;
+   const size=geos[0].attributes[nm].itemSize,arr=new Float32Array(n*size);let off=0;
+   geos.forEach(geo=>{arr.set(geo.attributes[nm].array,off);off+=geo.attributes[nm].array.length});
+   out.setAttribute(nm,new T3.BufferAttribute(arr,size))});
+  out.computeBoundingSphere();
+  g.add(new T3.Mesh(out,grp.mat));
+  geos.forEach(geo=>geo.dispose())}
+ const shared=[BOX,CYL,SPH,CIR,PLN];
+ drop.forEach(o=>{g.remove(o);if(o.geometry&&!shared.includes(o.geometry))o.geometry.dispose()})}
 function buildVehicle(u){const c=cfgFor(u.ty),V={u,lm:[[],[]],sp:[[],[]],ph:Math.random()*8,h:null,alt:0,spool:0,rotor:null,on:false};
  const g=c.k==="heli"?heli(c,V):c.k==="bike"?bike(c,V):c.k==="car"?car(c,V):c.k==="van"?van(c,V):c.k==="pickup"?pickup(c,V):truck(Object.assign({kind:c.k},c),V);
- const root=new T3.Group();root.add(g);root.traverse(o=>{o.frustumCulled=false});V.g=g;V.root=root;return V}
+ mergeStatic(g,V);const root=new T3.Group();root.add(g);root.traverse(o=>{o.frustumCulled=false});V.g=g;V.root=root;return V}
 
 /* ---------- 3D world ---------- */
 const W3={frames:0,err:null,adds:0};const VM_MAX=70; /* largest scale vehicles are drawn at when zoomed out (keeps them readable) */
@@ -331,7 +355,7 @@ function vehicleLayer(){return{id:"veh3d",type:"custom",renderingMode:"3d",
   const t=performance.now()/1000,dt=Math.min(.1,t-(lastT||t));lastT=t;
   const c=map3.getCenter(),mc=mercOf(c.lat,c.lng),s=(mc.meterInMercatorCoordinateUnits||mc.meterInMercatorUnits).call(mc),z=map3.getZoom();
   const mpp=78271.517*Math.cos(c.lat*D2R)/Math.pow(2,z),vm=clamp(34*mpp/5,1,VM_MAX);VM=vm;
-  const idx={};let anyVis=false,chg=false;keepGoing=false;const slots=scnSlots();
+  const idx={};let anyVis=false,chg=false,anyMove=false;keepGoing=false;const slots=scnSlots();
   /* only draw vehicles that are on screen (+15% margin): each one is ~100+ meshes, so off-screen ones are pure waste */
   const B=map3.getBounds(),bw=B.getWest(),be=B.getEast(),bs=B.getSouth(),bn=B.getNorth(),mx=(be-bw)*.15,my=(bn-bs)*.15;
   for(const id in fleet){const V=fleet[id],u=V.u;if(!S)continue;const A=airStep(V,u,dt,t);
@@ -340,7 +364,7 @@ function vehicleLayer(){return{id:"veh3d",type:"custom",renderingMode:"3d",
    const p=A?A.p:pk?pk.p:lagOn?along(u.rt,dd(u)+lg):(u.st==="scene"&&V.land?V.land:posOf(u,i)),m=mercOf(p[0],p[1]);
    const hd=A?A.h:pk?pk.h:lagOn?headingAt(u,dd(u)+lg):headingOf(u);if(hd!=null)V.h=V.h==null?hd:angLerp(V.h,hd,Math.min(1,dt*2.5));else if(V.h==null)V.h=(u.id%8)*Math.PI/4;
    
-   V.ll=p;const bx=(m.x-mc.x)/s,bz=(m.y-mc.y)/s;V.bx=bx;V.bz=bz;V.root.position.set(bx,V.alt,bz);V.root.rotation.y=-V.h;V.root.scale.setScalar(vm);{const vis=u.st!=="hand"&&u.st!=="idle"&&p[1]>bw-mx&&p[1]<be+mx&&p[0]>bs-my&&p[0]<bn+my;if(vis!==V.root.visible)chg=true;if(vis)anyVis=true;V.root.visible=vis}/* vehicles parked at their station are hidden */
+   V.ll=p;const bx=(m.x-mc.x)/s,bz=(m.y-mc.y)/s;V.bx=bx;V.bz=bz;V.root.position.set(bx,V.alt,bz);V.root.rotation.y=-V.h;V.root.scale.setScalar(vm);{const vis=u.st!=="hand"&&u.st!=="idle"&&p[1]>bw-mx&&p[1]<be+mx&&p[0]>bs-my&&p[0]<bn+my;if(vis!==V.root.visible)chg=true;if(vis){anyVis=true;if(u.st==="out"||u.st==="back"||u.st==="hosp"||(A&&A.alt>0))anyMove=true}V.root.visible=vis}/* vehicles parked at their station are hidden */
    if(V.rotor&&u.st!=="idle")V.rotor.rotation.y+=dt*35*(A?A.spool:1);
    const lit=isLit(u);
    if(lit){const k=Math.floor(t*8+V.ph)%8,L=k===0||k===2,R=k===4||k===6;
@@ -369,7 +393,7 @@ function vehicleLayer(){return{id:"veh3d",type:"custom",renderingMode:"3d",
   if(renderer.resetState)renderer.resetState();else renderer.state.reset();
   renderer.render(scene,camera);W3.frames++}catch(e){if(!W3.err){W3.err=String(e&&e.message||e);console.error('3D render error',e);try{toast('3D vehicle error: '+W3.err)}catch(x){}}}
   /* only keep redrawing (capped ~30fps) while a vehicle is visible; otherwise the map renders on demand and the GPU idles */
-  if(map3&&keepGoing&&!rpT)rpT=setTimeout(()=>{rpT=0;if(map3)map3.triggerRepaint()},33)}}}
+  if(map3&&keepGoing&&!rpT&&!document.hidden)rpT=setTimeout(()=>{rpT=0;if(map3)map3.triggerRepaint()},33)}}}
 /* restart the repaint loop when a unit becomes active */
 function kick(){if(map3&&!rpT&&S&&S.un.some(u=>u.st!=="idle"&&u.st!=="hand"))map3.triggerRepaint()}
 
@@ -427,7 +451,7 @@ function syncLabels(){if(!map3||!S)return;const z=map3.getZoom();
  S.un.forEach(u=>{let o=vlb[u.id];const V=fleet[u.id],show=V&&u.st!=="hand"&&u.st!=="idle"&&z>=13.5;
   if(!show){if(o)o.mk.getElement().style.display="none";return}
   if(!o){const e=document.createElement("div");e.className="w3u";e.textContent=u.cs;e.style.setProperty("--c",SC[U[u.ty][0]]);e.onclick=ev=>{ev.stopPropagation();try{openUI(u.id)}catch(x){}};e.onpointerdown=ev=>ev.stopPropagation();
-   o=vlb[u.id]={mk:new maplibregl.Marker({element:e,anchor:"bottom",offset:[0,-16]}).setLngLat([0,0]).addTo(map3)}}
+   o=vlb[u.id]={mk:new maplibregl.Marker({element:e,anchor:"bottom",offset:[0,-30]}).setLngLat([0,0]).addTo(map3)}}
   const el=o.mk.getElement();el.style.display="";el.classList.toggle("w3rs",isLit(u));const p=V.ll||upos(u);if(o.la!==p[0]||o.lo!==p[1]){o.la=p[0];o.lo=p[1];o.mk.setLngLat([p[1],p[0]])}});
  const ids=new Set(S.un.map(u=>String(u.id)));for(const id in vlb)if(!ids.has(id)){vlb[id].mk.remove();delete vlb[id]}}
 
@@ -444,13 +468,73 @@ function addExtrusions(gl){try{if(gl.getLayer("ofm-3d"))return;const st=gl.getSt
  if(gl.getLayer("building-3d"))gl.setLayoutProperty("building-3d","visibility","none");
  gl.addLayer({id:"ofm-3d",type:"fill-extrusion",source:src,"source-layer":"building",minzoom:13,paint:{"fill-extrusion-color":["interpolate",["linear"],["coalesce",["get","render_height"],0],0,"#e4e1da",60,"#c9c5bb",200,"#a9a59b"],"fill-extrusion-height":["coalesce",["get","render_height"],4],"fill-extrusion-base":["coalesce",["get","render_min_height"],0],"fill-extrusion-opacity":1}},lab&&lab.id)}catch(e){console.warn("3D buildings unavailable",e)}}
 
+/* ----- night: the sun's height over the map centre decides, so it follows the real sunset wherever you are looking.
+   Night darkens the base map and buildings, glows the main roads, and puts a soft red/blue light under responding vehicles. ----- */
+const NIGHT_KEY="fc_night",NORIG=new Map();let NT=-1,NLK_="";
+function nightPref(){try{return localStorage.getItem(NIGHT_KEY)||"auto"}catch(e){return "auto"}}
+function setNightPref(v){try{localStorage.setItem(NIGHT_KEY,v)}catch(e){}}
+function nightLabel(){return "🌙 "+({auto:"Auto",night:"Night",day:"Day"}[nightPref()]||"Auto")}
+/* the sun's altitude in degrees (standard low-precision solar position, good to a fraction of a degree) */
+function sunAlt(lat,lon,ms){const d=(ms-Date.UTC(2000,0,1,12))/86400000,g=(357.528+.9856003*d)*D2R,L=(280.46+.9856474*d)*D2R,
+ lam=L+(1.915*Math.sin(g)+.02*Math.sin(2*g))*D2R,eps=(23.439-4e-7*d)*D2R,
+ dec=Math.asin(Math.sin(eps)*Math.sin(lam)),ra=Math.atan2(Math.cos(eps)*Math.sin(lam),Math.cos(lam)),
+ gmst=((280.46061837+360.98564736629*d)%360+360)%360,H=(gmst+lon)*D2R-ra,la=lat*D2R;
+ return Math.asin(Math.sin(la)*Math.sin(dec)+Math.cos(la)*Math.cos(dec)*Math.cos(H))/D2R}
+/* 0 = day, 1 = night. Blends from 2 degrees above the horizon down to 8 below it, so dusk and dawn fade in gradually */
+function nightAmount(){if(!map3)return 0;const p=nightPref();if(p==="day")return 0;if(p==="night")return 1;
+ const c=map3.getCenter();return clamp((2-sunAlt(c.lat,c.lng,Date.now()))/10,0,1)}
+const mixHex=(a,b,t)=>{const p=h=>[1,3,5].map(i=>parseInt(h.substr(i,2),16));const A=p(a),B=p(b);return"#"+A.map((x,i)=>Math.round(x+(B[i]-x)*t).toString(16).padStart(2,"0")).join("")};
+const isHex=c=>typeof c==="string"&&/^#[0-9a-f]{6}$/i.test(c);
+/* the night colour for each base-map layer (null = leave alone) */
+function nightColor(l){const id=l.id;
+ if(l.type==="background")return "#07090d";
+ if(l.type==="fill"){if(/water/.test(id))return "#0a1826";if(/park|grass|wood|garden|cemetery|pitch|landcover|landuse|golf|sand/.test(id))return "#0c1512";return "#0f141b"}
+ if(l.type==="line")return /motorway|trunk|primary|secondary|tertiary/.test(id)?"#2b3442":"#1a212b";
+ if(l.type==="symbol")return "#6f7c8c";
+ return null}
+/* darken the base map by blending each layer from its own day colour towards its night colour (t: 0 day, 1 night) */
+function paintNight(t){const st=map3.getStyle();if(!st||!st.layers)return;
+ const PROP={background:"background-color",fill:"fill-color",line:"line-color",symbol:"text-color"};
+ for(const l of st.layers){if(/^(ofm-|fc-|routes|building-3d)/.test(l.id))continue;const prop=PROP[l.type],night=nightColor(l);if(!prop||!night)continue;
+  const key=l.id+"|"+prop;if(!NORIG.has(key))NORIG.set(key,map3.getPaintProperty(l.id,prop)??null);
+  const orig=NORIG.get(key);if(orig==null)continue;
+  try{map3.setPaintProperty(l.id,prop,isHex(orig)?mixHex(orig,night,t):(t>.5?night:orig))}catch(e){}}}
+/* 3D buildings: the height colour ramp blends to a dark night ramp, and the sun light dims */
+function paintBuildings(t){const day=["#e4e1da","#c9c5bb","#a9a59b"],ngt=["#1b1f26","#262b33","#2f3540"],hs=[0,60,200];
+ const col=["interpolate",["linear"],["coalesce",["get","render_height"],0]];hs.forEach((h,i)=>col.push(h,mixHex(day[i],ngt[i],t)));
+ map3.setPaintProperty("ofm-3d","fill-extrusion-color",col);
+ map3.setLight({anchor:"viewport",color:"#ffffff",intensity:.5-.3*t,position:[1.15,210,30]})}
+/* glow layers: main roads, and a soft light under each responding vehicle (fed by updateNightLights) */
+function addNightLayers(gl){NT=-1;NLK_="";NORIG.clear();if(gl.getSource("fc-lights"))return;
+ const st=gl.getStyle(),src=st.sources.openmaptiles?"openmaptiles":Object.keys(st.sources).find(k=>st.sources[k].type==="vector"),
+  sym=(st.layers||[]).find(l=>l.type==="symbol"),before=sym?sym.id:undefined;
+ if(!src)return;
+ gl.addLayer({id:"fc-road-glow",type:"line",source:src,"source-layer":"transportation",minzoom:12,
+  filter:["in",["get","class"],["literal",["motorway","trunk","primary"]]],layout:{"line-cap":"round","line-join":"round"},
+  paint:{"line-color":"#ffb24a","line-width":["interpolate",["linear"],["zoom"],12,5,17,18],"line-opacity":0}},before);
+ gl.addSource("fc-lights",{type:"geojson",data:{type:"FeatureCollection",features:[]}});
+ gl.addLayer({id:"fc-light-glow",type:"circle",source:"fc-lights",paint:{"circle-radius":["interpolate",["linear"],["zoom"],12,9,17,28],"circle-color":["get","c"],"circle-blur":.9,"circle-opacity":0}},before)}
+function updateNightLights(t){if(!map3||!map3.getSource||!map3.getSource("fc-lights"))return;const f=[];
+ if(t>0)for(const id in fleet){const V=fleet[id];if(!V.ll||!isLit(V.u))continue;
+  f.push({type:"Feature",geometry:{type:"Point",coordinates:[V.ll[1],V.ll[0]]},properties:{c:cfgFor(V.u.ty).liv==="amb"?"#ff3b3b":"#3b82ff"}})}
+ const key=JSON.stringify(f.map(x=>[x.geometry.coordinates,x.properties.c]));if(key===NLK_)return;NLK_=key;
+ map3.getSource("fc-lights").setData({type:"FeatureCollection",features:f})}
+/* called on every fleet tick: recolours only when the night amount has really changed, glow follows the vehicles */
+function syncNight(){if(!map3)return;const t=nightAmount();
+ if(NT<0||Math.abs(t-NT)>=.005){NT=t;
+  try{paintNight(t);if(map3.getLayer("ofm-3d"))paintBuildings(t);
+   if(map3.getLayer("fc-road-glow")){map3.setPaintProperty("fc-road-glow","line-opacity",.45*t);map3.setPaintProperty("fc-light-glow","circle-opacity",.55*t)}}
+  catch(e){}}
+ updateNightLights(t)}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)kick()});
 function showHud(on){if(hud){hud.remove();hud=null}if(!on)return;
- hud=document.createElement("div");hud.className="w3hud";hud.innerHTML=`<button data-a="reset">⟲ Reset view</button><button data-a="follow">🚨 Follow responder</button><button data-a="radio">📻 Radio follow</button><button data-a="tilt">⬍ Tilt</button>`;
+ hud=document.createElement("div");hud.className="w3hud";hud.innerHTML=`<button data-a="reset">⟲ Reset view</button><button data-a="follow">🚨 Follow responder</button><button data-a="radio">📻 Radio follow</button><button data-a="tilt">⬍ Tilt</button><button data-a="night">${nightLabel()}</button>`;
  hud.onclick=e=>{const a=e.target.dataset&&e.target.dataset.a;if(!a)return;
   if(a==="reset"){stopFollow();const b=bounds();map3.fitBounds(b,{padding:70,maxZoom:16,pitch:62,bearing:-20,duration:900})}
   else if(a==="tilt"){map3.easeTo({pitch:map3.getPitch()>45?0:65,duration:600})}
   else if(a==="follow")startFollow();
-  else if(a==="radio")radioFollowToggle()};
+  else if(a==="radio")radioFollowToggle();
+  else if(a==="night"){setNightPref({auto:"night",night:"day",day:"auto"}[nightPref()]||"auto");hud.querySelector('[data-a="night"]').textContent=nightLabel();NT=-1;syncNight()}};
  $("#mapw").appendChild(hud)}
 function bounds(){const b=new maplibregl.LngLatBounds();let n=0;S.st.forEach(s=>{b.extend([s.lon,s.lat]);n++});S.hs.forEach(h=>{b.extend([h.lon,h.lat]);n++});
  if(!n){const c=map.getCenter();b.extend([c.lng-.01,c.lat-.01]);b.extend([c.lng+.01,c.lat+.01])}return b}
@@ -477,12 +561,14 @@ function followTick(){if(!map3)return;
  const p=upos(u),c=map3.getCenter(),V=fleet[u.id];let o={center:[c.lng+(p[1]-c.lng)*.25,c.lat+(p[0]-c.lat)*.25]};
  if(V&&V.h!=null){const b=map3.getBearing()*D2R;o.bearing=angLerp(b,V.h,.03)/D2R}map3.jumpTo(o)}
 
+/* phones and tablets: draw at 1x and redraw less often, which is what drains the battery */
+const LOW3D=matchMedia("(pointer:coarse)").matches||innerWidth<800;
 async function enter3D(){if(active||busy||!S)return;busy=true;
  try{toast("Loading 3D world…");await loadLibs()}catch(e){busy=false;toast("Couldn't load the 3D libraries (check your connection) – staying on the classic map.");setTog();return}
  try{initShared();const w=$("#mapw");let el=$("#map3d");if(!el){el=document.createElement("div");el.id="map3d";w.insertBefore(el,w.firstChild)}
   $("#map").style.display="none";el.style.display="";
   const b=bounds();
-  map3=new maplibregl.Map({container:el,style:STYLE_URL,bounds:b,fitBoundsOptions:{padding:70,maxZoom:16,pitch:62,bearing:-20},pitch:62,bearing:-20,maxPitch:85,pixelRatio:Math.min(window.devicePixelRatio||1,2),antialias:(window.devicePixelRatio||1)<2,attributionControl:false,fadeDuration:0});
+  map3=new maplibregl.Map({container:el,style:STYLE_URL,bounds:b,fitBoundsOptions:{padding:70,maxZoom:16,pitch:62,bearing:-20},pitch:62,bearing:-20,maxPitch:85,pixelRatio:LOW3D?1:Math.min(window.devicePixelRatio||1,2),antialias:!LOW3D&&(window.devicePixelRatio||1)<2,attributionControl:false,fadeDuration:0});
   map3.addControl(new maplibregl.AttributionControl({compact:true,customAttribution:'<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> © OpenMapTiles, © OpenStreetMap contributors'}));
   map3.addControl(new maplibregl.NavigationControl({visualizePitch:true}),"top-right");
   let ok=0;const to=setTimeout(()=>{if(!ok)fail("The 3D map took too long to load.")},20000);
@@ -490,15 +576,15 @@ async function enter3D(){if(active||busy||!S)return;busy=true;
   map3.on("error",e=>{if(!ok&&e&&!e.tile&&!e.sourceId&&e.error&&/style|fetch|Failed/i.test(String(e.error.message||e.error)))fail("Couldn't load the 3D map style.")});
   map3.on("click",e=>{try{if(typeof mv!=="undefined"&&(mv||bm||pm))bpSet(e.lngLat.lat,e.lngLat.lng,0)}catch(x){}});
   map3.on("dragstart",stopFollow);
-  map3.once("load",()=>{ok=1;clearTimeout(to);const gl=map3;addExtrusions(gl);
+  map3.once("load",()=>{ok=1;clearTimeout(to);const gl=map3;addExtrusions(gl);addNightLayers(gl);
    routesEmpty=true;gl.addSource("routes",{type:"geojson",data:{type:"FeatureCollection",features:[]}});
    gl.addLayer({id:"routes-casing",type:"line",source:"routes",layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":"#0b1b4d","line-width":8,"line-opacity":.6}});
    gl.addLayer({id:"routes-line",type:"line",source:"routes",layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":"#3b82f6","line-width":4,"line-opacity":.95}});
    try{gl.addLayer(vehicleLayer())}catch(e){W3.err="layer: "+(e&&e.message||e);console.error(e);toast("3D vehicle layer failed: "+W3.err)}
    const safe=f=>()=>{try{f()}catch(e){if(!W3.err2){W3.err2=1;console.error("3D sync",e)}}};
-   const tickA=safe(()=>{syncFleet();syncMarkers();syncRoutes();kick()}),tickB=safe(()=>{syncLabels();syncPin()}),tickC=safe(followTick);
+   const tickA=safe(()=>{syncFleet();syncMarkers();syncRoutes();kick();syncNight()}),tickB=safe(()=>{syncLabels();syncPin()}),tickC=safe(followTick);
    tickA();tickB();
-   timers.push(setInterval(tickA,500),setInterval(tickB,120),setInterval(tickC,33))});
+   timers.push(setInterval(tickA,500),setInterval(tickB,250),setInterval(tickC,33))});
   active=true;showHud(true);setTog();lsSet(MODE_KEY,"3d")}
  catch(e){console.error(e);toast("3D mode couldn't start on this device – using the classic map.");exit3D(true)}
  busy=false}
