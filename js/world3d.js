@@ -33,6 +33,7 @@ const css=document.createElement("style");css.textContent=`
 #w3tog{position:absolute;z-index:1300;right:56px;top:10px}
 .w3m{display:flex;flex-direction:column;align-items:center;cursor:pointer;font:600 11px system-ui;color:#fff;pointer-events:auto;--c:#2563eb}
 .w3m .w3l{background:#0b1220d9;padding:1px 6px;border-radius:6px;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.w3st .w3l{display:none}
 .w3m .w3b{width:34px;height:34px;border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;background:var(--c);box-shadow:0 2px 8px #0009;font-size:17px;font-weight:800;overflow:hidden}
 .w3m .w3b img{width:100%;height:100%;object-fit:cover}
 .w3m .w3p{width:2px;height:24px;background:linear-gradient(var(--c),transparent)}
@@ -225,7 +226,7 @@ function buildVehicle(u){const c=cfgFor(u.ty),V={u,lm:[[],[]],sp:[[],[]],ph:Math
  const root=new T3.Group();root.add(g);root.traverse(o=>{o.frustumCulled=false});V.g=g;V.root=root;return V}
 
 /* ---------- 3D world ---------- */
-const W3={frames:0,err:null,adds:0};let map3=null,scene,camera,renderer,fleet={},mk={s:{},h:{},m:{},u:{}},vlb={},timers=[],hud=null,follow=null,lastT=0,lastLb=0,rt0=0;
+const W3={frames:0,err:null,adds:0};let map3=null,scene,camera,renderer,fleet={},mk={s:{},h:{},m:{},u:{}},vlb={},timers=[],hud=null,follow=null,lastT=0,lastLb=0,rt0=0,rpT=0,keepGoing=false,routesEmpty=true,TMP=null;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),D2R=Math.PI/180;
 const mercOf=(lat,lon)=>maplibregl.MercatorCoordinate.fromLngLat({lng:lon,lat:lat},0);
 function angLerp(a,b,f){let d=((b-a+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;return a+d*f}
@@ -240,29 +241,33 @@ function posOf(u,i){const p=upos(u);let ox=0,oy=0;
 const isLit=u=>u.st==="out"||u.st==="hosp"||u.st==="scene";
 
 function vehicleLayer(){return{id:"veh3d",type:"custom",renderingMode:"3d",
- onAdd(m,gl){W3.adds++;scene=new T3.Scene();camera=new T3.Camera();const k=(parseInt(T3.REVISION,10)>=155)?Math.PI:1;scene.add(new T3.AmbientLight(0xffffff,.8*k));const sun=new T3.DirectionalLight(0xffffff,.55*k);sun.position.set(.4,1,.3);scene.add(sun);
+ onAdd(m,gl){W3.adds++;scene=new T3.Scene();camera=new T3.Camera();TMP={a:new T3.Matrix4(),b:new T3.Matrix4(),v:new T3.Vector3()};const k=(parseInt(T3.REVISION,10)>=155)?Math.PI:1;scene.add(new T3.AmbientLight(0xffffff,.8*k));const sun=new T3.DirectionalLight(0xffffff,.55*k);sun.position.set(.4,1,.3);scene.add(sun);
   renderer=new T3.WebGLRenderer({canvas:m.getCanvas(),context:gl,antialias:true});renderer.autoClear=false},
  render(gl,a){if(!map3||!renderer)return;try{const arr=Array.isArray(a)||(a&&a.length===16)?a:(a&&a.defaultProjectionData&&a.defaultProjectionData.mainMatrix);if(!arr)return;
   const t=performance.now()/1000,dt=Math.min(.1,t-(lastT||t));lastT=t;
   const c=map3.getCenter(),mc=mercOf(c.lat,c.lng),s=(mc.meterInMercatorCoordinateUnits||mc.meterInMercatorUnits).call(mc),z=map3.getZoom();
   const mpp=78271.517*Math.cos(c.lat*D2R)/Math.pow(2,z),vm=clamp(34*mpp/5,1,70);
-  const idx={};
+  const idx={};let anyVis=false,chg=false;keepGoing=false;
   for(const id in fleet){const V=fleet[id],u=V.u;if(!S||!S.un.includes(u)){continue}
    const sid=u.st==="idle"?u.sid:0;const i=sid?(idx[sid]=(idx[sid]||0)+1)-1:0,p=posOf(u,i),m=mercOf(p[0],p[1]);
    const hd=headingOf(u);if(hd!=null)V.h=V.h==null?hd:angLerp(V.h,hd,Math.min(1,dt*6));else if(V.h==null)V.h=(u.id%8)*Math.PI/4;
    const air=u.ty==="hel"||u.ty==="air",tgt=air&&(u.st==="out"||u.st==="back"||u.st==="hosp")?45:0;V.alt+=(tgt-V.alt)*Math.min(1,dt*1.5);
-   V.ll=p;V.root.position.set((m.x-mc.x)/s,V.alt,(m.y-mc.y)/s);V.root.rotation.y=-V.h;V.root.scale.setScalar(vm);V.root.visible=u.st!=="hand"&&u.st!=="idle";/* vehicles parked at their station are hidden */
+   V.ll=p;V.root.position.set((m.x-mc.x)/s,V.alt,(m.y-mc.y)/s);V.root.rotation.y=-V.h;V.root.scale.setScalar(vm);{const vis=u.st!=="hand"&&u.st!=="idle";if(vis!==V.root.visible)chg=true;if(vis)anyVis=true;V.root.visible=vis}/* vehicles parked at their station are hidden */
    if(V.rotor&&u.st!=="idle")V.rotor.rotation.y+=dt*35;
    const lit=isLit(u);
    if(lit){const k=Math.floor(t*8+V.ph)%8,L=k===0||k===2,R=k===4||k===6;
     V.lm[0].forEach(x=>x.color.setHex(L?ON:OFF));V.lm[1].forEach(x=>x.color.setHex(R?ON:OFF));
     V.sp[0].forEach(x=>x.material.opacity=L?.95:0);V.sp[1].forEach(x=>x.material.opacity=R?.95:0);V.wash.material.opacity=(L||R)?.4:.06;V.on=true}
    else if(V.on){V.lm[0].concat(V.lm[1]).forEach(x=>x.color.setHex(OFF));V.sp[0].concat(V.sp[1]).forEach(x=>x.material.opacity=0);V.wash.material.opacity=0;V.on=false}}
-  const l=new T3.Matrix4().makeTranslation(mc.x,mc.y,0).scale(new T3.Vector3(s,-s,s)).multiply(new T3.Matrix4().makeRotationX(Math.PI/2));
-  camera.projectionMatrix=new T3.Matrix4().fromArray(arr).multiply(l);
+  TMP.a.makeTranslation(mc.x,mc.y,0).scale(TMP.v.set(s,-s,s)).multiply(TMP.b.makeRotationX(Math.PI/2));
+  camera.projectionMatrix.fromArray(arr).multiply(TMP.a);
+  keepGoing=anyVis||chg||!!follow;
   if(renderer.resetState)renderer.resetState();else renderer.state.reset();
   renderer.render(scene,camera);W3.frames++}catch(e){if(!W3.err){W3.err=String(e&&e.message||e);console.error('3D render error',e);try{toast('3D vehicle error: '+W3.err)}catch(x){}}}
-  if(map3)map3.triggerRepaint()}}}
+  /* only keep redrawing (capped ~30fps) while a vehicle is visible; otherwise the map renders on demand and the GPU idles */
+  if(map3&&keepGoing&&!rpT)rpT=setTimeout(()=>{rpT=0;if(map3)map3.triggerRepaint()},33)}}}
+/* restart the repaint loop when a unit becomes active */
+function kick(){if(map3&&!rpT&&S&&S.un.some(u=>u.st!=="idle"&&u.st!=="hand"))map3.triggerRepaint()}
 
 /* reconcile 3D models with the game's units */
 function syncFleet(){if(!scene||!S)return;const seen={};
@@ -275,8 +280,8 @@ function mkEl(cls,c,inner,label,onClick){const e=document.createElement("div");e
  e.addEventListener("click",ev=>{ev.stopPropagation();onClick()});e.addEventListener("pointerdown",ev=>ev.stopPropagation());return e}
 function upsert(group,id,ll,key,make){let o=mk[group][id];
  if(o&&o.k!==key){o.mk.remove();o=mk[group][id]=null}
- if(!o)o=mk[group][id]={k:key,mk:new maplibregl.Marker({element:make(),anchor:"bottom",offset:[0,4]}).setLngLat([ll[1],ll[0]]).addTo(map3)};
- else o.mk.setLngLat([ll[1],ll[0]])}
+ if(!o)o=mk[group][id]={k:key,la:ll[0],lo:ll[1],mk:new maplibregl.Marker({element:make(),anchor:"bottom",offset:[0,4]}).setLngLat([ll[1],ll[0]]).addTo(map3)};
+ else if(o.la!==ll[0]||o.lo!==ll[1]){o.la=ll[0];o.lo=ll[1];o.mk.setLngLat([ll[1],ll[0]])}}
 function syncMarkers(){if(!map3||!S)return;const seen={s:{},h:{},m:{},u:{}};
  S.st.forEach(s=>{seen.s[s.id]=1;upsert("s",s.id,[s.lat,s.lon],s.sv+"|"+s.name+"|"+(IMGS["s"+s.id]?1:0),()=>mkEl("w3st",SC[s.sv],bIco("s",s),s.name,()=>openS(s.id)))});
  S.hs.forEach(x=>{seen.h[x.id]=1;const pn=x.ty==="pn";upsert("h",x.id,[x.lat,x.lon],x.ty+"|"+x.name,()=>mkEl("w3hs",pn?"#475569":"#0369a1",bIco("h",x),x.name,()=>openH(x.id)))});
@@ -301,20 +306,21 @@ function syncLabels(){if(!map3||!S)return;const z=map3.getZoom();
   if(!show){if(o)o.mk.getElement().style.display="none";return}
   if(!o){const e=document.createElement("div");e.className="w3u";e.textContent=u.cs;e.style.setProperty("--c",SC[U[u.ty][0]]);e.onclick=ev=>{ev.stopPropagation();try{openUI(u.id)}catch(x){}};e.onpointerdown=ev=>ev.stopPropagation();
    o=vlb[u.id]={mk:new maplibregl.Marker({element:e,anchor:"bottom",offset:[0,-16]}).setLngLat([0,0]).addTo(map3)}}
-  const el=o.mk.getElement();el.style.display="";el.classList.toggle("w3rs",isLit(u));const p=V.ll||upos(u);o.mk.setLngLat([p[1],p[0]])});
+  const el=o.mk.getElement();el.style.display="";el.classList.toggle("w3rs",isLit(u));const p=V.ll||upos(u);if(o.la!==p[0]||o.lo!==p[1]){o.la=p[0];o.lo=p[1];o.mk.setLngLat([p[1],p[0]])}});
  for(const id in vlb)if(!S.un.some(u=>String(u.id)===id)){vlb[id].mk.remove();delete vlb[id]}}
 
 /* blue route lines for responding units */
 function syncRoutes(){if(!map3||!map3.getSource("routes")||!S)return;const f=[];
  if(getSet().routeLines!==false)S.un.forEach(u=>{if(!(u.st==="out"||u.st==="hosp")||!u.rt||!u.rt.d)return;const R=u.rt,n=R.d.length,p=upos(u),g=clamp(dd(u)/R.len,0,1)*R.d[n-1];let i=1;while(i<n-1&&R.d[i]<g)i++;
   f.push({type:"Feature",properties:{},geometry:{type:"LineString",coordinates:[[p[1],p[0]]].concat(R.p.slice(i).map(q=>[q[1],q[0]]))}})});
+ if(!f.length&&routesEmpty)return;routesEmpty=!f.length;
  map3.getSource("routes").setData({type:"FeatureCollection",features:f})}
 
 function addExtrusions(gl){try{if(gl.getLayer("ofm-3d"))return;const st=gl.getStyle(),src=st.sources.openmaptiles?"openmaptiles":Object.keys(st.sources).find(k=>st.sources[k].type==="vector");if(!src)return;
  const lab=st.layers.find(l=>l.type==="symbol");
  (st.layers||[]).forEach(l=>{if(l.type==="fill"&&/^building/.test(l.id)&&!/3d/.test(l.id)){try{gl.setLayoutProperty(l.id,"visibility","none")}catch(e){}}});
  if(gl.getLayer("building-3d"))gl.setLayoutProperty("building-3d","visibility","none");
- gl.addLayer({id:"ofm-3d",type:"fill-extrusion",source:src,"source-layer":"building",minzoom:13,paint:{"fill-extrusion-color":["interpolate",["linear"],["coalesce",["get","render_height"],0],0,"#e4e1da",60,"#c9c5bb",200,"#a9a59b"],"fill-extrusion-height":["coalesce",["get","render_height"],4],"fill-extrusion-base":["coalesce",["get","render_min_height"],0],"fill-extrusion-opacity":.95}},lab&&lab.id)}catch(e){console.warn("3D buildings unavailable",e)}}
+ gl.addLayer({id:"ofm-3d",type:"fill-extrusion",source:src,"source-layer":"building",minzoom:13,paint:{"fill-extrusion-color":["interpolate",["linear"],["coalesce",["get","render_height"],0],0,"#e4e1da",60,"#c9c5bb",200,"#a9a59b"],"fill-extrusion-height":["coalesce",["get","render_height"],4],"fill-extrusion-base":["coalesce",["get","render_min_height"],0],"fill-extrusion-opacity":1}},lab&&lab.id)}catch(e){console.warn("3D buildings unavailable",e)}}
 
 function showHud(on){if(hud){hud.remove();hud=null}if(!on)return;
  hud=document.createElement("div");hud.className="w3hud";hud.innerHTML=`<button data-a="reset">⟲ Reset view</button><button data-a="follow">🚨 Follow responder</button><button data-a="tilt">⬍ Tilt</button>`;
@@ -340,7 +346,7 @@ async function enter3D(){if(active||busy||!S)return;busy=true;
  try{initShared();const w=$("#mapw");let el=$("#map3d");if(!el){el=document.createElement("div");el.id="map3d";w.insertBefore(el,w.firstChild)}
   $("#map").style.display="none";el.style.display="";
   const b=bounds();
-  map3=new maplibregl.Map({container:el,style:STYLE_URL,bounds:b,fitBoundsOptions:{padding:70,maxZoom:16,pitch:62,bearing:-20},pitch:62,bearing:-20,maxPitch:85,antialias:true,attributionControl:false,fadeDuration:0});
+  map3=new maplibregl.Map({container:el,style:STYLE_URL,bounds:b,fitBoundsOptions:{padding:70,maxZoom:16,pitch:62,bearing:-20},pitch:62,bearing:-20,maxPitch:85,pixelRatio:Math.min(window.devicePixelRatio||1,2),antialias:(window.devicePixelRatio||1)<2,attributionControl:false,fadeDuration:0});
   map3.addControl(new maplibregl.AttributionControl({compact:true,customAttribution:'<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> © OpenMapTiles, © OpenStreetMap contributors'}));
   map3.addControl(new maplibregl.NavigationControl({visualizePitch:true}),"top-right");
   let ok=0;const to=setTimeout(()=>{if(!ok)fail("The 3D map took too long to load.")},20000);
@@ -349,19 +355,19 @@ async function enter3D(){if(active||busy||!S)return;busy=true;
   map3.on("click",e=>{try{if(typeof mv!=="undefined"&&(mv||bm||pm))bpSet(e.lngLat.lat,e.lngLat.lng,0)}catch(x){}});
   map3.on("dragstart",stopFollow);
   map3.once("load",()=>{ok=1;clearTimeout(to);const gl=map3;addExtrusions(gl);
-   gl.addSource("routes",{type:"geojson",data:{type:"FeatureCollection",features:[]}});
+   routesEmpty=true;gl.addSource("routes",{type:"geojson",data:{type:"FeatureCollection",features:[]}});
    gl.addLayer({id:"routes-casing",type:"line",source:"routes",layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":"#0b1b4d","line-width":8,"line-opacity":.6}});
    gl.addLayer({id:"routes-line",type:"line",source:"routes",layout:{"line-cap":"round","line-join":"round"},paint:{"line-color":"#3b82f6","line-width":4,"line-opacity":.95}});
    try{gl.addLayer(vehicleLayer())}catch(e){W3.err="layer: "+(e&&e.message||e);console.error(e);toast("3D vehicle layer failed: "+W3.err)}
    const safe=f=>()=>{try{f()}catch(e){if(!W3.err2){W3.err2=1;console.error("3D sync",e)}}};
-   const tickA=safe(()=>{syncFleet();syncMarkers();syncRoutes()}),tickB=safe(()=>{syncLabels();syncPin()}),tickC=safe(followTick);
+   const tickA=safe(()=>{syncFleet();syncMarkers();syncRoutes();kick()}),tickB=safe(()=>{syncLabels();syncPin()}),tickC=safe(followTick);
    tickA();tickB();
    timers.push(setInterval(tickA,500),setInterval(tickB,120),setInterval(tickC,33))});
   active=true;showHud(true);setTog();lsSet(MODE_KEY,"3d")}
  catch(e){console.error(e);toast("3D mode couldn't start on this device – using the classic map.");exit3D(true)}
  busy=false}
 
-function exit3D(silent){timers.forEach(clearInterval);timers=[];stopFollow();
+function exit3D(silent){timers.forEach(clearInterval);timers=[];clearTimeout(rpT);rpT=0;keepGoing=false;stopFollow();
  for(const g in mk){for(const id in mk[g])try{mk[g][id].mk.remove()}catch(e){}mk[g]={}}
  for(const id in vlb){try{vlb[id].mk.remove()}catch(e){}}vlb={};try{pin3&&pin3.remove()}catch(e){}pin3=null;pin3k=null;
  for(const id in fleet){try{scene&&scene.remove(fleet[id].root)}catch(e){}}fleet={};
