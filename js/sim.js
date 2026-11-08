@@ -29,7 +29,7 @@ const noAmb=m=>!m.roomId&&T[m.k][0]==="a"&&ownN("dca")<1;
 const isShort=(t,nd)=>Object.entries(t[3]).some(([k,n])=>!k.startsWith("tr:")&&(nd[k]||0)<n);
 async function spawn(fk){if(spb)return;spb=1;if(fk===undefined)S.next=now()+rateMs();
 try{const svs=new Set(S.st.map(s=>s.sv)),rk=rank();
-const pool=T.filter(t=>Object.entries(t[3]).every(([k,n])=>kr(k)<=rk&&svs.has(ks(k,t))&&(!k.startsWith("tr:")||S.un.filter(u=>has(u,k)).length>=n))&&ownOK(t));if(fk===undefined&&!pool.length)return;if(fk!==undefined&&!ownOK(T[fk]))return;
+const pool=T.filter(t=>!t.off&&Object.entries(t[3]).every(([k,n])=>kr(k)<=rk&&svs.has(ks(k,t))&&(!k.startsWith("tr:")||S.un.filter(u=>has(u,k)).length>=n))&&ownOK(t));if(fk===undefined&&!pool.length)return;if(fk!==undefined&&!ownOK(T[fk]))return;
 const t=fk===undefined?pick(pool):T[fk],k=T.indexOf(t),own=S.st.filter(x=>x.sv===t[0]),b=fk===undefined||!own.length?pick(S.st):pick(own);let la,lo,loc=null;{let po=typeof poiPick==="function"?poiPick(t,b):null;if(!po&&typeof prisonLookup==="function"&&typeof isPrisonT==="function"&&isPrisonT(t))po=await prisonLookup(b);if(po){la=po.la;lo=po.lo;loc=await addr(la,lo);if(po.nm)loc.s=po.nm+", "+loc.s}}
 for(let i=0;i<5&&!loc&&1;i++){[la,lo]=offKm(b);const sn=await snap(la,lo);if(sn&&sn.name&&sn.d<400){la=sn.la;lo=sn.lo;loc=await addr(la,lo,sn.name)}}
 if(!loc){const bl=land(b.lat,b.lon);for(let i=0;i<12;i++){[la,lo]=offKm(b);if(!bl||land(la,lo))break}if(bl&&!land(la,lo)){la=b.lat;lo=b.lon}loc={s:Math.ceil(R(1,98))+" "+pick(ROADS),t:near(la,lo),pc:fpc(la,lo),rd:"",fk:1}}
