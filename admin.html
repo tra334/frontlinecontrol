@@ -658,7 +658,7 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
   // Draft missions are only visible here. Publishing assigns a permanent position in the game's list, so after that
   // only Retire / Restore is allowed: to change a live mission, duplicate it, publish the copy and retire the old one.
   const MS_VEH = [["pump","f","Fire engine"],["rt","f","Rescue tender"],["wc","f","Water carrier"],["alp","f","Aerial ladder platform"],["icu","f","Incident command unit"],["fo","f","Fire officer car"],["wf","f","Wildfire 4x4"],["wru","f","Water rescue unit"],["hmu","f","Hazmat unit"],["usar","f","Urban search & rescue"],["irv","p","Response car"],["van","p","Police van"],["rp","p","Roads policing"],["dog","p","Dog unit"],["arv","p","Armed response"],["sgt","p","Patrol sergeant car"],["mc","p","Police motorcycle"],["cid","p","CID detectives"],["po","p","Public order carrier"],["hel","p","Police helicopter"],["dca","a","Ambulance"],["rrv","a","Rapid response car"],["ao","a","Ambulance officer"],["bike","a","Paramedic motorbike"],["hart","a","HART team"],["ccc","a","Critical care car"],["air","a","Air ambulance"],["mci","a","Major incident unit"]], MS_PLACES = ["pub","restaurant","hotel","supermarket","shop","services","home","care_home","high","school","college","civic","attraction","stadium","major_stadium","rec","leisure","hospital","church","station","road","car_park","petrol","office","airport","industrial","farm","water","lake","harbour","coast","woods","cemetery","bridge","prison"], MS_SV = { f: "Fire", p: "Police", a: "Ambulance" },
-    MS_STD = ["What\u2019s happened?", "Is anyone hurt?", "Any weapons or dangers?", "How many people are involved?", "Is it still happening?", "Nearest landmark or junction?", "Are you in a safe place right now?", "Is the patient breathing and conscious?", "Description of anyone involved?", "Is anyone still inside or trapped?", "Can you see flames or smoke?", "Is the fire spreading?", "Is there any bleeding?", "How old is the patient?", "Did they leave in a vehicle?", "Are the offenders still at the scene?"];
+    MS_STD = ["What\u2019s happened?", "Is anyone hurt?", "Any weapons or dangers?", "How many people are involved?", "Is it still happening?", "Are you in a safe place right now?", "Is the patient breathing and conscious?", "Description of anyone involved?", "Is anyone still inside or trapped?", "Can you see flames or smoke?", "Is the fire spreading?", "Is there any bleeding?", "How old is the patient?", "Did they leave in a vehicle?", "Are the offenders still at the scene?"];
   let msList = [], msEdit = null;
   const msNew = () => ({ id: null, status: "draft", svc: "f", name: "", caller: "", needs: {}, secs: 60, pay: 500, places: ["road"], g: 0, qa: [] });
   async function showMissions() {
@@ -702,10 +702,16 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
       <div class="row" style="margin-top:12px"><label class="mu">Seconds on scene <input id="ms_t" type="number" min="20" max="1200" style="width:90px"></label><label class="mu">Payout (£) <input id="ms_p" type="number" min="50" max="20000" style="width:100px"></label><label class="mu">Grade <select id="ms_g"><option value="0">Auto (from payout)</option><option value="1">G1 – life threatening</option><option value="2">G2 – urgent</option><option value="3">G3 – standard</option><option value="4">G4 – low priority</option></select></label></div>
       <div class="mu" style="margin:12px 0 4px">Can spawn at</div><div id="ms_pl" style="display:flex;flex-wrap:wrap;gap:6px"></div>
       <div class="mu" style="margin:14px 0 4px">Caller questions &amp; answers <span style="opacity:.7">(optional, up to 12)</span></div>
-      <div class="mu" style="margin-bottom:6px">Shown to players as buttons when they question the caller. Use the exact wording of a standard question (pick one from the suggestions) to replace its generic answer for this mission only; any other wording becomes an extra question. An answer can reveal extra vehicles the call needs, added once the player has asked it.</div>
+      <div class="mu" style="margin-bottom:6px">Once you add questions, players are offered ONLY the three fixed questions below plus the ones you write. All other standard questions are hidden for this call, so write every question you want players to have. Leave this empty to keep the full standard question set. An answer can reveal extra vehicles the call needs, added once the player has asked it.</div>
+      <div style="border:1px solid var(--bd);border-radius:8px;padding:8px 10px;margin-bottom:8px">
+        <div class="mu" style="margin-bottom:6px">&#128274; Always asked on every call. These are fixed and their answers can't be edited.</div>
+        <input disabled value="What’s the address of the emergency?" style="width:100%"><div class="mu" style="margin:2px 0 6px">Answered automatically with the call’s real address.</div>
+        <input disabled value="Your name and phone number?" style="width:100%"><div class="mu" style="margin:2px 0 6px">Answered automatically with a random caller name and phone number.</div>
+        <input disabled value="Nearest landmark or junction?" style="width:100%"><div class="mu" style="margin:2px 0 0">Answered automatically from the nearest real landmark or road.</div>
+      </div>
       <div id="ms_qa"></div><button type="button" class="btn sm" id="ms_qa_add">+ Add question</button>
       <datalist id="ms_std">${MS_STD.map(q => `<option value="${esc(q)}">`).join("")}</datalist>
-      <div class="mu" style="margin-top:10px">The minimum rank comes from the vehicles chosen. The grade is Auto (from the payout) unless you pick one. Questions you don't write use the generic caller answers.</div>
+      <div class="mu" style="margin-top:10px">The minimum rank comes from the vehicles chosen. The grade is Auto (from the payout) unless you pick one. With no questions written, the call uses the standard questions and generic answers.</div>
       <div id="ms_err" style="color:var(--rd);margin-top:8px"></div>
       <div class="row" style="margin-top:10px"><button class="btn pri" id="ms_save">Save draft</button><button class="btn" id="ms_x">Cancel</button></div></div>`;
     $("#ms_sv").value = m.svc; $("#ms_n").value = m.name; $("#ms_c").value = m.caller; $("#ms_t").value = m.secs; $("#ms_p").value = m.pay; $("#ms_g").value = String(m.g);
@@ -758,7 +764,7 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
         if (p.q.length < 3 || p.q.length > 80) qerr = "Question " + (i + 1) + " needs 3 to 80 characters";
         else if (p.a.length < 2 || p.a.length > 240) qerr = "Answer " + (i + 1) + " needs 2 to 240 characters";
         else if (seen.has(nq(p.q))) qerr = "Question " + (i + 1) + " is a duplicate";
-        else if (/address of the emergency/i.test(p.q)) qerr = "The address question can't be changed";
+        else if (/address of the emergency|name and phone number|nearest landmark or junction/i.test(p.q)) qerr = "Question " + (i + 1) + " is one of the fixed questions, which are always asked and can't be changed";
         seen.add(nq(p.q));
       });
       const err = qerr || (!(m.name.length >= 3) ? "Name needs at least 3 characters" : !(m.caller.length >= 5) ? "Write what the caller says" : !Object.keys(m.needs).length ? "Add at least one vehicle"
