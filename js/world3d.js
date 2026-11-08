@@ -222,7 +222,7 @@ const KIND={
  rrv:{k:"car",p:"estate",liv:"amb",L:4.5,W:1.85,H:1.5},ao:{k:"car",p:"estate",liv:"amb",L:4.7,W:1.9,H:1.5},ccc:{k:"car",p:"suv",liv:"amb",L:4.8,W:1.95,H:1.65},
  bike:{k:"bike",liv:"amb"},air:{k:"heli",liv:"amb"}};
 function cfgFor(ty){if(KIND[ty])return KIND[ty];const sv=U[ty]&&U[ty][0];return sv==="f"?KIND.pump:sv==="p"?KIND.irv:KIND.dca}
-function buildVehicle(u){const c=cfgFor(u.ty),V={u,lm:[[],[]],sp:[[],[]],ph:Math.random()*8,h:null,alt:0,rotor:null,on:false};
+function buildVehicle(u){const c=cfgFor(u.ty),V={u,lm:[[],[]],sp:[[],[]],ph:Math.random()*8,h:null,alt:0,spool:0,rotor:null,on:false};
  const g=c.k==="heli"?heli(c,V):c.k==="bike"?bike(c,V):c.k==="car"?car(c,V):c.k==="van"?van(c,V):c.k==="pickup"?pickup(c,V):truck(Object.assign({kind:c.k},c),V);
  const root=new T3.Group();root.add(g);root.traverse(o=>{o.frustumCulled=false});V.g=g;V.root=root;return V}
 
@@ -259,26 +259,67 @@ function posOf(u,i){const p=upos(u);let ox=0,oy=0;
 const isLit=u=>u.st==="out"||u.st==="hosp"||u.st==="scene";
 
 /* helicopters: cruise high enough to clear most rooftops (was 45 m, which clipped buildings) */
-const HEL_ALT=200,HEL_GAP=25;
+const HEL_ALT=200,HEL_GAP=25,ORBIT_ALT=120,ORBIT_R=110,ORBIT_T=45,ROTOR_R=6.5,SPOOL_UP=.3,SPOOL_DN=.2,LAND_WAIT=3000;
+/* police helicopters (ty "hel") never land: they orbit the scene. Air ambulances (ty "air") land on a clear spot next to it. */
 const isHel=u=>u.ty==="hel";
-/* a helicopter on scene puts down on the open road or green space nearest the call, never on a building.
-   returns [lat,lon], null if nothing suitable within ~150 m, or undefined if the map tiles aren't in yet (try again next tick) */
+const isAmb=u=>u.ty==="air";
+/* an air ambulance on scene puts down on open road or green space nearest the call, never on a building.
+   the search runs in real metres on the ground (not screen pixels, which are distorted when the map is tilted), and the spot must
+   also be clear of buildings around the rotor disc. returns [lat,lon], null if nothing suitable within 400 m, or undefined if the
+   map tiles aren't in yet (try again later). there is no fallback to the call point itself. */
 function landSpot(u,taken){if(!map3||!map3.areTilesLoaded||!map3.areTilesLoaded())return undefined;
- const ll=upos(u),z=map3.getZoom(),mpp=78271.517*Math.cos(ll[0]*D2R)/Math.pow(2,z);
- let P;try{P=map3.project([ll[1],ll[0]])}catch(e){return null}
- const ok=(x,y)=>{let road=false,green=false;let f=[];try{f=map3.queryRenderedFeatures([[x-3,y-3],[x+3,y+3]])}catch(e){}
+ const ll=upos(u),la0=ll[0],lo0=ll[1],cosL=Math.cos(la0*D2R);
+ const enu=(e,n)=>[la0+n/111320,lo0+e/(111320*cosL)];   /* metres east/north of the call -> [lat,lon] */
+ const off=(la,lo,e,n)=>[la+n/111320,lo+e/(111320*Math.cos(la*D2R))];   /* metres east/north of any point */
+ const sc=(la,lo)=>{try{const p=map3.project([lo,la]);return[p.x,p.y]}catch(e){return null}};
+ /* what is drawn at a screen point: "b" building, "open" road or green space, "" anything else */
+ const kind=(x,y)=>{let f=[];try{f=map3.queryRenderedFeatures([[x-2,y-2],[x+2,y+2]])}catch(e){}
+  let road=false,green=false;
   for(const q of f){const sl=q.sourceLayer||"",cl=String((q.properties&&q.properties.class)||"");
-   if(sl==="building")return false;
+   if(sl==="building")return "b";
    if(sl==="transportation"){if(!/rail|transit|path|track|busway|raceway/i.test(cl))road=true}
    else if(/^(park|landcover|landuse)$/.test(sl)&&/park|grass|wood|scrub|farm|meadow|recreation|pitch|golf|garden|cemetery|sand/i.test(cl))green=true}
-  return road||green};
- for(let d=0;d<=150;d+=15){const n=d?Math.max(8,Math.round(2*Math.PI*d/15)):1;
-  for(let k=0;k<n;k++){const a=k/n*2*Math.PI,x=P.x+Math.cos(a)*d/mpp,y=P.y+Math.sin(a)*d/mpp;
-   let g;try{g=map3.unproject([x,y])}catch(e){continue}
-   const la=g.lat,lo=g.lng;
-   if(taken.some(t=>km(t,[la,lo])<HEL_GAP/1000))continue;
-   if(ok(x,y))return[la,lo]}}
+  return road||green?"open":""};
+ /* the centre must be open ground, and no building may touch the rotor disc */
+ const clear=(la,lo)=>{const c=sc(la,lo);if(!c||kind(c[0],c[1])!=="open")return false;
+  for(let i=0;i<8;i++){const a=i/8*2*Math.PI,q=off(la,lo,Math.cos(a)*ROTOR_R,Math.sin(a)*ROTOR_R),s=sc(q[0],q[1]);if(!s||kind(s[0],s[1])==="b")return false}
+  return true};
+ for(let d=0;d<=400;d+=15){const n=d?Math.max(8,Math.round(2*Math.PI*d/15)):1;
+  for(let k=0;k<n;k++){const a=k/n*2*Math.PI,q=enu(Math.cos(a)*d,Math.sin(a)*d);
+   if(taken.some(t=>km(t,q)<HEL_GAP/1000))continue;
+   if(clear(q[0],q[1]))return q}}
  return null}
+/* per-frame state of a helicopter or air ambulance (null for road vehicles):
+   - rotor spool: spins up before any lift and spins down only after touchdown
+   - ground hold: stays put on the station or landing spot until the rotor is up
+   - police helicopter on scene: orbits the scene at ORBIT_ALT, never lands
+   - air ambulance on scene: descends onto its landing spot; while no spot is found yet it orbits
+   Returns {p:[lat,lon], h:heading or null, alt, spool}. */
+function airStep(V,u,dt,t){
+ if(!(isHel(u)||isAmb(u)))return null;
+ const onScene=u.st==="scene",orbiting=onScene&&(isHel(u)||!V.land),
+  moving=u.st==="out"||u.st==="back"||u.st==="hosp",intent=moving||orbiting;
+ V.spool=clamp(V.spool+(intent||V.alt>.5?SPOOL_UP:-SPOOL_DN)*dt,0,1);
+ const lift=intent&&(V.spool>=.95||V.alt>.5),cruise=orbiting?ORBIT_ALT:HEL_ALT;
+ V.alt+=((lift?cruise:0)-V.alt)*Math.min(1,dt*1.5);
+ if(!lift&&V.alt<.05)V.alt=0;
+ let p=upos(u),h=null;
+ if(orbiting){const c=upos(u),w=t*2*Math.PI/ORBIT_T+u.id*1.9,R=ORBIT_R+(u.id%3)*20,e=Math.cos(w)*R,n=Math.sin(w)*R;
+  p=[c[0]+n/111320,c[1]+e/(111320*Math.cos(c[0]*D2R))];h=Math.atan2(-Math.sin(w),Math.cos(w))}
+ else if(onScene){p=V.land||upos(u)}
+ else if(moving&&u.rt&&u.rt.d){
+  if(V.lrt!==u.rt){V.lrt=u.rt;V.dOff=0}
+  if(!lift){ /* still on the ground: hold position and face the way out while the rotor comes up */
+   V.dOff=dd(u);V.hold=V.hold||V.ll||along(u.rt,0);p=V.hold;h=headingAt(u,0)}
+  else{ /* airborne: fly the leg, offset by the time spent on the ground so there is no jump */
+   V.hold=null;const prog=Math.max(0,Math.min(u.rt.len,dd(u)-(V.dOff||0)));p=along(u.rt,prog);h=headingAt(u,prog)}}
+ /* when the state changes, glide from where the aircraft was drawn last frame instead of teleporting */
+ const mode=u.st+"|"+(orbiting?"o":"")+(lift?"l":"")+(onScene&&V.land?"L":"");
+ if(V.amode!==undefined&&V.amode!==mode&&V.ll)V.gap=[V.ll[0]-p[0],V.ll[1]-p[1]];
+ V.amode=mode;
+ if(V.gap){const f=Math.exp(-dt*1.5);V.gap=[V.gap[0]*f,V.gap[1]*f];
+  if(Math.abs(V.gap[0])+Math.abs(V.gap[1])<1e-8)V.gap=null;else p=[p[0]+V.gap[0],p[1]+V.gap[1]]}
+ return{p,h,alt:V.alt,spool:V.spool}}
 function vehicleLayer(){return{id:"veh3d",type:"custom",renderingMode:"3d",
  onAdd(m,gl){W3.adds++;scene=new T3.Scene();camera=new T3.Camera();TMP={a:new T3.Matrix4(),b:new T3.Matrix4(),v:new T3.Vector3()};const k=(parseInt(T3.REVISION,10)>=155)?Math.PI:1;scene.add(new T3.AmbientLight(0xffffff,.8*k));const sun=new T3.DirectionalLight(0xffffff,.55*k);sun.position.set(.4,1,.3);scene.add(sun);
   renderer=new T3.WebGLRenderer({canvas:m.getCanvas(),context:gl,antialias:true});renderer.autoClear=false},
@@ -289,14 +330,14 @@ function vehicleLayer(){return{id:"veh3d",type:"custom",renderingMode:"3d",
   const idx={};let anyVis=false,chg=false;keepGoing=false;const slots=scnSlots();
   /* only draw vehicles that are on screen (+15% margin): each one is ~100+ meshes, so off-screen ones are pure waste */
   const B=map3.getBounds(),bw=B.getWest(),be=B.getEast(),bs=B.getSouth(),bn=B.getNorth(),mx=(be-bw)*.15,my=(bn-bs)*.15;
-  for(const id in fleet){const V=fleet[id],u=V.u;if(!S)continue;
+  for(const id in fleet){const V=fleet[id],u=V.u;if(!S)continue;const A=airStep(V,u,dt,t);
    if(u.st==="idle"||u.st==="hand"){if(V.root.visible){V.root.visible=false;chg=true}continue}/* parked: hidden, skip all the maths */
    const sid=u.st==="idle"?u.sid:0;const i=sid?(idx[sid]=(idx[sid]||0)+1)-1:0,pk=parkOf(u,slots);const lagOn=!pk&&!!u.rt&&!!u.rt.d&&(u.st==="out"||u.st==="back"||u.st==="hosp");const lg=lagOn?clamp(V.lag||0,-dd(u),Math.max(0,u.rt.len-dd(u))):0;
-   const p=pk?pk.p:lagOn?along(u.rt,dd(u)+lg):(u.st==="scene"&&V.land?V.land:posOf(u,i)),m=mercOf(p[0],p[1]);
-   const hd=pk?pk.h:lagOn?headingAt(u,dd(u)+lg):headingOf(u);if(hd!=null)V.h=V.h==null?hd:angLerp(V.h,hd,Math.min(1,dt*2.5));else if(V.h==null)V.h=(u.id%8)*Math.PI/4;
-   const air=u.ty==="hel"||u.ty==="air",tgt=air&&(u.st==="out"||u.st==="back"||u.st==="hosp")?HEL_ALT:0;V.alt+=(tgt-V.alt)*Math.min(1,dt*1.5);
+   const p=A?A.p:pk?pk.p:lagOn?along(u.rt,dd(u)+lg):(u.st==="scene"&&V.land?V.land:posOf(u,i)),m=mercOf(p[0],p[1]);
+   const hd=A?A.h:pk?pk.h:lagOn?headingAt(u,dd(u)+lg):headingOf(u);if(hd!=null)V.h=V.h==null?hd:angLerp(V.h,hd,Math.min(1,dt*2.5));else if(V.h==null)V.h=(u.id%8)*Math.PI/4;
+   
    V.ll=p;const bx=(m.x-mc.x)/s,bz=(m.y-mc.y)/s;V.bx=bx;V.bz=bz;V.root.position.set(bx,V.alt,bz);V.root.rotation.y=-V.h;V.root.scale.setScalar(vm);{const vis=u.st!=="hand"&&u.st!=="idle"&&p[1]>bw-mx&&p[1]<be+mx&&p[0]>bs-my&&p[0]<bn+my;if(vis!==V.root.visible)chg=true;if(vis)anyVis=true;V.root.visible=vis}/* vehicles parked at their station are hidden */
-   if(V.rotor&&u.st!=="idle")V.rotor.rotation.y+=dt*35;
+   if(V.rotor&&u.st!=="idle")V.rotor.rotation.y+=dt*35*(A?A.spool:1);
    const lit=isLit(u);
    if(lit){const k=Math.floor(t*8+V.ph)%8,L=k===0||k===2,R=k===4||k===6;
     V.lm[0].forEach(x=>x.color.setHex(L?ON:OFF));V.lm[1].forEach(x=>x.color.setHex(R?ON:OFF));
@@ -345,9 +386,10 @@ function syncFleet(){if(!scene||!S)return;const seen={};
   if(!V){if(u.st==="idle"||u.st==="hand")return;
    try{V=fleet[u.id]=buildVehicle(u);scene.add(V.root)}catch(e){if(!W3.err){W3.err='model '+u.ty+': '+(e&&e.message||e);console.error(e);toast('3D model error: '+W3.err)}}}});
  for(const id in fleet)if(!seen[id]){scene.remove(fleet[id].root);disposeV(fleet[id]);delete fleet[id]}
- /* helicopters on scene: choose their landing spot once, when they arrive (kept while they stay on scene) */
- const taken=[];for(const id in fleet){const V=fleet[id];if(V.u.st!=="scene"){V.land=null;continue}if(V.land)taken.push(V.land)}
- for(const id in fleet){const V=fleet[id];if(V.u.st!=="scene"||!isHel(V.u)||V.land)continue;const r=landSpot(V.u,taken);if(r!==undefined){V.land=r||upos(V.u);taken.push(V.land)}}}
+ /* air ambulances on scene: choose their landing spot once, when they arrive (kept while they stay on scene). police helicopters never land. */
+ const taken=[];for(const id in fleet){const V=fleet[id];if(V.u.st!=="scene"){V.land=null;V.landTry=0;continue}if(V.land)taken.push(V.land)}
+ for(const id in fleet){const V=fleet[id];if(V.u.st!=="scene"||!isAmb(V.u)||V.land)continue;if(V.landTry&&now()-V.landTry<LAND_WAIT)continue;
+  const r=landSpot(V.u,taken);if(r){V.land=r;taken.push(r)}else if(r===null)V.landTry=now()}}
 
 /* DOM markers: stations, hospitals/custody, calls + unit callsign chips */
 function mkEl(cls,c,inner,label,onClick){const e=document.createElement("div");e.className="w3m "+cls;e.style.setProperty("--c",c);
