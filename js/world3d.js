@@ -416,9 +416,7 @@ function syncFleet(){if(!scene||!S)return;const seen={};
  for(const id in fleet)if(!seen[id]){scene.remove(fleet[id].root);disposeV(fleet[id]);delete fleet[id]}
  /* air ambulances on scene: choose their landing spot once, when they arrive (kept while they stay on scene). police helicopters never land. */
  const taken=[];for(const id in fleet){const V=fleet[id];if(V.u.st!=="scene"){V.land=null;V.landTry=0;continue}if(V.land)taken.push(V.land)}
- for(const id in fleet){const V=fleet[id];if(V.u.st!=="scene"||!isAmb(V.u)||V.land||landMode===1)continue;if(V.landTry&&now()-V.landTry<LAND_WAIT)continue;
-  V.scan=V.scan||{d:0,k:0};const r=landSpot(V.u,taken,V.scan);
-  if(r){V.land=r;taken.push(r);V.scan=null}else if(r===null){V.landTry=now()}}}
+ for(const id in fleet){const V=fleet[id];if(V.u.st!=="scene"||!isAmb(V.u)||V.land){if(V.u.st!=="scene")V.told=0;continue}if(!V.told){V.told=1;toast("🚁 "+V.u.cs+" is on scene: tap the map where it should land")}}}
 
 /* DOM markers: stations, hospitals/custody, calls + unit callsign chips */
 function mkEl(cls,c,inner,label,onClick){const e=document.createElement("div");e.className="w3m "+cls;e.style.setProperty("--c",c);
@@ -528,14 +526,13 @@ function syncNight(){if(!map3)return;const t=nightAmount();
  updateNightLights(t)}
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)kick()});
 function showHud(on){if(hud){hud.remove();hud=null}if(!on)return;
- hud=document.createElement("div");hud.className="w3hud";hud.innerHTML=`<button data-a="reset">⟲ Reset view</button><button data-a="follow">🚨 Follow responder</button><button data-a="radio">📻 Radio follow</button><button data-a="tilt">⬍ Tilt</button><button data-a="night">${nightLabel()}</button><button data-a="landing">${landLabel()}</button>`;
+ hud=document.createElement("div");hud.className="w3hud";hud.innerHTML=`<button data-a="reset">⟲ Reset view</button><button data-a="follow">🚨 Follow responder</button><button data-a="radio">📻 Radio follow</button><button data-a="tilt">⬍ Tilt</button><button data-a="night">${nightLabel()}</button>`;
  hud.onclick=e=>{const a=e.target.dataset&&e.target.dataset.a;if(!a)return;
   if(a==="reset"){stopFollow();const b=bounds();map3.fitBounds(b,{padding:70,maxZoom:16,pitch:62,bearing:-20,duration:900})}
   else if(a==="tilt"){map3.easeTo({pitch:map3.getPitch()>45?0:65,duration:600})}
   else if(a==="follow")startFollow();
   else if(a==="radio")radioFollowToggle();
-  else if(a==="night"){setNightPref({auto:"night",night:"day",day:"auto"}[nightPref()]||"auto");hud.querySelector('[data-a="night"]').textContent=nightLabel();NT=-1;syncNight()}
-  else if(a==="landing"){landMode=1-landMode;setLandBtn();if(landMode===1)toast("Tap the map where the air ambulance should land")}};
+  else if(a==="night"){setNightPref({auto:"night",night:"day",day:"auto"}[nightPref()]||"auto");hud.querySelector('[data-a="night"]').textContent=nightLabel();NT=-1;syncNight()}};
  $("#mapw").appendChild(hud)}
 function bounds(){const b=new maplibregl.LngLatBounds();let n=0;S.st.forEach(s=>{b.extend([s.lon,s.lat]);n++});S.hs.forEach(h=>{b.extend([h.lon,h.lat]);n++});
  if(!n){const c=map.getCenter();b.extend([c.lng-.01,c.lat-.01]);b.extend([c.lng+.01,c.lat+.01])}return b}
@@ -565,9 +562,6 @@ function followTick(){if(!map3)return;
 /* phones and tablets: draw at 1x and redraw less often, which is what drains the battery */
 const LOW3D=matchMedia("(pointer:coarse)").matches||innerWidth<800;
 /* ----- air ambulance landing choice: Auto (the search picks a clear spot) or Pick (tap the map where it should land) ----- */
-let landMode=0;const LANDMODES=["Auto","Pick"];
-function landLabel(){return "🛬 Landing: "+LANDMODES[landMode]}
-function setLandBtn(){hud&&hud.querySelector('[data-a="landing"]')&&(hud.querySelector('[data-a="landing"]').textContent=landLabel())}
 /* open ground with no building touching the rotor disc: the same test the automatic search uses */
 function clearAt(la,lo){if(!map3)return false;
  const sc=(a,b)=>{try{const p=map3.project([b,a]);return[p.x,p.y]}catch(e){return null}};
@@ -578,29 +572,27 @@ function clearAt(la,lo){if(!map3)return false;
    if(sl==="transportation"){if(!/rail|transit|path|track|busway|raceway/i.test(cl))road=true}
    else if(/^(park|landcover|landuse)$/.test(sl)&&/park|grass|wood|scrub|farm|meadow|recreation|pitch|golf|garden|cemetery|sand/i.test(cl))green=true}
   return road||green?"open":""};
- const c=sc(la,lo);if(!c||kind(c[0],c[1])!=="open")return false;
- for(let i=0;i<8;i++){const a=i/8*2*Math.PI,q=[la+Math.sin(a)*ROTOR_R/111320,lo+Math.cos(a)*ROTOR_R/(111320*Math.cos(la*D2R))],s2=sc(q[0],q[1]);
-  if(!s2||kind(s2[0],s2[1])==="b")return false}
- return true}
+ const c=sc(la,lo);if(!c)return false;
+ return kind(c[0],c[1])!=="b"}
 /* in Pick mode, a tap on the map sends the nearest air ambulance hovering over the scene to that spot, if the spot is clear */
-function landPickClick(e){if(landMode!==1||!S)return;
+function landPickClick(e){if(!S)return;
  const la=e.lngLat.lat,lo=e.lngLat.lng,onScene=[];
  for(const id in fleet){const V=fleet[id];if(V.u.st==="scene"&&isAmb(V.u))onScene.push(V)}
- if(!onScene.length){toast("No air ambulance is on scene");landMode=0;setLandBtn();return}
+ if(!onScene.length){toast("No air ambulance is on scene");return}
  const hover=onScene.filter(V=>V.alt>.5&&!V.land);
  if(!hover.length){toast(onScene.some(V=>V.land)?"It is already coming in to land":"Wait until the air ambulance is hovering over the scene");return}
  hover.sort((x,y)=>km(x.ll||upos(x.u),[la,lo])-km(y.ll||upos(y.u),[la,lo]));
  const V=hover[0],others=[];
  for(const id in fleet){const W=fleet[id];if(W!==V&&W.u.st==="scene"&&W.land)others.push(W.land)}
- if(others.some(t=>km(t,[la,lo])<HEL_GAP/1000)||!clearAt(la,lo)){toast("Not clear there: pick open ground away from buildings");return}
- V.land=[la,lo];landMode=0;setLandBtn();toast("🛬 "+V.u.cs+" will land there")}
+ if(others.some(t=>km(t,[la,lo])<HEL_GAP/1000)||!clearAt(la,lo)){toast("That spot is a building: tap open ground");return}
+ V.land=[la,lo];toast("🛬 "+V.u.cs+" will land there")}
 /* a green H marks the landing spot once the air ambulance has touched down (not while it is still hovering) */
 const landMks={};
 /* true while an air ambulance is on scene but still in the air (not yet touched down) */
 function landingNow(u){const V=fleet[u.id];return !!(V&&u.st==="scene"&&isAmb(u)&&V.alt>.5)}
 function syncLandMarks(){if(!map3)return;const seen={};
- for(const id in fleet){const V=fleet[id];if(V.u.st!=="scene"||!isAmb(V.u)||!V.land||V.alt<=.5)continue;seen[id]=1;
-  if(!landMks[id]){const e=document.createElement("div");e.style.cssText="width:26px;height:26px;border-radius:50%;background:#16a34a;color:#fff;border:2px solid #fff;font:800 13px system-ui;display:flex;align-items:center;justify-content:center;pointer-events:none";e.textContent="H";
+ for(const id in fleet){const V=fleet[id];if(V.u.st!=="scene"||!isAmb(V.u)||!V.land)continue;seen[id]=1;
+  if(!landMks[id]){const e=document.createElement("div");e.style.cssText="width:26px;height:26px;border-radius:50%;background:#16a34a;color:#fff;border:2px solid #fff;font:800 13px system-ui;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:5";e.textContent="H";
    landMks[id]=new maplibregl.Marker({element:e,anchor:"center"}).setLngLat([V.land[1],V.land[0]]).addTo(map3)}
   else landMks[id].setLngLat([V.land[1],V.land[0]])}
  for(const id in landMks)if(!seen[id]){landMks[id].remove();delete landMks[id]}}
