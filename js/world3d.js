@@ -7,7 +7,7 @@
    Nothing in the 2D game logic is changed: this only reads S, upos(), dd(), along(). */
 (function(){
 "use strict";
-const MODE_KEY="fc_mode",STYLE_URL="https://tiles.openfreemap.org/styles/liberty",
+const MODE_KEY="fc_mode",STYLE_URL="https://tiles.openfreemap.org/styles/positron",
  ML_VER="4.7.1",THREE_URLS=["https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js","https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"];
 let asked=false,active=false,busy=false,libs=null;
 const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}},lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
