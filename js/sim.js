@@ -38,7 +38,7 @@ if(!Object.keys(hn).every(x=>U[x][3]<=rk))hn=null;if(hn){hn=Object.fromEntries(O
 const NEED=ownNeed(t),SHORT=isShort(t,NEED);S.ms.push({id:S.nid++,k,la,lo,loc:loc.s+", "+loc.t+", "+loc.pc,adr:loc,adc:0,cn:pick(NM)+" "+pick(NS),ph:newPh(),cad:cadGen(),born:now(),ans:0,end:0,qa:[],hid:hn?{k:kd,n:hn}:null,rev:0,need:NEED,short:SHORT});
 log("📞 Incoming 999 call – answer it!",1);ctoast(S.ms[S.ms.length-1]);return 1}finally{spb=0}}
 const eta=(u,m)=>km(upos(u),mp(m))*(SP[u.ty]>=150?1:1.3)/(SP[u.ty]*spd())*3600;
-const dd=u=>(now()-u.t0)/3.6e6*SP[u.ty]*spd();
+const dd=u=>(now()-u.t0)/3.6e6*SP[u.ty]*spd()*roadF(u.ty,u.st);
 function along(rt,dk){const L=rt.d.length,g=Math.min(1,dk/rt.len)*rt.d[L-1];let i=1;while(i<L-1&&rt.d[i]<g)i++;const a=rt.p[i-1],b=rt.p[i],f=Math.min(1,Math.max(0,(g-rt.d[i-1])/((rt.d[i]-rt.d[i-1])||1)));return[a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f]}
 const credit=u=>{if(u.rt&&u.t0)u.km=(u.km||0)+Math.min(Math.max(0,dd(u)),u.rt.len)};
 /* A road-routing answer stops at the nearest ROAD. If the call is off-road (park, field...), add the call's own spot as the final point

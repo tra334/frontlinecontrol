@@ -536,7 +536,7 @@
     return { p: r.p.map(q => [+q[0], +q[1]]), d: r.d.map(Number), len: +r.len || r.d[r.d.length - 1] || 0.001 };
   }
   function estimateAllyUnit(u, stations, t) {
-    const speed = Math.max(1, ((typeof SP !== "undefined" && SP[u.ty]) || 60) * (+u.sm || 1)); // km/h
+    const baseSpeed = Math.max(1, ((typeof SP !== "undefined" && SP[u.ty]) || 60) * (+u.sm || 1)); // km/h, response speed
     const stn = (stations || []).find(s => s && s.id === u.sid);
     const home = stn ? [+stn.lat, +stn.lon] : null;
     const base = { id: u.id, ty: u.ty, cs: u.cs, mid: u.mid, oos: !!u.oos, online: false };
@@ -550,6 +550,7 @@
     const me = +u.me || 0;
 
     for (let guard = 0; guard < 8; guard++) {
+      const speed = baseSpeed * ((typeof roadF === "function") ? roadF(u.ty, st) : 1); // speed for the status this pass is in
       if (st === "out" || st === "hosp" || st === "back") {
         if (!b) return Object.assign(base, { st, la: +u.la, lo: +u.lo }); // nothing to follow: hold
         if (!rt) rt = roadRt(a, b, u.ty) || straightRt(a, b, u.ty);
@@ -1767,7 +1768,7 @@
     let eta = u.etaMs;
     if (eta == null && u.dla != null && u.dlo != null && typeof km === "function" && typeof SP !== "undefined") {
       const f = SP[u.ty] >= 150 ? 1 : 1.3;
-      eta = km([u.la, u.lo], [u.dla, u.dlo]) * f / Math.max(1, SP[u.ty] * (u.sm || 1)) * 3.6e6;
+      eta = km([u.la, u.lo], [u.dla, u.dlo]) * f / Math.max(1, SP[u.ty] * (u.sm || 1) * ((typeof roadF === "function") ? roadF(u.ty, u.st) : 1)) * 3.6e6;
     }
     return eta != null && isFinite(eta) ? Math.max(1, Math.ceil(eta / 60000)) : 0;
   }
