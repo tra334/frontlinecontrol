@@ -267,7 +267,8 @@ const isAmb=u=>u.ty==="air";
    the search runs in real metres on the ground (not screen pixels, which are distorted when the map is tilted), and the spot must
    also be clear of buildings around the rotor disc. returns [lat,lon], null if nothing suitable within 400 m, or undefined if the
    map tiles aren't in yet (try again later). there is no fallback to the call point itself. */
-function landSpot(u,taken){if(!map3||!map3.areTilesLoaded||!map3.areTilesLoaded())return undefined;
+function landSpot(u,taken,st){if(!map3||!map3.areTilesLoaded||!map3.areTilesLoaded())return undefined;
+ const LAND_BUDGET=24;   /* candidate spots checked per call: the search resumes next tick, so the page never stalls */
  const ll=upos(u),la0=ll[0],lo0=ll[1],cosL=Math.cos(la0*D2R);
  const enu=(e,n)=>[la0+n/111320,lo0+e/(111320*cosL)];   /* metres east/north of the call -> [lat,lon] */
  const off=(la,lo,e,n)=>[la+n/111320,lo+e/(111320*Math.cos(la*D2R))];   /* metres east/north of any point */
@@ -284,11 +285,14 @@ function landSpot(u,taken){if(!map3||!map3.areTilesLoaded||!map3.areTilesLoaded(
  const clear=(la,lo)=>{const c=sc(la,lo);if(!c||kind(c[0],c[1])!=="open")return false;
   for(let i=0;i<8;i++){const a=i/8*2*Math.PI,q=off(la,lo,Math.cos(a)*ROTOR_R,Math.sin(a)*ROTOR_R),s=sc(q[0],q[1]);if(!s||kind(s[0],s[1])==="b")return false}
   return true};
- for(let d=0;d<=400;d+=15){const n=d?Math.max(8,Math.round(2*Math.PI*d/15)):1;
-  for(let k=0;k<n;k++){const a=k/n*2*Math.PI,q=enu(Math.cos(a)*d,Math.sin(a)*d);
+ let checked=0;
+ while(st.d<=400){const d=st.d,n=d?Math.max(8,Math.round(2*Math.PI*d/15)):1;
+  while(st.k<n){const k=st.k++,a=k/n*2*Math.PI,q=enu(Math.cos(a)*d,Math.sin(a)*d);
    if(taken.some(t=>km(t,q)<HEL_GAP/1000))continue;
-   if(clear(q[0],q[1]))return q}}
- return null}
+   if(++checked>LAND_BUDGET)return undefined;   /* out of budget: st keeps where we are */
+   if(clear(q[0],q[1])){st.d=0;st.k=0;return q}}
+  st.d+=15;st.k=0}
+ st.d=0;st.k=0;return null}
 /* per-frame state of a helicopter or air ambulance (null for road vehicles):
    - rotor spool: spins up before any lift and spins down only after touchdown
    - ground hold: stays put on the station or landing spot until the rotor is up
@@ -389,7 +393,8 @@ function syncFleet(){if(!scene||!S)return;const seen={};
  /* air ambulances on scene: choose their landing spot once, when they arrive (kept while they stay on scene). police helicopters never land. */
  const taken=[];for(const id in fleet){const V=fleet[id];if(V.u.st!=="scene"){V.land=null;V.landTry=0;continue}if(V.land)taken.push(V.land)}
  for(const id in fleet){const V=fleet[id];if(V.u.st!=="scene"||!isAmb(V.u)||V.land)continue;if(V.landTry&&now()-V.landTry<LAND_WAIT)continue;
-  const r=landSpot(V.u,taken);if(r){V.land=r;taken.push(r)}else if(r===null)V.landTry=now()}}
+  V.scan=V.scan||{d:0,k:0};const r=landSpot(V.u,taken,V.scan);
+  if(r){V.land=r;taken.push(r);V.scan=null}else if(r===null){V.landTry=now()}}}
 
 /* DOM markers: stations, hospitals/custody, calls + unit callsign chips */
 function mkEl(cls,c,inner,label,onClick){const e=document.createElement("div");e.className="w3m "+cls;e.style.setProperty("--c",c);
