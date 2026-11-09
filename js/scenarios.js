@@ -115,8 +115,10 @@ Object.assign(PP,{"Siege – barricaded suspect":{n:[1,1],off:["here"],wp:1,wpT:
    (the address, "Your name and phone number?" and "Nearest landmark or junction?"); admins can't change those answers. A custom call with no questions written keeps the full standard set.
    veh = extra units the answer reveals: added once to m.xn (like the welfare-check call-outs) when the player has the rank and owns that vehicle type. */
 /* used by drawQ: is standard/other question q (index i in QS) offered on call type t? */
-const cqShow=(t,q,i)=>!(t.qa&&t.qa.length)||i===0||i===2||i===3||q[3]===t[1];
-function cqAnswer(m,p){if(p.veh){const add={};for(const k in p.veh)if(U[k]&&U[k][3]<=rank()&&(m.roomId||ownN(k)>0))add[k]=p.veh[k];const ks=Object.keys(add);if(ks.length){m.xn=mrg(m.xn||{},add);log("📋 Caller information: extra unit"+(ks.length>1||add[ks[0]]>1?"s":"")+" needed — "+ks.map(k=>add[k]+" × "+U[k][1]).join(", "))}}return p.a}
+/* a question that reveals vehicles is only offered if the player could use at least one of them (rank reached and owned, or a room call) */
+const cqVehOK=p=>{const rm=typeof mm==='function'&&typeof curM!=='undefined'&&mm(curM);return Object.keys(p.veh).some(k=>U[k]&&U[k][3]<=rank()&&((rm&&rm.roomId)||ownN(k)>0))};
+const cqShow=(t,q,i)=>(!q[4]||!q[4].veh||cqVehOK(q[4]))&&(!(t.qa&&t.qa.length)||i===0||i===2||i===3||q[3]===t[1]);
+function cqAnswer(m,p){if(p.veh){const add={},rm=!!m.roomId;let short=0;for(const k in p.veh){if(!U[k])continue;const have=U[k][3]<=rank()?(rm?p.veh[k]:ownN(k)):0,n=Math.min(p.veh[k],have);if(n>0)add[k]=n;if(n<p.veh[k])short=1}if(short&&!rm)m.short=1;const ks=Object.keys(add);if(ks.length){m.xn=mrg(m.xn||{},add);log("📋 Caller information: extra unit"+(ks.length>1||add[ks[0]]>1?"s":"")+" needed — "+ks.map(k=>add[k]+" × "+U[k][1]).join(", "))}}return p.a}
 function cqSync(){T.forEach(t=>{if(t.cqDone||!Array.isArray(t.qa)||!t.qa.length)return;t.cqDone=1;
-t.qa.forEach(p=>QS.push([p.q,m=>cqAnswer(m,p),t[0],t[1]]))})}
+t.qa.forEach(p=>QS.push([p.q,m=>cqAnswer(m,p),t[0],t[1],p]))})}
 cqSync();

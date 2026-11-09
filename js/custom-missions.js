@@ -34,6 +34,15 @@
     return out;
   }
 
+  /* per-rank pay for a custom call: 6 payouts (Trainee..Chief). Ranks below the call's lowest unlock rank (highest unlock rank of its base vehicles) are never used, so they take the first usable rank's pay. */
+  const kRank = k => k.startsWith("tr:") ? ((TR[k.slice(3)] || [])[2] || 0) : ((U[k] || [])[3] || 0);
+  function payRank(list, needs) {
+    if (!Array.isArray(list) || list.length !== 6 || !list.every(n => num(n, 50, 20000))) return null;
+    const mr = Math.max(0, ...Object.keys(needs).map(kRank)), out = list.slice();
+    for (let i = 0; i < mr; i++) out[i] = list[mr];
+    return out;
+  }
+
   /* returns a mission tuple [service, name, caller, needs, seconds, payout, places] or null if it is not safe to use */
   function build(m, selfIdx) {
     try {
@@ -53,6 +62,7 @@
         if (m.chat.length) t.chat = m.chat.map(x => x.trim());
       }
       if (m.qa != null) { const qa = cleanQA(m.qa); if (!qa) return null; if (qa.length) t.qa = qa; }
+      if (m.payR != null) { const pr = payRank(m.payR, m.needs); if (!pr) return null; t.payR = pr; }
       return t;
     } catch (e) { return null; }
   }
@@ -65,7 +75,7 @@
       if (m.seq < next) { /* already loaded: refresh its content in place (same slot, so saved incidents still point at it) and its retired flag */
         const idx = BASE + m.seq - 1, t = T[idx]; if (!t) continue;
         const nt = build(m, idx);
-        if (nt) { t.length = 0; nt.forEach(x => t.push(x)); t.g = nt.g; t.qa = nt.qa; t.chat = nt.chat; }
+        if (nt) { t.length = 0; nt.forEach(x => t.push(x)); t.g = nt.g; t.qa = nt.qa; t.chat = nt.chat; t.payR = nt.payR; }
         t.off = !!m.retired || t[1].indexOf("(unavailable)") === 0; continue;
       }
       if (m.seq > next) break; /* a gap: wait for a full list rather than shift every later index */
