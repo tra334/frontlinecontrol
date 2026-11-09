@@ -226,6 +226,14 @@
     queue.push({ p, at: Date.now() }); while (queue.length > MAXQ) queue.shift();
     next();
   }
+  /* chatter off: still play the radio tones (or the soft click if tones are off) so the Radio tones setting works on its own */
+  function tonesOnly(e) {
+    let p; try { p = plan(e.m); } catch (x) { return; }
+    if (!p || Date.now() - lastSq < 150) return;
+    lastSq = Date.now();
+    if (tns()) { const d = keyTone(p.kind) || 0.05; setTimeout(toneEnd, (d + 0.3) * 1000); }
+    else if (eff()) squelch();
+  }
   function stopChatter() { queue.length = 0; try { speechSynthesis.cancel(); } catch (e) {} speaking = false; }
 
   /* Settings: hear each voice */
@@ -268,7 +276,7 @@
       fresh.reverse().forEach(e => {
         if (now() - e.t > 45000) return;
         if (cht() && hasTTS()) say(e);
-        else if (eff() && Date.now() - lastSq > 150) { lastSq = Date.now(); squelch(); }
+        else tonesOnly(e);
       });
     } catch (err) {}
   }
@@ -287,7 +295,7 @@
         if (e && e.m === m) {
           seen.add(keyOf(e));
           if (cht() && hasTTS()) say(e);
-          else if (eff() && Date.now() - lastSq > 150) { lastSq = Date.now(); squelch(); }
+          else tonesOnly(e);
         }
       }
     } catch (err) {}
