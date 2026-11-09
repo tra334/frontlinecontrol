@@ -236,5 +236,5 @@ const PAYR={
 "Cat 1 – multi-casualty fire":[6750, 7430, 8440, 10130, 11810, 13500],
 "Cat 1 – air ambulance critical":[5100, 5610, 6380, 7650, 8930, 10200],
 };
-const payOf=(k,r)=>{const t=typeof k==="number"?T[k]:T[T.findIndex(x=>x[1]===k)],p=t&&PAYR[t[1]];if(!p)return t?t[5]:0;const i=Math.max(0,Math.min(p.length-1,r|0));return p[i]};
+const payOf=(k,r)=>{const t=typeof k==="number"?T[k]:T[T.findIndex(x=>x[1]===k)],p=t&&(PAYR[t[1]]||t.payR);if(!p)return t?t[5]:0;const i=Math.max(0,Math.min(p.length-1,r|0));return p[i]};
 const FACT={f:["Crews on scene, building is well alight.","Fire’s contained for now.","Neighbours evacuated to the street."],p:["Officers on scene, area is secure.","Witnesses giving statements.","Suspect has left the area."],a:["Crew with patient, observations ongoing.","Patient conscious and talking.","Family members at the scene."]};

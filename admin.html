@@ -662,6 +662,7 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
   // ---------- custom missions (added to the game's mission list) ----------
   // Draft missions are only visible here. Publishing assigns a permanent position in the game's list, so after that
   // published missions can still be edited (they keep their place in the list), retired or deleted.
+const MS_VRANK = {pump:0,rt:1,wc:2,alp:3,icu:4,fo:1,wf:2,wru:1,hmu:3,usar:4,irv:0,van:1,rp:1,dog:2,arv:3,sgt:1,mc:1,cid:2,po:3,hel:4,dca:0,rrv:0,ao:1,bike:1,hart:4,ccc:3,air:4,mci:4}, RMUL_A = [1,1.1,1.25,1.5,1.75,2];
   const MS_VEH = [["pump","f","Fire engine"],["rt","f","Rescue tender"],["wc","f","Water carrier"],["alp","f","Aerial ladder platform"],["icu","f","Incident command unit"],["fo","f","Fire officer car"],["wf","f","Wildfire 4x4"],["wru","f","Water rescue unit"],["hmu","f","Hazmat unit"],["usar","f","Urban search & rescue"],["irv","p","Response car"],["van","p","Police van"],["rp","p","Roads policing"],["dog","p","Dog unit"],["arv","p","Armed response"],["sgt","p","Patrol sergeant car"],["mc","p","Police motorcycle"],["cid","p","CID detectives"],["po","p","Public order carrier"],["hel","p","Police helicopter"],["dca","a","Ambulance"],["rrv","a","Rapid response car"],["ao","a","Ambulance officer"],["bike","a","Paramedic motorbike"],["hart","a","HART team"],["ccc","a","Critical care car"],["air","a","Air ambulance"],["mci","a","Major incident unit"]], MS_PLACES = ["pub","restaurant","hotel","supermarket","shop","services","home","care_home","high","school","college","civic","attraction","stadium","major_stadium","rec","leisure","hospital","church","station","road","car_park","petrol","office","airport","industrial","farm","water","lake","harbour","coast","woods","cemetery","bridge","prison"], MS_SV = { f: "Fire", p: "Police", a: "Ambulance" },
     MS_STD = ["What\u2019s happened?", "Is anyone hurt?", "Any weapons or dangers?", "How many people are involved?", "Is it still happening?", "Are you in a safe place right now?", "Is the patient breathing and conscious?", "Description of anyone involved?", "Is anyone still inside or trapped?", "Can you see flames or smoke?", "Is the fire spreading?", "Is there any bleeding?", "How old is the patient?", "Did they leave in a vehicle?", "Are the offenders still at the scene?"];
   let msList = [], msEdit = null;
@@ -710,6 +711,7 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
       <div class="mu" style="margin:12px 0 4px">Vehicles needed <span style="opacity:.7">(any service can be mixed, e.g. a fire call that also needs an ambulance)</span></div><div id="ms_v"></div>
       <div class="row" style="margin-top:6px"><select id="ms_vs"></select><input id="ms_vn" type="number" min="1" max="10" value="1" style="width:70px"><button class="btn sm" id="ms_va">Add</button></div>
       <div class="row" style="margin-top:12px"><label class="mu">Seconds on scene <input id="ms_t" type="number" min="20" max="1200" style="width:90px"></label><label class="mu">Payout (£) <input id="ms_p" type="number" min="50" max="20000" style="width:100px"></label><label class="mu">Grade <select id="ms_g"><option value="0">Auto (from payout)</option><option value="1">G1 – life threatening</option><option value="2">G2 – urgent</option><option value="3">G3 – standard</option><option value="4">G4 – low priority</option></select></label></div>
+      <div class="mu" style="margin:12px 0 4px">Pay by rank <span style="opacity:.7">(starts at the lowest rank the vehicles unlock; Auto scales the Payout by rank)</span> <button type="button" class="btn sm" id="ms_auto">Auto</button></div><div id="ms_pr" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px"></div>
       <div class="mu" style="margin:12px 0 4px">Can spawn at</div><div id="ms_pl" style="display:flex;flex-wrap:wrap;gap:6px"></div>
       <div class="mu" style="margin:14px 0 4px">On-scene radio chatter <span style="opacity:.7">(optional, one line per row, up to 6)</span></div>
       <div class="mu" style="margin-bottom:6px">What the first unit says over the radio when it arrives, e.g. "Cat is up the tree, ladder going up now." One line is picked at random. Leave empty to use neutral lines like "Crew on scene, assessing the situation."</div>
@@ -731,11 +733,11 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
     const drawV = () => {
       $("#ms_vs").innerHTML = vehOpts();
       $("#ms_v").innerHTML = Object.keys(m.needs).map(k => `<span class="tag t-idle" style="margin:0 6px 6px 0">${m.needs[k]} × ${esc((MS_VEH.find(v => v[0] === k) || [])[2] || k)} <a href="#" data-x="${k}" aria-label="Remove">×</a></span>`).join("") || '<span class="mu">None yet</span>';
-      $("#ms_v").querySelectorAll("[data-x]").forEach(a => a.onclick = e => { e.preventDefault(); delete m.needs[a.dataset.x]; drawV(); });
+      $("#ms_v").querySelectorAll("[data-x]").forEach(a => a.onclick = e => { e.preventDefault(); delete m.needs[a.dataset.x]; drawV(); drawPR(); });
     };
     const drawP = () => { $("#ms_pl").innerHTML = MS_PLACES.map(p => `<button type="button" class="btn sm ${m.places.includes(p) ? "gha" : ""}" data-pl="${p}" aria-pressed="${m.places.includes(p)}">${p.replace("_", " ")}</button>`).join(""); $("#ms_pl").querySelectorAll("[data-pl]").forEach(b => b.onclick = () => { const i = m.places.indexOf(b.dataset.pl); if (i >= 0) m.places.splice(i, 1); else if (m.places.length < 6) m.places.push(b.dataset.pl); drawP(); }); };
     $("#ms_sv").onchange = () => { m.svc = $("#ms_sv").value; };
-    $("#ms_va").onclick = () => { const k = $("#ms_vs").value, n = Math.max(1, Math.min(10, +$("#ms_vn").value || 1)); if (k) { m.needs[k] = n; drawV(); } };
+    $("#ms_va").onclick = () => { const k = $("#ms_vs").value, n = Math.max(1, Math.min(10, +$("#ms_vn").value || 1)); if (k) { m.needs[k] = n; drawV(); drawPR(); } };
     const vName = k => (MS_VEH.find(v => v[0] === k) || [])[2] || k;
     const drawQA = () => {
       const box2 = $("#ms_qa");
@@ -783,12 +785,20 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
         seen.add(nq(p.q));
       });
       const err = chatErr || qerr || (!(m.name.length >= 3) ? "Name needs at least 3 characters" : !(m.caller.length >= 5) ? "Write what the caller says" : !Object.keys(m.needs).length ? "Add at least one vehicle"
-        : !(m.secs >= 20 && m.secs <= 1200) ? "Seconds on scene must be 20 to 1200" : !(m.pay >= 50 && m.pay <= 20000) ? "Payout must be £50 to £20,000" : !m.places.length ? "Pick at least one place type" : "");
+        : !(m.secs >= 20 && m.secs <= 1200) ? "Seconds on scene must be 20 to 1200" : !(m.pay >= 50 && m.pay <= 20000) ? "Payout must be £50 to £20,000" : !m.places.length ? "Pick at least one place type" : m.payR.slice(minR()).some(x => !(x >= 50 && x <= 20000)) ? "Pay by rank must be £50 to £20,000" : "");
       $("#ms_err").textContent = err; if (err) return;
-      try { await api("/api/admin/mission", { id: m.id, svc: m.svc, name: m.name, caller: m.caller, needs: m.needs, secs: m.secs, pay: m.pay, places: m.places, g: m.g || null, qa: m.qa, chat: m.chat }); toast(m.id && m.status !== "draft" ? "Changes saved" : "Draft saved"); msEdit = null; box.innerHTML = ""; msLoad(); }
+      try { await api("/api/admin/mission", { id: m.id, svc: m.svc, name: m.name, caller: m.caller, needs: m.needs, secs: m.secs, pay: m.pay, payR: m.payR, places: m.places, g: m.g || null, qa: m.qa, chat: m.chat }); toast(m.id && m.status !== "draft" ? "Changes saved" : "Draft saved"); msEdit = null; box.innerHTML = ""; msLoad(); }
       catch (e) { $("#ms_err").textContent = e.message; }
     };
-    drawV(); drawP(); drawQA();
+    const minR = () => Math.max(0, ...Object.keys(m.needs).map(k => MS_VRANK[k] || 0));
+    const drawPR = () => {
+      const mr = minR();
+      if (!Array.isArray(m.payR) || m.payR.length !== 6) m.payR = RANKS.map(() => m.pay);
+      $("#ms_pr").innerHTML = RANKS.map((n, i) => i < mr ? "" : `<label class="mu">${esc(n)}<input data-pr="${i}" type="number" min="50" max="20000" value="${m.payR[i]}" style="width:100%;margin-top:3px"></label>`).join("") || '<span class="mu">Add a vehicle to set pay by rank.</span>';
+      $("#ms_pr").querySelectorAll("[data-pr]").forEach(inp => inp.oninput = () => { m.payR[+inp.dataset.pr] = +inp.value; });
+    };
+    $("#ms_auto").onclick = () => { const mr = minR(), base = +$("#ms_p").value || m.pay; m.payR = RANKS.map((_, i) => Math.min(20000, Math.max(50, Math.round(base * RMUL_A[i] / RMUL_A[mr] / 10) * 10))); drawPR(); };
+    drawV(); drawP(); drawQA(); drawPR();
   }
 
   // ---------- global bonuses (every player can claim each one once, from the Ranks tab) ----------
