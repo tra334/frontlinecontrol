@@ -1,5 +1,7 @@
 // Runs on a schedule. Jobs:
-//  1. New Discourse topics (category CATEGORY_ID) -> GitHub issues, then reply as Frontline.
+//  1. New Discourse topics (category CATEGORY_ID = bug reports, FEATURES_CATEGORY_ID = feature requests)
+//     -> GitHub issues, then reply as Frontline. Feature requests get the "feature request" label
+//     and a "Feature Request" heading instead of "Description".
 //  2. Tags <-> labels: Discourse topic tags and GitHub issue labels are kept in sync
 //     (3-way merge against a hidden "discourse-tags" marker in the issue body).
 //  3. New replies on linked topics -> GitHub issue comments (ignoring IGNORE_USERS).
@@ -7,14 +9,22 @@
 const {
   DISCOURSE_URL: DISCOURSE_URL_RAW, DISCOURSE_API_KEY, GITHUB_TOKEN, GITHUB_REPO,
   FRONTLINE_USER = "Frontline", LOOKBACK_HOURS = "24", CATEGORY_ID = "6",
+  FEATURES_CATEGORY_ID = "", // Discourse "Features" category id; leave empty to disable
   IGNORE_USERS = "Frontline",
   ISSUE_STYLE = "card", // "note" (callout header) or "card" (table header)
 } = process.env;
 
 const DISCOURSE_URL = String(DISCOURSE_URL_RAW).replace(/\/+$/, ""); // tolerate a trailing slash in the secret
 
-const CLOSE_TAG = "fixed"; // adding this tag closes the linked issue
+// Adding one of these tags closes the linked issue (tag -> close reason + comment).
+const CLOSE_TAGS = {
+  fixed: { reason: "completed", comment: "Issue has been marked as fixed and closed" },
+  shipped: { reason: "completed", comment: "This feature has shipped, so the request has been closed" },
+  "not-planned": { reason: "not_planned", comment: "This request is not planned, so it has been closed" },
+};
 const SKIP_LABEL = "discourse"; // internal label, never mirrored as a tag
+const FEATURE_LABEL = "feature request"; // added to issues from the features category, also never mirrored as a tag
+const isInternal = (x) => { const n = norm(x); return n === norm(SKIP_LABEL) || n === norm(FEATURE_LABEL); };
 const ignored = new Set(
   [...IGNORE_USERS.split(","), FRONTLINE_USER, "system"].map((u) => u.trim().toLowerCase()).filter(Boolean)
 );
@@ -168,10 +178,11 @@ async function syncTopics(linked) {
   if (!res.ok) throw new Error(`Discourse latest ${res.status}`);
   const topics = (await res.json()).topic_list.topics;
 
+  const watched = new Set([CATEGORY_ID, FEATURES_CATEGORY_ID].filter(Boolean).map(String));
   const recent = topics.filter(
     (t) =>
       t.archetype === "regular" &&
-      String(t.category_id) === String(CATEGORY_ID) &&
+      watched.has(String(t.category_id)) &&
       new Date(t.created_at).getTime() >= cutoff
   );
   const done = new Set(linked.map((l) => l.topicId));
@@ -179,6 +190,7 @@ async function syncTopics(linked) {
   for (const t of recent.reverse()) {
     if (done.has(t.id)) continue;
 
+    const isFeature = !!FEATURES_CATEGORY_ID && String(t.category_id) === String(FEATURES_CATEGORY_ID);
     const topicUrl = `${DISCOURSE_URL}/t/${t.slug}/${t.id}`;
     let firstPost = "";
     let createdAt = t.created_at;
@@ -191,7 +203,7 @@ async function syncTopics(linked) {
     if (info.ok) {
       const topic = await info.json();
       author = topic.details?.created_by?.username ?? author;
-      tags = tagNames(topic).filter((x) => x !== SKIP_LABEL);
+      tags = tagNames(topic).filter((x) => !isInternal(x));
       const first = topic.post_stream?.posts?.[0];
       if (first) {
         avatar = avatarUrl(first.avatar_template);
@@ -214,17 +226,17 @@ async function syncTopics(linked) {
       }
     }
 
-    const content = (await resolveUploads(firstPost)).trim() || "_No description provided._";
+    const content = (await resolveUploads(firstPost)).trim() || (isFeature ? "_No details provided._" : "_No description provided._");
     const images = imageLinksBlock(content);
     const when = fmtDate(createdAt);
     const card = ISSUE_STYLE === "card";
     const header = authorHeader({
-      name: author, avatar, role, action: "reported this on the forum", when, url: topicUrl, urlText: "Open discussion ↗",
+      name: author, avatar, role, action: isFeature ? "requested this on the forum" : "reported this on the forum", when, url: topicUrl, urlText: "Open discussion ↗",
     });
     const body = [
       header,
       "",
-      ...(card ? ["### 📝 Description", ""] : []),
+      ...(card ? [isFeature ? "### 💡 Feature Request" : "### 📝 Description", ""] : []),
       content,
       "",
       ...(images ? [images, ""] : []),
@@ -240,7 +252,7 @@ async function syncTopics(linked) {
       method: "POST",
       body: JSON.stringify({
         title: t.title,
-        labels: [SKIP_LABEL, ...tags.map(labelFor)],
+        labels: [SKIP_LABEL, ...(isFeature ? [FEATURE_LABEL] : []), ...tags.map(labelFor)],
         body,
       }),
     });
@@ -259,9 +271,9 @@ async function syncTopics(linked) {
 // ---------- 2. Tags <-> labels ----------
 async function reconcileTags(issue, topic) {
   const base = parseBase(issue.body);
-  const tags = new Set(tagNames(topic).filter((x) => x !== SKIP_LABEL));
+  const tags = new Set(tagNames(topic).filter((x) => !isInternal(x)));
   const labels = new Map(); // normalised -> actual label name
-  for (const l of issue.labels) if (norm(l) !== SKIP_LABEL) labels.set(norm(l), l);
+  for (const l of issue.labels) if (!isInternal(l)) labels.set(norm(l), l);
 
   // 3-way merge: additions and removals from either side win over the last synced state.
   const merged = new Set(base);
@@ -281,19 +293,21 @@ async function reconcileTags(issue, topic) {
     catch (e) { if (!String(e.message).includes(" 404")) throw e; }
   }
 
-  // "fixed" newly added (on Discourse or GitHub) -> close the issue as completed.
+  // A closing tag newly added (on Discourse or GitHub) -> close the issue with the matching reason.
   // Only fires on the transition, so reopening an issue that still has the tag won't re-close it.
-  if (merged.has(CLOSE_TAG) && !base.has(CLOSE_TAG)) {
+  const closeTag = Object.keys(CLOSE_TAGS).find((t) => merged.has(t) && !base.has(t));
+  if (closeTag) {
+    const { reason, comment } = CLOSE_TAGS[closeTag];
     await gh(`/repos/${GITHUB_REPO}/issues/${issue.number}/comments`, {
       method: "POST",
-      body: JSON.stringify({ body: "Issue has been marked as fixed and closed" }),
+      body: JSON.stringify({ body: comment }),
     });
     await gh(`/repos/${GITHUB_REPO}/issues/${issue.number}`, {
       method: "PATCH",
-      body: JSON.stringify({ state: "closed", state_reason: "completed" }),
+      body: JSON.stringify({ state: "closed", state_reason: reason }),
     });
     issue.state = "closed";
-    console.log(`Issue #${issue.number} closed (tagged "${CLOSE_TAG}")`);
+    console.log(`Issue #${issue.number} closed (tagged "${closeTag}", ${reason})`);
   }
 
   if (!sameSet(merged, base) || !/<!--\s*discourse-tags:/.test(issue.body)) {
@@ -346,6 +360,13 @@ async function syncReplies(issue, topic) {
 (async () => {
   const repoLabels = await ghAll(`/repos/${GITHUB_REPO}/labels`);
   labelMap = new Map(repoLabels.map((l) => [norm(l.name), l.name]));
+
+  if (FEATURES_CATEGORY_ID && !labelMap.has(norm(FEATURE_LABEL))) {
+    await gh(`/repos/${GITHUB_REPO}/labels`, {
+      method: "POST",
+      body: JSON.stringify({ name: FEATURE_LABEL, color: "a2eeef", description: "Requested on the Discourse forum" }),
+    });
+  }
 
   const linked = await linkedIssues();
   await syncTopics(linked);

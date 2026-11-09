@@ -9,6 +9,7 @@ const topicId = Number(m[1]);
 
 const actor = `**${E.ACTOR}**`;
 let card = null;
+const INTERNAL_LABELS = new Set(["discourse", "feature request"]); // never shown or mirrored as tags
 
 switch (E.ACTION) {
   case "assigned":
@@ -16,10 +17,10 @@ switch (E.ACTION) {
   case "unassigned":
     card = ["🚫", "Unassigned", `**${E.ASSIGNEE}** was unassigned by ${actor}`]; break;
   case "labeled":
-    if (E.LABEL_NAME === "discourse") break; // internal label, skip
+    if (INTERNAL_LABELS.has(String(E.LABEL_NAME).toLowerCase())) break; // internal label, skip
     card = ["🏷️", "Label added", `\`${E.LABEL_NAME}\` added by ${actor}`]; break;
   case "unlabeled":
-    if (E.LABEL_NAME === "discourse") break;
+    if (INTERNAL_LABELS.has(String(E.LABEL_NAME).toLowerCase())) break;
     card = ["🏷️", "Label removed", `\`${E.LABEL_NAME}\` removed by ${actor}`]; break;
   case "closed":
     card = E.STATE_REASON === "not_planned"
@@ -51,7 +52,7 @@ const raw =
 const norm = (x) =>
   String(x).toLowerCase().trim().replace(/\s+/g, "-").replace(/[\/?#\[\]@!$&'()*+,;=.:<>%\\"]/g, "");
 async function syncTag() {
-  if (!["labeled", "unlabeled"].includes(E.ACTION) || E.LABEL_NAME === "discourse") return;
+  if (!["labeled", "unlabeled"].includes(E.ACTION) || INTERNAL_LABELS.has(String(E.LABEL_NAME).toLowerCase())) return;
   const headers = { "Api-Key": DISCOURSE_API_KEY, "Api-Username": FRONTLINE_USER, "Content-Type": "application/json" };
   const r = await fetch(`${DISCOURSE_URL}/t/${topicId}.json`, { headers });
   if (!r.ok) throw new Error(`Discourse topic ${r.status}`);

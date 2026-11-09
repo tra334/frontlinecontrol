@@ -2,7 +2,7 @@
 const {
   DISCOURSE_URL, DISCOURSE_API_KEY, ISSUE_BODY = "", COMMENT_BODY = "",
   COMMENT_URL, COMMENTER, ISSUE_NUMBER = "", ISSUE_TITLE = "", FRONTLINE_USER = "Frontline",
-  THOMAS_USER = "Thomas", GITHUB_THOMAS_LOGIN = "tra334",
+  THOMAS_USER = "Thomas", GITHUB_THOMAS_LOGIN = "tra334", ISSUE_LABELS = "",
 } = process.env;
 
 const m = ISSUE_BODY.match(/<!--\s*discourse-topic-id:\s*(\d+)\s*-->/);
@@ -11,10 +11,12 @@ if (!m) { console.log("Issue not linked to Discourse, skipping"); process.exit(0
 if (/<!--\s*discourse-post-id:/.test(COMMENT_BODY)) { console.log("Comment came from Discourse, skipping"); process.exit(0); }
 
 const isThomas = COMMENTER.toLowerCase() === GITHUB_THOMAS_LOGIN.toLowerCase();
+const isFeature = ISSUE_LABELS.split(",").some((l) => l.trim().toLowerCase() === "feature request");
+const kind = isFeature ? "feature request" : "issue";
 const now = new Date().toISOString();
 // Plain markdown (no blockquote) so Discourse doesn't render a grey quote box.
 const raw =
-  `### 💬 New comment on issue by ${COMMENTER}\n\n` +
+  `### 💬 New comment on ${kind} by ${COMMENTER}\n\n` +
   `${COMMENT_BODY.trim()}\n\n` +
   `🔗 [#${ISSUE_NUMBER} ${ISSUE_TITLE}](${COMMENT_URL}) · ` +
   `🕒 [date=${now.slice(0, 10)} time=${now.slice(11, 19)} timezone="UTC"]`;
