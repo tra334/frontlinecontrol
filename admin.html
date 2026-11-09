@@ -95,7 +95,8 @@ body.dev-view .admin-only{display:none!important}
   .brand span{display:none}
   #tabs{order:3;flex:1 1 100%;display:flex;width:100%}
   #tabs[hidden]{display:none}
-  #tabs button{flex:1;padding:8px 2px;font-size:12.5px;white-space:nowrap}
+  #tabs{flex-wrap:wrap;gap:4px}
+  #tabs button{flex:1 1 calc(25% - 4px);min-width:0;padding:10px 4px;font-size:13px;white-space:nowrap;text-align:center}
   #out{order:2;flex:none}
 }
 .evt{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid var(--bd);align-items:flex-start}
