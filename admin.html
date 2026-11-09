@@ -656,11 +656,11 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
 
   // ---------- custom missions (added to the game's mission list) ----------
   // Draft missions are only visible here. Publishing assigns a permanent position in the game's list, so after that
-  // only Retire / Restore is allowed: to change a live mission, duplicate it, publish the copy and retire the old one.
+  // published missions can still be edited (they keep their place in the list), retired or deleted.
   const MS_VEH = [["pump","f","Fire engine"],["rt","f","Rescue tender"],["wc","f","Water carrier"],["alp","f","Aerial ladder platform"],["icu","f","Incident command unit"],["fo","f","Fire officer car"],["wf","f","Wildfire 4x4"],["wru","f","Water rescue unit"],["hmu","f","Hazmat unit"],["usar","f","Urban search & rescue"],["irv","p","Response car"],["van","p","Police van"],["rp","p","Roads policing"],["dog","p","Dog unit"],["arv","p","Armed response"],["sgt","p","Patrol sergeant car"],["mc","p","Police motorcycle"],["cid","p","CID detectives"],["po","p","Public order carrier"],["hel","p","Police helicopter"],["dca","a","Ambulance"],["rrv","a","Rapid response car"],["ao","a","Ambulance officer"],["bike","a","Paramedic motorbike"],["hart","a","HART team"],["ccc","a","Critical care car"],["air","a","Air ambulance"],["mci","a","Major incident unit"]], MS_PLACES = ["pub","restaurant","hotel","supermarket","shop","services","home","care_home","high","school","college","civic","attraction","stadium","major_stadium","rec","leisure","hospital","church","station","road","car_park","petrol","office","airport","industrial","farm","water","lake","harbour","coast","woods","cemetery","bridge","prison"], MS_SV = { f: "Fire", p: "Police", a: "Ambulance" },
     MS_STD = ["What\u2019s happened?", "Is anyone hurt?", "Any weapons or dangers?", "How many people are involved?", "Is it still happening?", "Are you in a safe place right now?", "Is the patient breathing and conscious?", "Description of anyone involved?", "Is anyone still inside or trapped?", "Can you see flames or smoke?", "Is the fire spreading?", "Is there any bleeding?", "How old is the patient?", "Did they leave in a vehicle?", "Are the offenders still at the scene?"];
   let msList = [], msEdit = null;
-  const msNew = () => ({ id: null, status: "draft", svc: "f", name: "", caller: "", needs: {}, secs: 60, pay: 500, places: ["road"], g: 0, qa: [] });
+  const msNew = () => ({ id: null, status: "draft", svc: "f", name: "", caller: "", needs: {}, secs: 60, pay: 500, places: ["road"], g: 0, qa: [], chat: [] });
   async function showMissions() {
     msEdit = null;
     $("#main").innerHTML = `<div class="row" style="justify-content:space-between;margin:4px 0 10px"><h3 style="margin:0">Missions</h3><button class="btn pri" id="ms_new">+ New mission</button></div><div id="ms_form"></div><div class="card" id="ms_list"><div class="mu">Loading…</div></div>`;
@@ -674,17 +674,22 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
       const tag = m => m.status === "live" ? '<span class="tag t-on">LIVE</span>' : m.status === "retired" ? '<span class="tag t-idle">RETIRED</span>' : '<span class="tag t-idle">DRAFT</span>';
       box.innerHTML = msList.length ? msList.map(m => {
         const need = Object.entries(m.needs || {}).map(([k, n]) => n + " " + ((MS_VEH.find(v => v[0] === k) || [])[2] || k)).join(", ");
-        const acts = m.status === "draft" ? `<button class="btn sm" data-e="${m.id}">Edit</button><button class="btn sm pri" data-p="${m.id}">Publish</button>`
-          : `<button class="btn sm" data-d="${m.id}">Duplicate</button>` + (m.status === "live" ? `<button class="btn sm ghr" data-r="${m.id}">Retire</button>` : `<button class="btn sm gha" data-s="${m.id}">Restore</button>`);
+        const acts = `<button class="btn sm" data-e="${m.id}">Edit</button>` + (m.status === "draft" ? `<button class="btn sm pri" data-p="${m.id}">Publish</button>` : `<button class="btn sm" data-d="${m.id}">Duplicate</button>` + (m.status === "live" ? `<button class="btn sm ghr" data-r="${m.id}">Retire</button>` : `<button class="btn sm gha" data-s="${m.id}">Restore</button>`)) + `<button class="btn sm ghr" data-x="${m.id}">Delete</button>`;
         return `<div class="item"><div class="m"><b>${esc(MS_SV[m.svc] || "")} · ${esc(m.name)} ${tag(m)}</b><span class="mu">${esc(need)} · ${m.secs}s · ${money(m.pay)}</span></div><div class="acts">${acts}</div></div>`;
       }).join("") : '<div class="empty">No custom missions yet</div>';
       const by = id => msList.find(m => m.id === +id);
       box.querySelectorAll("[data-e]").forEach(b => b.onclick = () => { msEdit = JSON.parse(JSON.stringify(by(b.dataset.e))); msForm(); });
       box.querySelectorAll("[data-d]").forEach(b => b.onclick = () => { const c = JSON.parse(JSON.stringify(by(b.dataset.d))); c.id = null; c.status = "draft"; c.name = ""; msEdit = c; msForm(); });
-      box.querySelectorAll("[data-p]").forEach(b => b.onclick = () => msStatus(b.dataset.p, "live", "Publish this mission? Its content can't be edited afterwards."));
+      box.querySelectorAll("[data-x]").forEach(b => b.onclick = () => msDelete(b.dataset.x));
+      box.querySelectorAll("[data-p]").forEach(b => b.onclick = () => msStatus(b.dataset.p, "live", "Publish this mission? It will go live for all players. You can still edit it later."));
       box.querySelectorAll("[data-r]").forEach(b => b.onclick = () => msStatus(b.dataset.r, "retired", "Retire this mission? It stops spawning for players."));
       box.querySelectorAll("[data-s]").forEach(b => b.onclick = () => msStatus(b.dataset.s, "live", "Restore this mission so it spawns again?"));
     } catch (e) { box.innerHTML = '<span style="color:var(--rd)">' + esc(e.message) + "</span>"; }
+  }
+  async function msDelete(id) {
+    const m = msList.find(x => x.id === +id); if (!m) return;
+    if (!confirm(m.status === "draft" ? "Delete this draft permanently?" : "Delete this published mission? It stops spawning and disappears from this list. Players mid-call are not affected.")) return;
+    try { await api("/api/admin/mission/delete", { id: +id }); toast("Deleted"); if (msEdit && msEdit.id === +id) { msEdit = null; $("#ms_form").innerHTML = ""; } msLoad(); } catch (e) { toast(e.message); }
   }
   async function msStatus(id, status, q) {
     if (!confirm(q)) return;
@@ -693,14 +698,17 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
   function msForm() {
     const m = msEdit, box = $("#ms_form"); if (!box) return;
     const vehOpts = () => ["f", "p", "a"].map(sv => `<optgroup label="${MS_SV[sv]}">` + MS_VEH.filter(v => v[1] === sv).map(v => `<option value="${v[0]}">${esc(v[2])}</option>`).join("") + "</optgroup>").join("");
-    m.qa = Array.isArray(m.qa) ? m.qa : []; m.g = [1, 2, 3, 4].includes(+m.g) ? +m.g : 0;
-    box.innerHTML = `<div class="card"><h3 style="margin-top:0">${m.id ? "Edit draft" : "New mission"}</h3>
+    m.qa = Array.isArray(m.qa) ? m.qa : []; m.chat = Array.isArray(m.chat) ? m.chat : []; m.g = [1, 2, 3, 4].includes(+m.g) ? +m.g : 0;
+    box.innerHTML = `<div class="card"><h3 style="margin-top:0">${m.id ? (m.status === "draft" ? "Edit draft" : "Edit " + (m.status === "live" ? "live" : "retired") + " mission") : "New mission"}</h3>
       <div class="row"><select id="ms_sv"><option value="f">Fire</option><option value="p">Police</option><option value="a">Ambulance</option></select><input id="ms_n" placeholder="Mission name, e.g. Substation fire" maxlength="60"></div>
       <input id="ms_c" placeholder="What the caller says" maxlength="160" style="margin-top:8px;width:100%">
       <div class="mu" style="margin:12px 0 4px">Vehicles needed <span style="opacity:.7">(any service can be mixed, e.g. a fire call that also needs an ambulance)</span></div><div id="ms_v"></div>
       <div class="row" style="margin-top:6px"><select id="ms_vs"></select><input id="ms_vn" type="number" min="1" max="10" value="1" style="width:70px"><button class="btn sm" id="ms_va">Add</button></div>
       <div class="row" style="margin-top:12px"><label class="mu">Seconds on scene <input id="ms_t" type="number" min="20" max="1200" style="width:90px"></label><label class="mu">Payout (£) <input id="ms_p" type="number" min="50" max="20000" style="width:100px"></label><label class="mu">Grade <select id="ms_g"><option value="0">Auto (from payout)</option><option value="1">G1 – life threatening</option><option value="2">G2 – urgent</option><option value="3">G3 – standard</option><option value="4">G4 – low priority</option></select></label></div>
       <div class="mu" style="margin:12px 0 4px">Can spawn at</div><div id="ms_pl" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      <div class="mu" style="margin:14px 0 4px">On-scene radio chatter <span style="opacity:.7">(optional, one line per row, up to 6)</span></div>
+      <div class="mu" style="margin-bottom:6px">What the first unit says over the radio when it arrives, e.g. "Cat is up the tree, ladder going up now." One line is picked at random. Leave empty to use neutral lines like "Crew on scene, assessing the situation."</div>
+      <textarea id="ms_chat" rows="4" maxlength="1000" placeholder="One line per row" style="width:100%"></textarea>
       <div class="mu" style="margin:14px 0 4px">Caller questions &amp; answers <span style="opacity:.7">(optional, up to 12)</span></div>
       <div class="mu" style="margin-bottom:6px">Once you add questions, players are offered ONLY the three fixed questions below plus the ones you write. All other standard questions are hidden for this call, so write every question you want players to have. Leave this empty to keep the full standard question set. An answer can reveal extra vehicles the call needs, added once the player has asked it.</div>
       <div style="border:1px solid var(--bd);border-radius:8px;padding:8px 10px;margin-bottom:8px">
@@ -713,8 +721,8 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
       <datalist id="ms_std">${MS_STD.map(q => `<option value="${esc(q)}">`).join("")}</datalist>
       <div class="mu" style="margin-top:10px">The minimum rank comes from the vehicles chosen. The grade is Auto (from the payout) unless you pick one. With no questions written, the call uses the standard questions and generic answers.</div>
       <div id="ms_err" style="color:var(--rd);margin-top:8px"></div>
-      <div class="row" style="margin-top:10px"><button class="btn pri" id="ms_save">Save draft</button><button class="btn" id="ms_x">Cancel</button></div></div>`;
-    $("#ms_sv").value = m.svc; $("#ms_n").value = m.name; $("#ms_c").value = m.caller; $("#ms_t").value = m.secs; $("#ms_p").value = m.pay; $("#ms_g").value = String(m.g);
+      <div class="row" style="margin-top:10px"><button class="btn pri" id="ms_save">${m.id && m.status !== "draft" ? "Save changes" : "Save draft"}</button><button class="btn" id="ms_x">Cancel</button></div></div>`;
+    $("#ms_sv").value = m.svc; $("#ms_n").value = m.name; $("#ms_c").value = m.caller; $("#ms_t").value = m.secs; $("#ms_p").value = m.pay; $("#ms_g").value = String(m.g); $("#ms_chat").value = m.chat.join("\n");
     const drawV = () => {
       $("#ms_vs").innerHTML = vehOpts();
       $("#ms_v").innerHTML = Object.keys(m.needs).map(k => `<span class="tag t-idle" style="margin:0 6px 6px 0">${m.needs[k]} × ${esc((MS_VEH.find(v => v[0] === k) || [])[2] || k)} <a href="#" data-x="${k}" aria-label="Remove">×</a></span>`).join("") || '<span class="mu">None yet</span>';
@@ -757,6 +765,8 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
     $("#ms_save").onclick = async () => {
       m.name = $("#ms_n").value.trim(); m.caller = $("#ms_c").value.trim(); m.secs = +$("#ms_t").value; m.pay = +$("#ms_p").value; m.svc = $("#ms_sv").value; m.g = +$("#ms_g").value || 0;
       m.qa = m.qa.map(p => ({ q: (p.q || "").trim(), a: (p.a || "").trim(), veh: p.veh })).filter(p => p.q || p.a || p.veh).map(p => { if (!p.veh || !Object.keys(p.veh).length) delete p.veh; return p; });
+      m.chat = $("#ms_chat").value.split("\n").map(x => x.trim()).filter(Boolean);
+      const chatErr = m.chat.length > 6 ? "Up to 6 chatter lines" : m.chat.some(x => x.length < 3 || x.length > 160) ? "Each chatter line needs 3 to 160 characters" : "";
       const nq = t => t.toLowerCase().replace(/'/g, "\u2019"), seen = new Set();
       let qerr = "";
       m.qa.forEach((p, i) => {
@@ -767,10 +777,10 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
         else if (/address of the emergency|name and phone number|nearest landmark or junction/i.test(p.q)) qerr = "Question " + (i + 1) + " is one of the fixed questions, which are always asked and can't be changed";
         seen.add(nq(p.q));
       });
-      const err = qerr || (!(m.name.length >= 3) ? "Name needs at least 3 characters" : !(m.caller.length >= 5) ? "Write what the caller says" : !Object.keys(m.needs).length ? "Add at least one vehicle"
+      const err = chatErr || qerr || (!(m.name.length >= 3) ? "Name needs at least 3 characters" : !(m.caller.length >= 5) ? "Write what the caller says" : !Object.keys(m.needs).length ? "Add at least one vehicle"
         : !(m.secs >= 20 && m.secs <= 1200) ? "Seconds on scene must be 20 to 1200" : !(m.pay >= 50 && m.pay <= 20000) ? "Payout must be £50 to £20,000" : !m.places.length ? "Pick at least one place type" : "");
       $("#ms_err").textContent = err; if (err) return;
-      try { await api("/api/admin/mission", { id: m.id, svc: m.svc, name: m.name, caller: m.caller, needs: m.needs, secs: m.secs, pay: m.pay, places: m.places, g: m.g || null, qa: m.qa }); toast("Draft saved"); msEdit = null; box.innerHTML = ""; msLoad(); }
+      try { await api("/api/admin/mission", { id: m.id, svc: m.svc, name: m.name, caller: m.caller, needs: m.needs, secs: m.secs, pay: m.pay, places: m.places, g: m.g || null, qa: m.qa, chat: m.chat }); toast(m.id && m.status !== "draft" ? "Changes saved" : "Draft saved"); msEdit = null; box.innerHTML = ""; msLoad(); }
       catch (e) { $("#ms_err").textContent = e.message; }
     };
     drawV(); drawP(); drawQA();
