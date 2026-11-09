@@ -25,6 +25,7 @@ jobs:
           GITHUB_REPO: ${{ github.repository }}
           FRONTLINE_USER: Frontline
           LOOKBACK_HOURS: "24"
-          CATEGORY_ID: "6"
+          CATEGORY_ID: "6"            # bug reports -> "Description" header
+          FEATURES_CATEGORY_ID: "8"   # Features category -> "Feature Request" header + "feature request" label
           IGNORE_USERS: "Frontline"
           ISSUE_STYLE: "card"   # "note" = callout header, "card" = table header
