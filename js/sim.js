@@ -118,7 +118,7 @@ function parkTrail(p,b,tl){try{if(!p||p.length<2)return null;let q=p.slice();con
  return out.map(x=>[+(+x[0]).toFixed(6),+(+x[1]).toFixed(6)])}catch(e){return null}}
 function arrive(u,m,rp,tl){u.st="scene";u.arr=now();u.app=(SP[u.ty]>=150)?null:parkTrail(rp,u.b,tl);const first=S.un.filter(x=>x.mid===m.id&&x.st==="scene").length===1;let r;
 if(m.hid&&!m.rev){m.rev=1;r=u.cs+": “Control, situation is worse than reported — "+(hk(m)==="h"?"there are casualties":"there are hazards/weapons")+". Request "+Object.entries(m.hid.n).map(([k,n])=>n+" × "+U[k][1]).join(", ")+".”"}
-else if(first)r=u.cs+": “"+pick(FACT[T[m.k][0]])+"”";
+else if(first)r=u.cs+": “"+pick(T[m.k].chat&&T[m.k].chat.length?T[m.k].chat:(window.CustomMissions&&m.k>=CustomMissions.base?["Crew on scene, assessing the situation.","Arrived and making the scene safe.","Dealing with the incident now."]:FACT[T[m.k][0]]))+"”";
 if(T[m.k][1]==="Welfare check"){const c=scn(m);
 if(!m.wst&&U[u.ty][0]==="p"){m.wst=1;if(c.wcNo){if(m.roomId||ownN("pump")>0){m.xn=mrg(m.xn||{},{pump:1});m.xb=(m.xb||0)+500}r=u.cs+": “Control, no response at the address after repeated knocking. Request a fire engine to gain entry.”"}else r=u.cs+": “Control, person came to the door — safe and well, just hadn’t been in contact. No further assistance required.”"}
 else if(m.wst===1&&U[u.ty][0]==="f"){m.wst=2;if(c.wcInj){if(m.roomId||ownN("dca")>0){m.xn=mrg(m.xn||{},{dca:1});m.xb=(m.xb||0)+600}r=u.cs+": “Control, entry gained. We have an injured person inside, conscious but unable to get up. Request an ambulance.”"}else r=u.cs+": “Control, entry gained. Person found safe and well, no injuries. No ambulance required.”"}

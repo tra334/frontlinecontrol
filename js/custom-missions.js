@@ -35,11 +35,11 @@
   }
 
   /* returns a mission tuple [service, name, caller, needs, seconds, payout, places] or null if it is not safe to use */
-  function build(m) {
+  function build(m, selfIdx) {
     try {
       if (!m || !["f", "p", "a"].includes(m.svc)) return null;
       if (!str(m.name, 3, 60) || !str(m.caller, 5, 160)) return null;
-      if (T.some(t => t[1] === m.name.trim())) return null;
+      if (T.some((t, i) => i !== selfIdx && t[1] === m.name.trim())) return null;
       if (!m.needs || typeof m.needs !== "object") return null;
       const ks = Object.keys(m.needs);
       if (!ks.length || ks.length > 8) return null;
@@ -48,6 +48,10 @@
       if (!Array.isArray(m.places) || !m.places.length || m.places.length > 6 || !m.places.every(p => PLACES.has(p))) return null;
       const t = [m.svc, m.name.trim(), m.caller.trim(), Object.assign({}, m.needs), m.secs, m.pay, m.places.slice()];
       if (m.g != null && m.g !== 0) { if (!num(m.g, 1, 4)) return null; t.g = m.g; } /* call grade; absent = worked out from the payout */
+      if (m.chat != null) { /* on-scene radio chatter: up to 6 short lines the first unit says when it arrives */
+        if (!Array.isArray(m.chat) || m.chat.length > 6 || !m.chat.every(x => str(x, 3, 160))) return null;
+        if (m.chat.length) t.chat = m.chat.map(x => x.trim());
+      }
       if (m.qa != null) { const qa = cleanQA(m.qa); if (!qa) return null; if (qa.length) t.qa = qa; }
       return t;
     } catch (e) { return null; }
@@ -58,7 +62,12 @@
     list = list.filter(m => m && Number.isInteger(m.seq) && m.seq >= 1).sort((a, b) => a.seq - b.seq);
     for (const m of list) {
       const next = T.length - BASE + 1;
-      if (m.seq < next) { const t = T[BASE + m.seq - 1]; if (t) t.off = !!m.retired; continue; }
+      if (m.seq < next) { /* already loaded: refresh its content in place (same slot, so saved incidents still point at it) and its retired flag */
+        const idx = BASE + m.seq - 1, t = T[idx]; if (!t) continue;
+        const nt = build(m, idx);
+        if (nt) { t.length = 0; nt.forEach(x => t.push(x)); t.g = nt.g; t.qa = nt.qa; t.chat = nt.chat; }
+        t.off = !!m.retired || t[1].indexOf("(unavailable)") === 0; continue;
+      }
       if (m.seq > next) break; /* a gap: wait for a full list rather than shift every later index */
       const t = build(m) || ["f", "(unavailable) " + m.seq, "", { pump: 1 }, 60, 0, ["road"]];
       if (t[1].indexOf("(unavailable)") === 0) t.off = true; else t.off = !!m.retired;
