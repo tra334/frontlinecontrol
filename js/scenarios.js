@@ -118,7 +118,7 @@ Object.assign(PP,{"Siege – barricaded suspect":{n:[1,1],off:["here"],wp:1,wpT:
 /* a question that reveals vehicles is only offered if the player could use at least one of them (rank reached and owned, or a room call) */
 const cqVehOK=p=>{const rm=typeof mm==='function'&&typeof curM!=='undefined'&&mm(curM);return Object.keys(p.veh).some(k=>U[k]&&U[k][3]<=rank()&&((rm&&rm.roomId)||ownN(k)>0))};
 const cqShow=(t,q,i)=>(!q[4]||!q[4].veh||cqVehOK(q[4]))&&(!(t.qa&&t.qa.length)||i===0||i===2||i===3||q[3]===t[1]);
-function cqAnswer(m,p){if(p.veh){const add={},rm=!!m.roomId;let short=0;for(const k in p.veh){if(!U[k])continue;const have=U[k][3]<=rank()?(rm?p.veh[k]:ownN(k)):0,n=Math.min(p.veh[k],have);if(n>0)add[k]=n;if(n<p.veh[k])short=1}if(short&&!rm)m.short=1;const ks=Object.keys(add);if(ks.length){m.xn=mrg(m.xn||{},add);log("📋 Caller information: extra unit"+(ks.length>1||add[ks[0]]>1?"s":"")+" needed — "+ks.map(k=>add[k]+" × "+U[k][1]).join(", "))}}return p.a}
+function cqAnswer(m,p){if(p.veh){const rm=!!m.roomId,bn=T[m.k][3]||{},rv=m.rv=m.rv||{},xn={...(m.xn||{})},base=m.need||{},ch=[];let short=0;for(const k in p.veh){if(!U[k])continue;rv[k]=Math.max(rv[k]||0,p.veh[k],bn[k]||0);const ok=U[k][3]<=rank(),own=rm?rv[k]:(ok?ownN(k):0),tot=Math.min(rv[k],own),add=Math.max(0,tot-(base[k]||0)),prev=xn[k]||0;if(!rm&&rv[k]>own)short=1;if(add>0)xn[k]=add;else delete xn[k];if(add>prev)ch.push(k)}if(short&&!rm)m.short=1;m.xn=xn;if(ch.length)log("📋 Caller information: extra unit"+(ch.length>1?"s":"")+" needed — "+ch.map(k=>xn[k]+" × "+U[k][1]).join(", "))}return p.a}
 function cqSync(){T.forEach(t=>{if(t.cqDone||!Array.isArray(t.qa)||!t.qa.length)return;t.cqDone=1;
 t.qa.forEach(p=>QS.push([p.q,m=>cqAnswer(m,p),t[0],t[1],p]))})}
 cqSync();
