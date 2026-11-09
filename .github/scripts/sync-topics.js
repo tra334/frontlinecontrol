@@ -36,6 +36,28 @@ const norm = (s) =>
 const tagNames = (topic) =>
   (topic.tags ?? []).map((t) => norm(typeof t === "string" ? t : t.name ?? t.slug)).filter(Boolean);
 
+
+// fetch with a per-request timeout and retries on network errors, 429 and 5xx,
+// so one slow Discourse/GitHub response can't hang or kill the whole run.
+async function req(url, options = {}, tries = 4) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const res = await fetch(url, { ...options, signal: AbortSignal.timeout(30000) });
+      if ((res.status === 429 || res.status >= 500) && attempt < tries) {
+        const wait = Number(res.headers.get("retry-after")) * 1000 || 2000 * 2 ** (attempt - 1);
+        console.warn(`${res.status} from ${String(url).split("?")[0]}, retry ${attempt}/${tries - 1} in ${wait}ms`);
+        await new Promise((r) => setTimeout(r, Math.min(wait, 20000)));
+        continue;
+      }
+      return res;
+    } catch (e) {
+      if (attempt >= tries) throw e;
+      console.warn(`${e.name}: ${e.message} on ${String(url).split("?")[0]}, retry ${attempt}/${tries - 1}`);
+      await new Promise((r) => setTimeout(r, 2000 * 2 ** (attempt - 1)));
+    }
+  }
+}
+
 const dHeaders = (user = FRONTLINE_USER) => ({
   "Api-Key": DISCOURSE_API_KEY,
   "Api-Username": user,
@@ -43,7 +65,7 @@ const dHeaders = (user = FRONTLINE_USER) => ({
 });
 
 async function gh(path, options = {}) {
-  const res = await fetch(`https://api.github.com${path}`, {
+  const res = await req(`https://api.github.com${path}`, {
     ...options,
     headers: {
       Authorization: `Bearer ${GITHUB_TOKEN}`,
@@ -98,7 +120,7 @@ function withMarker(body, set) {
 const sameSet = (a, b) => a.size === b.size && [...a].every((x) => b.has(x));
 
 async function setDiscourseTags(topicId, tags) {
-  const res = await fetch(`${DISCOURSE_URL}/t/-/${topicId}.json`, {
+  const res = await req(`${DISCOURSE_URL}/t/-/${topicId}.json`, {
     method: "PUT",
     headers: dHeaders(),
     body: JSON.stringify({ tags: tags.length ? tags : [""] }),
@@ -121,7 +143,7 @@ async function resolveUploads(raw) {
   const urls = new Map();
   if (shorts.length) {
     try {
-      const res = await fetch(`${DISCOURSE_URL}/uploads/lookup-urls.json`, {
+      const res = await req(`${DISCOURSE_URL}/uploads/lookup-urls.json`, {
         method: "POST",
         headers: { ...dHeaders(), "Content-Type": "application/x-www-form-urlencoded" },
         body: shorts.map((s) => `short_urls[]=${encodeURIComponent(s)}`).join("&"),
@@ -174,7 +196,7 @@ function imageLinksBlock(text) {
 
 // ---------- 1. Discourse topics -> GitHub issues ----------
 async function syncTopics(linked) {
-  const res = await fetch(`${DISCOURSE_URL}/latest.json?order=created`, { headers: dHeaders() });
+  const res = await req(`${DISCOURSE_URL}/latest.json?order=created`, { headers: dHeaders() });
   if (!res.ok) throw new Error(`Discourse latest ${res.status}`);
   const topics = (await res.json()).topic_list.topics;
 
@@ -199,7 +221,7 @@ async function syncTopics(linked) {
     let role = "";
     let tags = [];
 
-    const info = await fetch(`${DISCOURSE_URL}/t/${t.id}.json`, { headers: dHeaders() });
+    const info = await req(`${DISCOURSE_URL}/t/${t.id}.json`, { headers: dHeaders() });
     if (info.ok) {
       const topic = await info.json();
       author = topic.details?.created_by?.username ?? author;
@@ -209,7 +231,7 @@ async function syncTopics(linked) {
         avatar = avatarUrl(first.avatar_template);
         role = roleOf(first);
         // /posts/:id.json returns the clean markdown (no "user | date | #1" header line).
-        const pr = await fetch(`${DISCOURSE_URL}/posts/${first.id}.json`, { headers: dHeaders() });
+        const pr = await req(`${DISCOURSE_URL}/posts/${first.id}.json`, { headers: dHeaders() });
         if (pr.ok) {
           const p = await pr.json();
           firstPost = p.raw ?? "";
@@ -218,7 +240,7 @@ async function syncTopics(linked) {
       }
     }
     if (!firstPost) {
-      const raw = await fetch(`${DISCOURSE_URL}/raw/${t.id}`, { headers: dHeaders() });
+      const raw = await req(`${DISCOURSE_URL}/raw/${t.id}`, { headers: dHeaders() });
       if (raw.ok) {
         firstPost = (await raw.text())
           .replace(/^[^\n]*\|\s*#\d+\s*\n+/, "") // "Thomas | 2026-10-27 ... | #1"
@@ -258,7 +280,7 @@ async function syncTopics(linked) {
     });
     linked.push({ number: issue.number, state: "open", topicId: t.id, body: issue.body ?? "", labels: labelNames(issue.labels) });
 
-    const reply = await fetch(`${DISCOURSE_URL}/posts.json`, {
+    const reply = await req(`${DISCOURSE_URL}/posts.json`, {
       method: "POST",
       headers: dHeaders(),
       body: JSON.stringify({ topic_id: t.id, raw: `GitHub ${isFeature ? "feature request" : "issue"} created: ${issue.html_url}` }),
@@ -333,7 +355,7 @@ async function syncReplies(issue, topic) {
   for (const id of candidates) {
     if (synced.has(id)) continue;
 
-    const pr = await fetch(`${DISCOURSE_URL}/posts/${id}.json`, { headers: dHeaders() });
+    const pr = await req(`${DISCOURSE_URL}/posts/${id}.json`, { headers: dHeaders() });
     if (!pr.ok) continue;
     const p = await pr.json();
 
@@ -373,7 +395,7 @@ async function syncReplies(issue, topic) {
 
   for (const issue of linked.filter((l) => l.state === "open")) {
     try {
-      const tr = await fetch(`${DISCOURSE_URL}/t/${issue.topicId}.json`, { headers: dHeaders() });
+      const tr = await req(`${DISCOURSE_URL}/t/${issue.topicId}.json`, { headers: dHeaders() });
       if (!tr.ok) { console.warn(`Topic ${issue.topicId}: ${tr.status}`); continue; }
       const topic = await tr.json();
       await reconcileTags(issue, topic);
