@@ -212,6 +212,7 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
 <div id="modal"></div>
 <div id="toast"></div>
 
+<script src="js/data.js"></script>
 <script>
 (function () {
   "use strict";
@@ -663,14 +664,16 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
   // Draft missions are only visible here. Publishing assigns a permanent position in the game's list, so after that
   // published missions can still be edited (they keep their place in the list), retired or deleted.
 const MS_VRANK = {pump:0,rt:1,wc:2,alp:3,icu:4,fo:1,wf:2,wru:1,hmu:3,usar:4,irv:0,van:1,rp:1,dog:2,arv:3,sgt:1,mc:1,cid:2,po:3,hel:4,dca:0,rrv:0,ao:1,bike:1,hart:4,ccc:3,air:4,mci:4}, RMUL_A = [1,1.1,1.25,1.5,1.75,2];
-  const MS_VEH = [["pump","f","Fire engine"],["rt","f","Rescue tender"],["wc","f","Water carrier"],["alp","f","Aerial ladder platform"],["icu","f","Incident command unit"],["fo","f","Fire officer car"],["wf","f","Wildfire 4x4"],["wru","f","Water rescue unit"],["hmu","f","Hazmat unit"],["usar","f","Urban search & rescue"],["irv","p","Response car"],["van","p","Police van"],["rp","p","Roads policing"],["dog","p","Dog unit"],["arv","p","Armed response"],["sgt","p","Patrol sergeant car"],["mc","p","Police motorcycle"],["cid","p","CID detectives"],["po","p","Public order carrier"],["hel","p","Police helicopter"],["dca","a","Ambulance"],["rrv","a","Rapid response car"],["ao","a","Ambulance officer"],["bike","a","Paramedic motorbike"],["hart","a","HART team"],["ccc","a","Critical care car"],["air","a","Air ambulance"],["mci","a","Major incident unit"]], MS_PLACES = ["pub","restaurant","hotel","supermarket","shop","services","home","care_home","high","school","college","civic","attraction","stadium","major_stadium","rec","leisure","hospital","church","station","road","car_park","petrol","office","airport","industrial","farm","water","lake","harbour","coast","woods","cemetery","bridge","prison"], MS_SV = { f: "Fire", p: "Police", a: "Ambulance" },
+  const MS_VEH = [["pump","f","Fire engine"],["rt","f","Rescue tender"],["wc","f","Water carrier"],["alp","f","Aerial ladder platform"],["icu","f","Incident command unit"],["fo","f","Fire officer car"],["wf","f","Wildfire 4x4"],["wru","f","Water rescue unit"],["hmu","f","Hazmat unit"],["usar","f","Urban search & rescue"],["irv","p","Response car"],["van","p","Police van"],["rp","p","Roads policing"],["dog","p","Dog unit"],["arv","p","Armed response"],["sgt","p","Patrol sergeant car"],["mc","p","Police motorcycle"],["cid","p","CID detectives"],["po","p","Public order carrier"],["hel","p","Police helicopter"],["dca","a","Ambulance"],["rrv","a","Rapid response car"],["ao","a","Ambulance officer"],["bike","a","Paramedic motorbike"],["hart","a","HART team"],["ccc","a","Critical care car"],["air","a","Air ambulance"],["mci","a","Major incident unit"]], MS_PLACES = ["pub","restaurant","hotel","supermarket","shop","services","home","care_home","high","school","college","civic","attraction","stadium","major_stadium","rec","leisure","hospital","church","station","road","car_park","petrol","office","airport","industrial","farm","water","lake","harbour","coast","woods","cemetery","bridge","prison"], MS_SV = { f: "Fire", p: "Police", a: "Ambulance", t: "Trained crew (built-in calls only)" },
     MS_STD = ["What\u2019s happened?", "Is anyone hurt?", "Any weapons or dangers?", "How many people are involved?", "Is it still happening?", "Are you in a safe place right now?", "Is the patient breathing and conscious?", "Description of anyone involved?", "Is anyone still inside or trapped?", "Can you see flames or smoke?", "Is the fire spreading?", "Is there any bleeding?", "How old is the patient?", "Did they leave in a vehicle?", "Are the offenders still at the scene?"];
+  Object.keys(TR).forEach(k => { MS_VEH.push(["tr:" + k, "t", TR[k][0] + " (trained)"]); MS_VRANK["tr:" + k] = TR[k][2]; });
   let msList = [], msEdit = null;
   const msNew = () => ({ id: null, status: "draft", svc: "f", name: "", caller: "", needs: {}, secs: 60, pay: 500, places: ["road"], g: 0, qa: [], chat: [] });
   async function showMissions() {
     msEdit = null;
-    $("#main").innerHTML = `<div class="row" style="justify-content:space-between;margin:4px 0 10px"><h3 style="margin:0">Missions</h3><button class="btn pri" id="ms_new">+ New mission</button></div><div id="ms_form"></div><div class="card" id="ms_list"><div class="mu">Loading…</div></div>`;
+    $("#main").innerHTML = `<div class="row" style="justify-content:space-between;margin:4px 0 10px"><h3 style="margin:0">Missions</h3><span class="row"><button class="btn" id="ms_bi">Built-in calls</button><button class="btn pri" id="ms_new">+ New mission</button></span></div><div id="ms_form"></div><div class="card" id="ms_list"><div class="mu">Loading…</div></div>`;
     $("#ms_new").onclick = () => { msEdit = msNew(); msForm(); };
+    $("#ms_bi").onclick = showBuiltins;
     await msLoad();
   }
   async function msLoad() {
@@ -703,9 +706,9 @@ const MS_VRANK = {pump:0,rt:1,wc:2,alp:3,icu:4,fo:1,wf:2,wru:1,hmu:3,usar:4,irv:
   }
   function msForm() {
     const m = msEdit, box = $("#ms_form"); if (!box) return;
-    const vehOpts = () => ["f", "p", "a"].map(sv => `<optgroup label="${MS_SV[sv]}">` + MS_VEH.filter(v => v[1] === sv).map(v => `<option value="${v[0]}">${esc(v[2])}</option>`).join("") + "</optgroup>").join("");
+    const vehOpts = tr => ["f", "p", "a"].concat(tr && m.base != null ? ["t"] : []).map(sv => `<optgroup label="${MS_SV[sv]}">` + MS_VEH.filter(v => v[1] === sv).map(v => `<option value="${v[0]}">${esc(v[2])}</option>`).join("") + "</optgroup>").join("");
     m.qa = Array.isArray(m.qa) ? m.qa : []; m.chat = Array.isArray(m.chat) ? m.chat : []; m.g = [1, 2, 3, 4].includes(+m.g) ? +m.g : 0;
-    box.innerHTML = `<div class="card"><h3 style="margin-top:0">${m.id ? (m.status === "draft" ? "Edit draft" : "Edit " + (m.status === "live" ? "live" : "retired") + " mission") : "New mission"}</h3>
+    box.innerHTML = `<div class="card"><h3 style="margin-top:0">${m.base != null ? "Edit built-in call" : m.id ? (m.status === "draft" ? "Edit draft" : "Edit " + (m.status === "live" ? "live" : "retired") + " mission") : "New mission"}</h3>
       <div class="row"><select id="ms_sv"><option value="f">Fire</option><option value="p">Police</option><option value="a">Ambulance</option></select><input id="ms_n" placeholder="Mission name, e.g. Substation fire" maxlength="60"></div>
       <input id="ms_c" placeholder="What the caller says" maxlength="160" style="margin-top:8px;width:100%">
       <div class="mu" style="margin:12px 0 4px">Vehicles needed <span style="opacity:.7">(any service can be mixed, e.g. a fire call that also needs an ambulance)</span></div><div id="ms_v"></div>
@@ -728,14 +731,14 @@ const MS_VRANK = {pump:0,rt:1,wc:2,alp:3,icu:4,fo:1,wf:2,wru:1,hmu:3,usar:4,irv:
       <datalist id="ms_std">${MS_STD.map(q => `<option value="${esc(q)}">`).join("")}</datalist>
       <div class="mu" style="margin-top:10px">The minimum rank comes from the vehicles chosen. The grade is Auto (from the payout) unless you pick one. With no questions written, the call uses the standard questions and generic answers.</div>
       <div id="ms_err" style="color:var(--rd);margin-top:8px"></div>
-      <div class="row" style="margin-top:10px"><button class="btn pri" id="ms_save">${m.id && m.status !== "draft" ? "Save changes" : "Save draft"}</button><button class="btn" id="ms_x">Cancel</button></div></div>`;
-    $("#ms_sv").value = m.svc; $("#ms_n").value = m.name; $("#ms_c").value = m.caller; $("#ms_t").value = m.secs; $("#ms_p").value = m.pay; $("#ms_g").value = String(m.g); $("#ms_chat").value = m.chat.join("\n");
+      <div class="row" style="margin-top:10px"><button class="btn pri" id="ms_save">${m.base != null || (m.id && m.status !== "draft") ? "Save changes" : "Save draft"}</button><button class="btn" id="ms_x">Cancel</button></div></div>`;
+    $("#ms_sv").value = m.svc; $("#ms_n").value = m.name; if (m.base != null) { $("#ms_sv").disabled = true; $("#ms_n").disabled = true; } $("#ms_c").value = m.caller; $("#ms_t").value = m.secs; $("#ms_p").value = m.pay; $("#ms_g").value = String(m.g); $("#ms_chat").value = m.chat.join("\n");
     const drawV = () => {
-      $("#ms_vs").innerHTML = vehOpts();
+      $("#ms_vs").innerHTML = vehOpts(true);
       $("#ms_v").innerHTML = Object.keys(m.needs).map(k => `<span class="tag t-idle" style="margin:0 6px 6px 0">${m.needs[k]} × ${esc((MS_VEH.find(v => v[0] === k) || [])[2] || k)} <a href="#" data-x="${k}" aria-label="Remove">×</a></span>`).join("") || '<span class="mu">None yet</span>';
       $("#ms_v").querySelectorAll("[data-x]").forEach(a => a.onclick = e => { e.preventDefault(); delete m.needs[a.dataset.x]; drawV(); drawPR(); });
     };
-    const drawP = () => { $("#ms_pl").innerHTML = MS_PLACES.map(p => `<button type="button" class="btn sm ${m.places.includes(p) ? "gha" : ""}" data-pl="${p}" aria-pressed="${m.places.includes(p)}">${p.replace("_", " ")}</button>`).join(""); $("#ms_pl").querySelectorAll("[data-pl]").forEach(b => b.onclick = () => { const i = m.places.indexOf(b.dataset.pl); if (i >= 0) m.places.splice(i, 1); else if (m.places.length < 6) m.places.push(b.dataset.pl); drawP(); }); };
+    const drawP = () => { $("#ms_pl").innerHTML = MS_PLACES.map(p => `<button type="button" class="btn sm ${m.places.includes(p) ? "gha" : ""}" data-pl="${p}" aria-pressed="${m.places.includes(p)}">${p.replace("_", " ")}</button>`).join(""); $("#ms_pl").querySelectorAll("[data-pl]").forEach(b => b.onclick = () => { const i = m.places.indexOf(b.dataset.pl); if (i >= 0) m.places.splice(i, 1); else if (m.places.length < (m.base != null ? 40 : 6)) m.places.push(b.dataset.pl); drawP(); }); };
     $("#ms_sv").onchange = () => { m.svc = $("#ms_sv").value; };
     $("#ms_va").onclick = () => { const k = $("#ms_vs").value, n = Math.max(1, Math.min(10, +$("#ms_vn").value || 1)); if (k) { m.needs[k] = n; drawV(); drawPR(); } };
     const vName = k => (MS_VEH.find(v => v[0] === k) || [])[2] || k;
@@ -787,6 +790,11 @@ const MS_VRANK = {pump:0,rt:1,wc:2,alp:3,icu:4,fo:1,wf:2,wru:1,hmu:3,usar:4,irv:
       const err = chatErr || qerr || (!(m.name.length >= 3) ? "Name needs at least 3 characters" : !(m.caller.length >= 5) ? "Write what the caller says" : !Object.keys(m.needs).length ? "Add at least one vehicle"
         : !(m.secs >= 20 && m.secs <= 1200) ? "Seconds on scene must be 20 to 1200" : !(m.pay >= 50 && m.pay <= 20000) ? "Payout must be £50 to £20,000" : !m.places.length ? "Pick at least one place type" : m.payR.slice(minR()).some(x => !(x >= 50 && x <= 20000)) ? "Pay by rank must be £50 to £20,000" : "");
       $("#ms_err").textContent = err; if (err) return;
+      if (m.base != null) { /* built-in call: store an override for this slot */
+        try { await api("/api/admin/builtin", { base: m.base, caller: m.caller, needs: m.needs, secs: m.secs, pay: m.pay, payR: m.payR, places: m.places, g: m.g || null, qa: m.qa, chat: m.chat }); toast("Built-in call saved"); msEdit = null; box.innerHTML = ""; biLoad(); }
+        catch (e) { $("#ms_err").textContent = e.message; }
+        return;
+      }
       try { await api("/api/admin/mission", { id: m.id, svc: m.svc, name: m.name, caller: m.caller, needs: m.needs, secs: m.secs, pay: m.pay, payR: m.payR, places: m.places, g: m.g || null, qa: m.qa, chat: m.chat }); toast(m.id && m.status !== "draft" ? "Changes saved" : "Draft saved"); msEdit = null; box.innerHTML = ""; msLoad(); }
       catch (e) { $("#ms_err").textContent = e.message; }
     };
@@ -799,6 +807,49 @@ const MS_VRANK = {pump:0,rt:1,wc:2,alp:3,icu:4,fo:1,wf:2,wru:1,hmu:3,usar:4,irv:
     };
     $("#ms_auto").onclick = () => { const mr = minR(), base = +$("#ms_p").value || m.pay; m.payR = RANKS.map((_, i) => Math.min(20000, Math.max(50, Math.round(base * RMUL_A[i] / RMUL_A[mr] / 10) * 10))); drawPR(); };
     drawV(); drawP(); drawQA(); drawPR();
+  }
+
+  // ---------- built-in calls (the 98 calls in data.js; edits are stored as overrides keyed by slot) ----------
+  const BI_N = T.length; let biOv = {}, biQ = "";
+  const biMinRank = needs => Math.max(0, ...Object.keys(needs).map(k => k.startsWith("tr:") ? (TR[k.slice(3)] || [])[2] || 0 : (U[k] || [])[3] || 0));
+  const biLabel = k => (MS_VEH.find(v => v[0] === k) || [])[2] || k;
+  async function showBuiltins() {
+    msEdit = null;
+    $("#main").innerHTML = `<div class="row" style="justify-content:space-between;margin:4px 0 10px"><h3 style="margin:0">Built-in calls</h3><button class="btn" id="bi_back">&larr; Custom missions</button></div><div id="ms_form"></div><input id="bi_q" placeholder="Search built-in calls" style="width:100%;margin-bottom:8px"><div class="card" id="bi_list"><div class="mu">Loading…</div></div>`;
+    $("#bi_back").onclick = showMissions; $("#bi_q").oninput = e => { biQ = e.target.value.trim().toLowerCase(); biDraw(); }; biQ = "";
+    await biLoad();
+  }
+  async function biLoad() {
+    const box = $("#bi_list"); if (!box) return;
+    try { const j = await api("/api/admin/builtins"); biOv = {}; (j.overrides || []).forEach(o => { biOv[o.base] = o; }); }
+    catch (e) { box.innerHTML = '<span style="color:var(--rd)">' + esc(e.message) + "</span>"; return; }
+    biDraw();
+  }
+  function biDraw() {
+    const box = $("#bi_list"); if (!box) return;
+    const rows = [];
+    for (let i = 0; i < BI_N; i++) {
+      const t = T[i]; if (biQ && !t[1].toLowerCase().includes(biQ)) continue;
+      const o = biOv[i], edited = !!(o && o.needs), needs = edited ? o.needs : t[3], secs = edited ? o.secs : t[4], mr = biMinRank(needs);
+      const pay = edited ? (o.payR || [])[mr] || o.pay : (PAYR[t[1]] || [])[mr] || t[5];
+      const tag = o && o.retired ? '<span class="tag t-idle">RETIRED</span>' : edited ? '<span class="tag t-on">EDITED</span>' : "";
+      const need = Object.entries(needs).map(([k, n]) => n + " " + biLabel(k)).join(", ");
+      const acts = `<button class="btn sm" data-e="${i}">Edit</button>` + (edited ? `<button class="btn sm" data-z="${i}">Reset</button>` : "") + `<button class="btn sm" data-r="${i}">${o && o.retired ? "Restore" : "Retire"}</button>`;
+      rows.push(`<div class="item"><div class="m"><b>${esc(MS_SV[t[0]] || "")} · ${esc(t[1])} ${tag}</b><span class="mu">${esc(need)} · ${secs}s · ${money(pay)}</span></div><div class="acts">${acts}</div></div>`);
+    }
+    box.innerHTML = rows.join("") || '<div class="empty">No matches</div>';
+    box.querySelectorAll("[data-e]").forEach(b => b.onclick = () => biEdit(+b.dataset.e));
+    box.querySelectorAll("[data-z]").forEach(b => b.onclick = () => biPost("/api/admin/builtin/reset", { base: +b.dataset.z }, "Reset this call to its built-in version? Your edits to it are removed."));
+    box.querySelectorAll("[data-r]").forEach(b => b.onclick = () => { const i = +b.dataset.r, off = !(biOv[i] && biOv[i].retired); biPost("/api/admin/builtin/status", { base: i, retired: off }, off ? "Retire this call? It stops spawning for players." : "Restore this call so it spawns again?"); });
+  }
+  async function biPost(path, body, q) {
+    if (!confirm(q)) return;
+    try { await api(path, body); toast("Saved"); if (msEdit && msEdit.base === body.base) { msEdit = null; $("#ms_form").innerHTML = ""; } biLoad(); } catch (e) { toast(e.message); }
+  }
+  function biEdit(i) {
+    const t = T[i], o = biOv[i], src = o && o.needs ? o : { caller: t[2], needs: t[3], secs: t[4], pay: t[5], payR: PAYR[t[1]], places: t[6], g: 0, qa: [], chat: [] };
+    msEdit = JSON.parse(JSON.stringify({ base: i, id: null, status: "live", svc: t[0], name: t[1], caller: src.caller, needs: src.needs, secs: src.secs, pay: src.pay, payR: src.payR, places: src.places, g: src.g || 0, qa: src.qa || [], chat: src.chat || [] }));
+    msForm(); $("#ms_form").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   // ---------- global bonuses (every player can claim each one once, from the Ranks tab) ----------

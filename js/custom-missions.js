@@ -44,17 +44,17 @@
   }
 
   /* returns a mission tuple [service, name, caller, needs, seconds, payout, places] or null if it is not safe to use */
-  function build(m, selfIdx) {
+  function build(m, selfIdx, bi) { /* bi = index of a built-in call being overridden: its name is fixed, training needs (tr:x) are allowed and it may spawn at any place type */
     try {
       if (!m || !["f", "p", "a"].includes(m.svc)) return null;
       if (!str(m.name, 3, 60) || !str(m.caller, 5, 160)) return null;
-      if (T.some((t, i) => i !== selfIdx && t[1] === m.name.trim())) return null;
+      if (bi == null && T.some((t, i) => i !== selfIdx && t[1] === m.name.trim())) return null;
       if (!m.needs || typeof m.needs !== "object") return null;
       const ks = Object.keys(m.needs);
       if (!ks.length || ks.length > 8) return null;
-      for (const k of ks) if (!Object.prototype.hasOwnProperty.call(U, k) || !num(m.needs[k], 1, 10)) return null;
+      for (const k of ks) if ((!Object.prototype.hasOwnProperty.call(U, k) && !(bi != null && k.startsWith("tr:") && Object.prototype.hasOwnProperty.call(TR, k.slice(3)))) || !num(m.needs[k], 1, 10)) return null;
       if (!num(m.secs, 20, 1200) || !num(m.pay, 50, 20000)) return null;
-      if (!Array.isArray(m.places) || !m.places.length || m.places.length > 6 || !m.places.every(p => PLACES.has(p))) return null;
+      if (!Array.isArray(m.places) || !m.places.length || m.places.length > (bi != null ? PLACES.size : 6) || !m.places.every(p => PLACES.has(p))) return null;
       const t = [m.svc, m.name.trim(), m.caller.trim(), Object.assign({}, m.needs), m.secs, m.pay, m.places.slice()];
       if (m.g != null && m.g !== 0) { if (!num(m.g, 1, 4)) return null; t.g = m.g; } /* call grade; absent = worked out from the payout */
       if (m.chat != null) { /* on-scene radio chatter: up to 6 short lines the first unit says when it arrives */
@@ -86,19 +86,47 @@
     if (typeof cqSync === "function") cqSync(); /* scenarios.js: turn the new missions' caller questions into buttons */
   }
 
+  /* ===== overrides of the built-in calls (edited in the admin dashboard, "Built-in calls") =====
+     The built-ins stay in data.js (slots 0..BASE-1, so saved incidents keep pointing at the right call). An override {base, ...fields}
+     patches T[base] in place; name and service can't change (pay, grade and caller answers in data.js / state.js / scenarios.js are keyed by name).
+     {base, retired:true} with no fields just stops that call spawning. When an override disappears from the list the call goes back to its code version. */
+  const ORIG = {}, TOUCHED = new Set();
+  const snap = t => ({ tuple: t.slice(), g: t.g, qa: t.qa, chat: t.chat, payR: t.payR });
+  function patch(t, nt) { t.length = 0; nt.forEach(x => t.push(x)); t.g = nt.g; t.qa = nt.qa; t.chat = nt.chat; t.payR = nt.payR; }
+  function restore(idx) { const s = ORIG[idx], t = T[idx]; if (!s || !t) return; t.length = 0; s.tuple.forEach(x => t.push(x)); t.g = s.g; t.qa = s.qa; t.chat = s.chat; t.payR = s.payR; t.ov = 0; delete ORIG[idx]; }
+  function applyOverrides(list) {
+    if (!Array.isArray(list)) return;
+    const live = new Set();
+    for (const o of list) {
+      if (!o || !Number.isInteger(o.base) || o.base < 0 || o.base >= BASE || !T[o.base]) continue;
+      const idx = o.base, t = T[idx]; live.add(idx); TOUCHED.add(idx);
+      if (o.needs) { /* has content: patch the call */
+        if (!ORIG[idx]) ORIG[idx] = snap(t);
+        const s = ORIG[idx].tuple, nt = build(Object.assign({}, o, { name: s[1], svc: s[0] }), idx, idx);
+        if (nt) {
+          if (!nt.payR) nt.payR = RMUL.map(x => Math.max(50, Math.min(20000, Math.round(nt[5] * x / 10) * 10))); /* no per-rank pay sent: scale the payout */
+          patch(t, nt); t.ov = 1;
+        } else restore(idx); /* invalid override: keep the code version rather than break the call */
+      } else restore(idx);
+      t.off = !!o.retired;
+    }
+    for (const idx of Array.from(TOUCHED)) if (!live.has(idx)) { restore(idx); T[idx].off = false; TOUCHED.delete(idx); }
+    if (typeof cqSync === "function") cqSync();
+  }
+
   async function load() {
     try {
       const r = await fetch(API + "/api/missions", { cache: "no-store" });
       const j = await r.json();
       if (!j || !j.ok || !Array.isArray(j.missions)) return;
-      apply(j.missions);
-      try { localStorage.setItem(KEY, JSON.stringify({ missions: j.missions })); } catch (e) { /* storage full */ }
+      apply(j.missions); applyOverrides(j.overrides || []);
+      try { localStorage.setItem(KEY, JSON.stringify({ missions: j.missions, overrides: j.overrides || [] })); } catch (e) { /* storage full */ }
     } catch (e) { /* offline: keep what we have */ }
   }
-  /* the game server sets FC_NO_FETCH and calls CustomMissions.apply() itself with the list from its own database */
+  /* the game server sets FC_NO_FETCH and calls CustomMissions.apply(missions) and CustomMissions.applyOverrides(overrides) itself with the lists from its own database */
   if (!window.FC_NO_FETCH) {
-    try { const c = JSON.parse(localStorage.getItem(KEY)); if (c && Array.isArray(c.missions)) apply(c.missions); } catch (e) { /* no cache yet */ }
+    try { const c = JSON.parse(localStorage.getItem(KEY)); if (c && Array.isArray(c.missions)) { apply(c.missions); applyOverrides(c.overrides || []); } } catch (e) { /* no cache yet */ }
     load();
   }
-  window.CustomMissions = { base: BASE, count: () => T.length - BASE, apply };
+  window.CustomMissions = { base: BASE, count: () => T.length - BASE, apply, applyOverrides, overridden: () => Object.keys(ORIG).length };
 })();
