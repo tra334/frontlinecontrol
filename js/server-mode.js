@@ -117,6 +117,10 @@
       if (all && !confirm("Cancel all " + us.length + " unit" + (us.length > 1 ? "s" : "") + " on this call?")) return;
       act({ type: "cancelu", mid: m.id, units: us.map(u => u.id) }).then(() => { try { drawQ(); } catch (e) {} }); };
 
+    // queued dispatch: a busy unit is told to go direct to another call once its current call ends
+    queueUnits = function (mid, ids) { return act({ type: "queue", mid, units: ids }); };
+    unqueueUnits = function (ids) { return act({ type: "unqueue", units: ids }); };
+
     // buildings, vehicles, staff and rewards: the browser asks (and shows its own "are you sure?" box), the server does it
     const fn = (name, args, extra) => act(Object.assign({ type: "fn", name, args }, extra || {}));
     upgrade = id => fn("upgrade", [id]);
