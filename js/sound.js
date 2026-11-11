@@ -153,6 +153,11 @@
       const urgent = /, Grade [12], at /.test(x[2]) || /blue lights/.test(x[2]);
       return { voice: "ctl", kind: urgent ? "urgent" : "ctl", text: clean(x[2], x[1]) };
     }
+    /* call taker handing a new call to Control: spoken in the Control voice, e.g. "Operator to Control. New Grade 1 incident, House fire. Awaiting dispatch." */
+    if ((x = /^Operator to Control: “([\s\S]*?)”?$/.exec(s))) {
+      const urgent = /^New Grade [12] /.test(x[1]);
+      return { voice: "ctl", kind: urgent ? "urgent" : "ctl", text: clean("Operator to Control. " + x[1]) };
+    }
     if ((x = /^(.+?): “([\s\S]*?)”?$/.exec(s))) {
       if (!/[A-Za-z0-9]/.test(x[1])) return null;
       const body = x[2].replace(/(showing in attendance at )([^,.]+)(,[^.]*)?\./, "$1$2.");
