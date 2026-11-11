@@ -1,5 +1,5 @@
 /* ===== Frontline Control: startup mode chooser + 3D world =====
-   - Every page load asks: Classic map or 3D world (before the game starts).
+   - Every page load asks: Classic map or 3D world, then Easy or Hard (before the game starts).
    - 3D world = MapLibre GL (OpenFreeMap vector tiles, extruded buildings, tilted camera)
      + a Three.js custom layer that draws proper 3D vehicle models at their live positions.
    - Responding units (out / hosp / on scene) flash blue lights, glow and wash the road blue.
@@ -69,6 +69,21 @@ function chooseMode(){return new Promise(res=>{
  const b3=ov.querySelector('[data-m="3d"]');
  if(gl){const pre=()=>{loadLibs().catch(()=>{})};b3.addEventListener("pointerenter",pre,{once:true});b3.addEventListener("touchstart",pre,{once:true,passive:true})}
  ov.querySelectorAll(".cd").forEach(b=>b.onclick=()=>{if(!b.disabled)done(b.dataset.m)});
+ const f=ov.querySelector(".last");if(f)f.focus();
+})}
+
+/* ---------- difficulty chooser (asked right after Classic / 3D) ----------
+   Easy: control room operators answer calls and question callers; you dispatch.  Hard: no operators, you do it all. */
+function chooseDiff(){return new Promise(res=>{
+ const last=lsGet("fc_diff")==="hard"?"hard":"easy",ov=document.createElement("div");ov.id="w3ov";
+ ov.innerHTML=`<div class="bx"><h1>Choose difficulty</h1><p class="sub">How much do you want to handle yourself?</p><div class="cards">
+ <button class="cd${last==="easy"?" last":""}" data-m="easy"><i>🎧</i><b>Easy</b><span>Control room operators pick up unanswered 999 calls and question the caller for you. You just dispatch units.</span></button>
+ <button class="cd${last==="hard"?" last":""}" data-m="hard"><i>☎️</i><b>Hard</b><span>No operators. You answer every call, question the caller and dispatch.</span></button></div>
+ <div class="tip">Press 1 or 2</div></div>`;
+ document.body.appendChild(ov);
+ const done=m=>{document.removeEventListener("keydown",kd);lsSet("fc_diff",m);window.FC_DIFF=m;ov.remove();res(m)};
+ const kd=e=>{if(e.key==="1")done("easy");else if(e.key==="2")done("hard")};document.addEventListener("keydown",kd);
+ ov.querySelectorAll(".cd").forEach(b=>b.onclick=()=>done(b.dataset.m));
  const f=ov.querySelector(".last");if(f)f.focus();
 })}
 
@@ -703,6 +718,6 @@ sync=function(){if(active&&map3)return;return origSync.apply(this,arguments)};
 /* ---------- hook into start-up ---------- */
 const origStart=startGame;
 startGame=function(st){if(asked)return origStart.apply(this,arguments);asked=true;
- chooseMode().then(m=>{origStart(st);setTog();if(m==="3d")setTimeout(enter3D,50)})};
+ chooseMode().then(m=>chooseDiff().then(()=>{origStart(st);setTog();if(m==="3d")setTimeout(enter3D,50)}))};
 window.World3D={landing:landingNow,enter:enter3D,exit:exit3D,center(){return map3?map3.getCenter():null},get active(){return active},debug(){return{libs:{three:window.THREE&&THREE.REVISION,maplibre:window.maplibregl&&maplibregl.getVersion&&maplibregl.getVersion()},onAdd:W3.adds,frames:W3.frames,error:W3.err,units:S&&S.un.length,models:Object.keys(fleet).length,sceneChildren:scene&&scene.children.length}}};
 })();
