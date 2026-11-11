@@ -31,7 +31,7 @@ function script(m){
  QS.forEach((q,i)=>{
   if((q[2]&&q[2]!==tp[0])||(q[3]&&q[3]!==tp[1]))return;
   if(typeof cqShow==="function"&&!cqShow(tp,q,i))return;
-  if(q[4]&&q[4].veh)return;            /* never auto-ask questions that call extra vehicles */
+  /* vehicle-reveal questions: cqShow (scenarios.js) only lets them through when the player can use a revealed unit */
   out.push(i)});
  return out.sort((a,b)=>{const pa=FIRST.indexOf(a),pb=FIRST.indexOf(b);return(pa<0?9:pa)-(pb<0?9:pb)||a-b})}
 const asked=(m,i)=>m.qa.some(x=>x[0]===QS[i][0]);
