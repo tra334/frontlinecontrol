@@ -53,7 +53,7 @@ function pickUp(o,m){
 
 function finish(o,m){
  o.calls++;cc().ans++;o.mid=0;o.rest=now()+1500;o.last=now();
- if(m)log("✅ "+o.n+" finished questioning the caller – "+T[m.k][1]+" awaiting dispatch");
+ if(m){m.ccdone=1;log("✅ "+o.n+" finished questioning the caller – "+T[m.k][1]+" awaiting dispatch")}
  dirty=true}
 
 let lastKey="";
