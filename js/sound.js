@@ -283,9 +283,26 @@
         if (cht() && hasTTS()) say(e);
         else tonesOnly(e);
       });
+      scanHandovers();
     } catch (err) {}
   }
   setInterval(scan, 400);
+
+  /* call taker handover: when a call's questioning is finished (m.ccdone), Control announces it once.
+     Reacts to the call's state, so it works in server mode (operators run on the server) and offline alike.
+     Calls already finished when the page loads are not announced. */
+  const ccSeen = new Set(); let ccPrimed = false;
+  function scanHandovers() {
+    const calls = Array.isArray(S.ms) ? S.ms : [];
+    if (!ccPrimed) { calls.forEach(m => { if (m.ccdone) ccSeen.add(m.id); }); ccPrimed = true; return; }
+    calls.forEach(m => {
+      if (!m.ccdone || ccSeen.has(m.id)) return;
+      ccSeen.add(m.id);
+      /* drops the ambulance "Cat N – " prefix: "New Grade 1 incident, cardiac arrest. Awaiting dispatch." */
+      const title = String(T[m.k][1]).replace(/^Cat \d\s*[–-]\s*/, "");
+      log("\u{1F4FB} Operator to Control: “New Grade " + gr(m.k) + " incident, " + title + ". Awaiting dispatch.”", 1, m.id);
+    });
+  }
 
   /* ---------- hook log() ---------- */
   const _log = window.log;

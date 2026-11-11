@@ -53,11 +53,7 @@ function pickUp(o,m){
 
 function finish(o,m){
  o.calls++;cc().ans++;o.mid=0;o.rest=now()+1500;o.last=now();
- if(m){m.ccdone=1;log("✅ "+o.n+" finished questioning the caller – "+T[m.k][1]+" awaiting dispatch");
-  /* handover to Control: a radio line, so it shows in the Radio tab and is spoken in the Control voice by sound.js.
-     Title drops the ambulance "Cat N – " prefix: "New Grade 1 incident, cardiac arrest. Awaiting dispatch." */
-  const title=T[m.k][1].replace(/^Cat \d\s*[–-]\s*/,"");
-  log("📻 Operator to Control: “New Grade "+gr(m.k)+" incident, "+title+". Awaiting dispatch.”",1,m.id)}
+ if(m){m.ccdone=1;log("✅ "+o.n+" finished questioning the caller – "+T[m.k][1]+" awaiting dispatch")}
  dirty=true}
 
 let lastKey="";
