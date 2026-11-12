@@ -631,7 +631,7 @@ body.logged-out main{max-width:none}
   const ACTION_NAMES = { credits: "Credits", ban: "Suspended", unban: "Unsuspended", reset: "Game reset", deletegame: "Game deleted",
     delvehicle: "Vehicle removed", delstation: "Station removed", delhospital: "Hospital removed", movevehicle: "Vehicle moved",
     setroles: "Roles", deleteuser: "User deleted", removeavatar: "Picture removed", announce: "Announcement", announce_end: "Announcement ended", incident: "Incident", incident_update: "Incident update",
-    setrank: "Rank changed", bonus: "Bonus created", bonus_end: "Bonus ended", room_close: "Room closed", room_member_remove: "Removed from room", room_mission_cancel: "Call cancelled" };
+    setrank: "Rank changed", bonus: "Bonus created", bonus_end: "Bonus ended", room_close: "Room closed", room_member_remove: "Removed from room", room_mission_cancel: "Call cancelled", mission_save: "Mission saved", mission_live: "Mission published", builtin_save: "Built-in call saved" };
   const CAT = { credits: "money", unban: "info", ban: "danger", setroles: "info", reset: "warn", deletegame: "danger", deleteuser: "danger", removeavatar: "warn", delvehicle: "danger",
     delstation: "danger", delhospital: "danger", movevehicle: "info", announce: "info", announce_end: "info", incident: "warn", incident_update: "warn",
     setrank: "info", bonus: "money", bonus_end: "info", room_close: "danger", room_member_remove: "danger", room_mission_cancel: "warn" };
@@ -672,7 +672,12 @@ body.logged-out main{max-width:none}
       case "room_close": return { say: A + " closed the room <b>" + esc(d.room || "") + "</b>", meta: d.code ? "Code " + esc(d.code) : "" };
       case "room_member_remove": return { say: A + " removed " + P + " from a room" };
       case "room_mission_cancel": return { say: A + " cancelled a call in a room", meta: d.call ? "Call: " + esc(d.call) : "" };
-      default: return { say: A + " did " + esc(l.action) };
+      case "mission_save": return { say: A + " saved the mission <b>" + esc(d.name || "") + "</b>", meta: "Saved as a draft" };
+      case "mission_live": return { say: A + " published the mission <b>" + esc(d.name || "") + "</b>", meta: d.seq ? "Version " + d.seq : "" };
+      case "builtin_save": return { say: A + " saved the built-in call <b>" + esc(d.name || d.title || "") + "</b>" };
+      default:
+        if (String(l.action).startsWith("mission_")) return { say: A + " changed the mission <b>" + esc(d.name || "") + "</b> to " + esc(String(l.action).slice(8)), meta: d.seq ? "Version " + d.seq : "" };
+        return { say: A + " did " + esc(l.action) + (d.name ? " to <b>" + esc(d.name) + "</b>" : "") };
     }
   }
   function logLine(l) {
