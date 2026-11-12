@@ -233,6 +233,13 @@ body.logged-out main{max-width:none}
   main{max-width:none}
 }
 @media (prefers-reduced-motion:reduce){header#adm-nav,.scrim{transition:none}}
+.who{display:flex;align-items:center;gap:10px;padding:14px 10px 8px;margin-top:12px;border-top:1px solid var(--bd)}
+.who[hidden]{display:none}
+.who .av{width:34px;height:34px;border-radius:50%;background:var(--ams);color:var(--am);display:grid;place-items:center;font-weight:700;font-size:13px;flex:none}
+.who .wt{min-width:0}
+.who b{display:block;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.who small{display:block;color:var(--mu);font-size:12px}
+.who small .rb{margin:2px 0 0}
 </style>
 </head>
 <body>
@@ -254,6 +261,7 @@ body.logged-out main{max-width:none}
     <button data-t="n"><svg class="i"><use href="#i-mega"/></svg>Announce</button>
     <button data-t="l"><svg class="i"><use href="#i-log"/></svg>Action log</button>
   </nav>
+  <div class="who" id="who" hidden><span class="av" id="who-av"></span><div class="wt"><b id="who-name"></b><small id="who-role"></small></div></div>
   <button class="btn sm" id="out" hidden>Sign out</button>
 </header>
 <div class="stage">
@@ -1137,6 +1145,14 @@ const MS_VRANK = {pump:0,rt:1,wc:2,alp:3,icu:4,fo:1,wf:2,wru:1,hmu:3,usar:4,irv:
     document.body.classList.toggle("dev-view", !staff.includes("admin"));
     document.querySelectorAll("#tabs button").forEach(b => { if (["o", "r", "n", "b", "m", "i", "s", "l"].includes(b.dataset.t)) b.hidden = !staff.includes("admin"); });
     document.body.classList.remove("logged-out"); document.body.classList.add("signed-in"); $("#tabs").hidden = false; $("#out").hidden = false;
+    try {
+      const em = (session() && session().user && session().user.email) || "";
+      $("#who-name").textContent = me.name || em || "Signed in";
+      const rk = me.owner ? "owner" : staff.includes("admin") ? "admin" : "dev";
+      $("#who-role").innerHTML = badge(rk, rk === "owner" ? "MANAGER" : rk === "admin" ? "ADMIN" : "DEV");
+      $("#who").firstElementChild.outerHTML = avatar({ id: me.id, name: me.name || em || "?" });
+      $("#who").hidden = false;
+    } catch (e) { /* the name is cosmetic */ }
     tab = staff.includes("admin") ? "o" : "p";
     document.querySelectorAll("#tabs button").forEach(x => x.classList.toggle("on", x.dataset.t === tab));
     show();
