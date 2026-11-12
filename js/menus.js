@@ -32,7 +32,9 @@ function bpStart(){bpEnd();const b=mv?movB():null,c=b?{lat:b.lat,lng:b.lon}:((wi
 function bpSet(la,lo,z){bll=[la,lo];if(bpin)bpin.setLatLng(bll);if(z)map.setView(bll,z);bpNote()}
 function bpBanner(){return `<div style="font-weight:700">${lci("map-pin")} Place <b>${bn(bm)}</b> · ${prc(bm)}</div><div class="mu" style="margin:2px 0 8px;font-size:12px">Drag the pin or tap the map to set the spot.<span id="bpn"></span></div><div style="display:flex;gap:8px"><button class="s g" style="flex:1" onclick="bm=null;paint()">Cancel</button><button id="bpok" class="s" style="flex:2;background:#2c5fc7" onclick="bpConfirm()">Confirm and build</button></div>`}
 function mvBanner(){const b=movB();return `<div style="font-weight:700">${lci("map-pin")} Move <b>${b?b.name:"building"}</b> · £${fmt(MOVECOST)}</div><div class="mu" style="margin:2px 0 8px;font-size:12px">Drag the pin or tap the map to set the new spot.<span id="bpn"></span></div><div style="display:flex;gap:8px"><button class="s g" style="flex:1" onclick="mv=null;paint()">Cancel</button><button id="mvok" class="s" style="flex:2;background:#2c5fc7" onclick="mvConfirm()">Confirm move</button></div>`}
-function mvConfirm(){if(!mv||!bll)return;const b=$("#mvok");if(b)b.disabled=true;doMove(bll[0],bll[1]).finally(()=>{const e=$("#mvok");if(e)e.disabled=false})}
+function mvConfirm(){if(!mv||!bll)return;
+if(window.SRV&&SRV.on){SRV.act({type:"moveb",kind:mv.t,id:mv.id,lat:bll[0],lon:bll[1]});mv=null;paint();return}
+const b=$("#mvok");if(b)b.disabled=true;doMove(bll[0],bll[1]).finally(()=>{const e=$("#mvok");if(e)e.disabled=false})}
 /* optional custom name typed in the placement banner: cleaned like renS/renH; "" means use the default name */
 /* profanity filter for custom building names: names containing offensive words (incl. simple plurals / -ing / -ed / -er forms) are refused */
 const CENS_RE=new RegExp("\\b(?:"+["fuck","shit","bitch","cunt","nigger","nigga","faggot","fag","retard","wanker","twat","bollocks","asshole","dickhead","pussy","bastard","slut","whore","rapist"].join("|")+")(?:s|ed|ing|er)?\\b","i");
