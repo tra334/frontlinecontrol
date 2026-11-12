@@ -48,7 +48,7 @@ const PP={
 "Drink driver":{n:[1,1],off:["vehicle"],still:"Yes, they’re still driving — the car’s all over the road.",offT:"No, they’re still on the move down the road.",vehT:"Yes, it’s a {veh}, still heading {dir}.",wp:0},
 "Pub brawl":{n:[4,10],off:["here"],hu:"Yes, a couple of people are bleeding on the pavement."},
 "Missing child":{n:[1,1],off:["foot"],nT:"Just my daughter — she’s six.",desc:"A girl, six years old, long brown hair, pink coat.",offT:"I haven’t seen anyone with her, I just can’t find her.",vehT:"No, I don’t think so — she was last seen on foot in the park.",still:"Yes, she’s still missing — I’ve looked everywhere.",hu:"No, not that I know of — I just can’t find her.",wp:0},
-"Armed robbery":{n:[1,2],off:["here","vehicle"],wp:1,wpT:"Yes! I saw a gun!"},
+"Armed robbery":{n:[1,2],off:["here","vehicle"],desc:(n,r)=>sus(n,r,{x:"m"}),wp:1,wpT:"Yes! I saw a gun!"},
 "Stolen vehicle pursuit":{n:[1,2],off:["vehicle"],veh:"white van",still:"Yes, it’s still going — it’s heading down the bypass.",offT:"No, they’re driving away fast down the bypass.",vehT:"Yes, it’s my white van, heading {dir} on the bypass.",wp:0},
 "Football disorder":{n:[8,30],off:["here"],hu:"Yes, a few people have been hit by bottles.",wp:0},
 "Anti-social behaviour":{n:[3,5],off:["here","vehicle"],veh:"moped",vb:"ridden",desc:(n,r)=>sus(n,r,{w:"youths"}),vh:"No, they’re still here, riding round on mopeds.",hu:"No, nobody’s hurt, they’re just a nuisance.",wp:0},
@@ -58,6 +58,14 @@ const PP={
 "Suspicious death":{n:[1,1],off:["here"],sub:{a:[55,85]},nT:"Just the one person — {he}’s my neighbour.",desc:"My neighbour, a {man} of about {age}.",offT:"I haven’t seen anyone else, but the door was open.",vehT:"I haven’t seen any vehicle.",still:"Yes, I’m standing outside the open door now.",hu:"Yes — I think {he}’s dead, {he} isn’t moving.",wp:0},
 "Missing person – woods":{n:[1,1],off:["foot"],sub:{a:[68,90]},nT:"Just the one — {he}’s got dementia.",desc:"A {man}, about {age}, in a coat and slippers I think.",offT:"I don’t think anyone is with {him}.",vehT:"No, {he}’s on foot — {he} doesn’t drive.",still:"Yes, {he}’s still missing since dawn.",hu:"Not that I know of, but {he}’s vulnerable and it’s cold.",wp:0},
 "Mental health crisis":{n:[1,1],off:["here"],sub:{a:[20,55],s:"m"},nT:"Just him — he’s alone, I think.",desc:"A man, about {age}, in a dark jumper.",offT:"Yes, he’s still here, he hasn’t left.",vehT:"No vehicle, he’s on foot.",still:"Yes, it’s happening right now — please hurry.",hu:"Not yet, but he’s threatening to hurt himself."},
+"Shop theft – gang":{n:[3,5],off:["foot","vehicle"],desc:(n,r)=>sus(n,r,{x:"m",w:"lads"}),wp:0},
+"Shoplifting in progress":{n:[1,1],off:["here"],desc:(n,r)=>sus(n,r,{x:"m"}),still:"Yes, security have him by the door and he’s kicking off.",offT:"Yes, security are holding him at the shop entrance.",vehT:"No vehicle, he’s on foot.",wp:0},
+"Road rage":{n:[2,2],off:["here"],nT:"Two drivers.",desc:"Two men, both drivers — one is holding a baseball bat.",offT:"Yes, they’re both still in the road.",vehT:"Both cars are stopped in the road.",wp:1,wpT:"Yes, one of them has a baseball bat!"},
+"Kidnap report":{n:[2,3],off:["vehicle"],veh:"white van",desc:(n,r)=>sus(n,r,{x:"m"}),vehT:"Yes, a white van, headed {dir}.",hu:"I don’t know — they bundled him in by force."},
+"Aggravated burglary":{n:[2,4],off:["here"],desc:(n,r)=>sus(n,r,{x:"m"}).replace("hoods up and dark clothing","masked and dressed in black"),offT:"Yes, they’re inside the house now.",wp:1,wpT:"I think so — I heard one of them shout about a knife."},
+"Siege – barricaded suspect":{n:[1,1],off:["here"],sub:{a:[25,55],s:"m"},nT:"Just him, I think.",desc:"A man, about {age}, still inside.",offT:"Yes, he’s still locked in.",vehT:"No vehicle, he hasn’t left.",wp:1,wpT:"Yes — he’s got a knife and says he’ll use it!"},
+"Marauding attack":{n:[1,1],off:["here"],sub:{a:[20,45],s:"m"},nT:"Just the one man.",desc:"A man, about {age}, with a blade.",offT:"Yes, he’s still in the street attacking people.",vehT:"No vehicle, he’s on foot.",wp:1,wpT:"Yes — he’s got a blade!"},
+"Hostage situation":{n:[1,1],off:["here"],sub:{a:[25,55],s:"m"},nT:"One man, with two staff held hostage.",desc:"A man, about {age}.",offT:"Yes, he’s still inside the bank.",vehT:"No vehicle, he’s inside.",wp:1,wpT:"Yes — he’s got a gun!"},
 "Riot":{n:[15,50],off:["here"],hu:"Yes, people are being hurt in the crowd."}};
 /* "Nearest landmark or junction?" answered from real places: the named place the address lookup found (or the nearest named POI on the map) and the real road */
 function lmT(m){const a=m.adr||{},rd=a.fk?"":(a.rd||""),pl=a.nl||lmNear(m.la,m.lo,rd),th=(a.t||"").split(", ")[0],the=p=>/^The /.test(p)?p:"the "+p;
