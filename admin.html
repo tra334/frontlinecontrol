@@ -235,6 +235,7 @@ body.logged-out main{max-width:none}
   main{max-width:none}
 }
 @media (prefers-reduced-motion:reduce){header#adm-nav,.scrim{transition:none}}
+
 .who{display:flex;align-items:center;gap:10px;padding:14px 10px 8px;margin-top:12px;border-top:1px solid var(--bd)}
 .who[hidden]{display:none}
 .who .av{width:34px;height:34px;border-radius:50%;background:var(--ams);color:var(--am);display:grid;place-items:center;font-weight:700;font-size:13px;flex:none}
@@ -421,7 +422,7 @@ body.logged-out main{max-width:none}
 
   function drawUser() {
     const { data: j, view } = cur, u = j.user, g = j.game, label = u.name || u.email || u.id;
-    const V = [["o", "Overview"], ["s", "Stations"], ["v", "Vehicles"], ["g", "Logs"]];
+    const V = [["o", "Overview"], ["s", "Stations & vehicles"], ["g", "Logs"]];
     sheet.innerHTML = `<div class="sh-top"><div class="sh-in">
         <div style="display:flex;gap:12px;align-items:center">${avatar(u)}
           <div style="flex:1;min-width:0"><b style="font-size:17px;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(label)}${badges(u)}${u.banned_until ? '<span class="tag t-ban">SUSPENDED</span>' : ""}</b><span class="mu" style="display:block;overflow:hidden;text-overflow:ellipsis">${esc(u.email)}</span></div>
@@ -434,7 +435,6 @@ body.logged-out main{max-width:none}
     if (view === "o") overview(sb, u, g, label);
     else if (!g) sb.innerHTML = '<div class="card empty">This player has no saved game.</div>';
     else if (view === "s") stations(sb, g);
-    else if (view === "v") vehicles(sb, g);
     else logs(sb, g);
   }
 
@@ -519,14 +519,28 @@ body.logged-out main{max-width:none}
   }
 
   function stations(sb, g) {
-    const st = g.stationList || [], hs = g.hospitalList || [];
-    sb.innerHTML = `<h3 style="margin-top:4px">Stations (${st.length})</h3><div class="card">${st.length ? st.map(x => `
-      <div class="item"><div class="ico">${SVI[x.sv] || "🏢"}</div><div class="m"><b>${esc(x.name)}</b><span class="mu">${esc(x.type)} · ${x.units} vehicle${x.units === 1 ? "" : "s"}</span></div>
-      <div class="acts admin-only"><button class="btn sm ghr" data-ds="${x.id}">Delete</button></div></div>`).join("") : '<div class="empty">No stations</div>'}</div>
+    const st = g.stationList || [], hs = g.hospitalList || [], all = g.vehicleList || [];
+    const f = (cur.filter || "").toLowerCase();
+    const match = v => !f || (v.cs + " " + v.type + " " + (v.station || "") + " " + v.status).toLowerCase().includes(f);
+    const at = s => all.filter(v => v.sid === s.id);
+    const orphans = all.filter(v => !st.some(s => s.id === v.sid) && match(v));
+    const shown = st.filter(s => !f || at(s).some(match) || (s.name + " " + s.type).toLowerCase().includes(f));
+    const vehRow = v => `<div class="item" style="padding-left:14px;margin-left:6px;border-left:2px solid var(--bd)">
+      <div class="m"><b>${esc(v.cs)} <span class="tag ${v.status === "idle" ? "t-idle" : "t-busy"}" style="margin-left:2px">${esc(String(v.status).toUpperCase())}</span></b><span class="mu">${esc(v.type)}</span></div>
+      <div class="acts admin-only"><button class="btn sm gha" data-mv="${v.id}">Move</button><button class="btn sm ghr" data-dv="${v.id}">Delete</button></div></div>`;
+    sb.innerHTML = `<input id="vf" type="search" placeholder="Filter stations or vehicles, e.g. FP12, ambulance" value="${esc(cur.filter || "")}" style="margin-bottom:12px" autocomplete="off">
+      <h3 style="margin-top:4px">Stations (${st.length}) · Vehicles (${all.length})</h3>
+      ${shown.length ? shown.map(s => { const vs = at(s).filter(match); return `<div class="card" style="padding:12px 14px">
+        <div class="item" style="padding:0 0 10px;border:0"><div class="ico">${SVI[s.sv] || "🏢"}</div><div class="m"><b>${esc(s.name)}</b><span class="mu">${esc(s.type)} · ${vs.length} vehicle${vs.length === 1 ? "" : "s"}</span></div>
+        <div class="acts admin-only"><button class="btn sm ghr" data-ds="${s.id}">Delete station</button></div></div>
+        ${vs.length ? vs.map(vehRow).join("") : '<div class="mu" style="padding:4px 0 2px 20px">No vehicles at this station</div>'}
+      </div>`; }).join("") : '<div class="card empty">' + (f ? "Nothing matches" : "No stations") + "</div>"}
+      ${orphans.length ? `<h3>Not at a station</h3><div class="card" style="padding:4px 14px">${orphans.map(vehRow).join("")}</div>` : ""}
       <h3>Hospitals &amp; prisons (${hs.length})</h3><div class="card">${hs.length ? hs.map(x => `
       <div class="item"><div class="ico">${x.type === "Prison" ? "🔒" : "🏥"}</div><div class="m"><b>${esc(x.name)}</b><span class="mu">${esc(x.type)}</span></div>
       <div class="acts admin-only"><button class="btn sm ghr" data-dh="${x.id}">Delete</button></div></div>`).join("") : '<div class="empty">None</div>'}</div>
-      <div class="mu">Deleting a station also removes the vehicles based there. Everything must be back at base (no vehicles out, no prisoners or patients inside).</div>`;
+      <div class="mu">Deleting a station also removes the vehicles based there. A vehicle has to be idle at its station to be moved or deleted. Moves follow the game's rules: same station type and a free bay.</div>`;
+    $("#vf").oninput = e => { cur.filter = e.target.value; const p = e.target.selectionStart; stations(sb, g); const n = $("#vf"); n.focus(); try { n.setSelectionRange(p, p); } catch (x) { /* ignore */ } };
     sb.querySelectorAll("[data-ds]").forEach(b => b.onclick = () => {
       const x = st.find(s => s.id === +b.dataset.ds);
       ask("Delete " + x.name + "?", (x.units ? "<b>" + x.units + " vehicle" + (x.units === 1 ? "" : "s") + "</b> based here will be removed too. " : "") + "This cannot be undone.", { ok: "Delete station", danger: 1, refund: "Refund the player the station price (£10,000)", reason: 1 })
@@ -537,25 +551,14 @@ body.logged-out main{max-width:none}
       ask("Delete " + x.name + "?", "This " + esc(x.type.toLowerCase()) + " is removed with no refund. This cannot be undone.", { ok: "Delete", danger: 1, reason: 1 })
         .then(r => { if (r) run({ type: "delhospital", id: x.id, reason: r.reason }); });
     });
-  }
-
-  function vehicles(sb, g) {
-    const all = g.vehicleList || [], f = (cur.filter || "").toLowerCase();
-    const list = f ? all.filter(v => (v.cs + " " + v.type + " " + v.station + " " + v.status).toLowerCase().includes(f)) : all;
-    sb.innerHTML = `<input id="vf" type="search" placeholder="Filter vehicles, e.g. FP12, ambulance, station name" value="${esc(cur.filter || "")}" style="margin-bottom:12px" autocomplete="off">
-      <div class="card" style="padding-top:4px;padding-bottom:4px">${list.length ? list.map(v => `
-      <div class="item"><div class="m"><b>${esc(v.cs)} <span class="tag ${v.status === "idle" ? "t-idle" : "t-busy"}" style="margin-left:2px">${esc(String(v.status).toUpperCase())}</span></b><span class="mu">${esc(v.type)}${v.station ? " · " + esc(v.station) : ""}</span></div>
-      <div class="acts admin-only"><button class="btn sm gha" data-mv="${v.id}">Move</button><button class="btn sm ghr" data-dv="${v.id}">Delete</button></div></div>`).join("") : '<div class="empty">' + (f ? "No vehicles match" : "No vehicles") + "</div>"}</div>
-      <div class="mu">${list.length} of ${all.length} shown. A vehicle has to be idle at its station to be moved or deleted. Moves follow the game's rules: same station type and a free bay.</div>`;
-    $("#vf").oninput = e => { cur.filter = e.target.value; const p = e.target.selectionStart; vehicles(sb, g); const n = $("#vf"); n.focus(); try { n.setSelectionRange(p, p); } catch (x) { /* ignore */ } };
     sb.querySelectorAll("[data-dv]").forEach(b => b.onclick = () => {
       const v = all.find(x => x.id === +b.dataset.dv);
       ask("Delete " + v.cs + "?", esc(v.type) + (v.station ? " at " + esc(v.station) : "") + ". This cannot be undone.", { ok: "Delete vehicle", danger: 1, refund: "Refund the player (vehicles £15,000+ get 40% back)", reason: 1 })
         .then(r => { if (r) run({ type: "delvehicle", id: v.id, refund: r.refund, reason: r.reason }); });
     });
     sb.querySelectorAll("[data-mv]").forEach(b => b.onclick = () => {
-      const v = all.find(x => x.id === +b.dataset.mv), home = (g.stationList || []).find(s => s.id === v.sid);
-      const dest = (g.stationList || []).filter(s => home && s.id !== home.id && s.sv === home.sv);
+      const v = all.find(x => x.id === +b.dataset.mv), home = st.find(s => s.id === v.sid);
+      const dest = st.filter(s => home && s.id !== home.id && s.sv === home.sv);
       modal.innerHTML = `<div class="box"><div style="font-size:18px;font-weight:700">Move ${esc(v.cs)}</div><div class="mu" style="margin:4px 0 6px">${esc(v.type)} · currently at ${esc(v.station || "?")}. Pick a ${esc(home ? home.type : "station")}:</div>
         ${dest.length ? dest.map(s => `<button class="pick" data-to="${s.id}"><span><b>${esc(s.name)}</b><br><span class="mu">${s.units} vehicle${s.units === 1 ? "" : "s"} based</span></span><span class="mu">Move →</span></button>`).join("") : '<div class="empty">No other stations of the same type.</div>'}
         <button class="btn" id="mno" style="width:100%;margin-top:14px">Cancel</button></div>`;
