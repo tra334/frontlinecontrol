@@ -55,7 +55,6 @@
       '<span class="lb-pos">' + posCell(r) + "</span>" +
       '<span class="lb-av">' + initial(r.name) + (window.fcAvatar ? fcAvatar.img(r.user_id) : "") + "</span>" +
       '<span class="lb-name"><b>' + esc(r.name) + "</b><small>" + esc(r.rank) + "</small></span>" +
-      '<span class="lb-rank">' + esc(r.rank) + "</span>" +
       '<span class="lb-cr">£' + fmt(r.earned) + "</span>" +
       '<span class="lb-jobs">' + fmt(r.jobs) + "</span>" +
       "</div>";
@@ -70,7 +69,7 @@
     if (Date.now() - loadedAt > TTL_MS || loadedKey !== key()) refresh();
 
     const head = '<div class="lb-row lb-head"><span class="lb-pos">#</span><span></span>' +
-      '<span class="lb-name">Player</span><span class="lb-rank">Rank</span>' +
+      '<span class="lb-name">Player</span>' +
       '<span class="lb-cr">Earned</span><span class="lb-jobs">Jobs</span></div>';
 
     let body;
