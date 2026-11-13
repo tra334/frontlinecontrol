@@ -86,7 +86,7 @@
     return '<div class="card lb" style="border-left-color:var(--p)">' +
       '<div class="row"><span class="t">' + lci("trophy") + ' Leaderboard</span><span class="mu">Top 50</span></div>' +
       chips(METRICS, sort, "sort") + chips(PERIODS, period, "period") +
-      '<div class="lb-tbl' + (sort === "jobs" ? " lb-jobsview" : "") + '">' + head + body + meRow + "</div></div>";
+      '<div class="lb-tbl ' + (sort === "jobs" ? "lb-jobsview" : "lb-earnview") + '">' + head + body + meRow + "</div></div>";
   }
 
   /* put the leaderboard at the top of the Ranks tab (wraps the rewards card that bonus.js added) */
