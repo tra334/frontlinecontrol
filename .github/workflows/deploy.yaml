@@ -19,7 +19,16 @@ jobs:
 
       - name: Upload site to VPS
         run: |
-          rsync -az \
+          rsync -az --itemize-changes \
             --exclude '.git' --exclude '.github' \
             -e "ssh -i ~/.ssh/id_ed25519" \
-            ./ game@${{ secrets.VPS_HOST }}:/home/game/app/frontlinecontrol-main/
+            ./ game@${{ secrets.VPS_HOST }}:/home/game/app/frontlinecontrol-main/ | tee changes.txt
+
+      - name: Restart game server if game code changed
+        run: |
+          if grep -q -E '^[<>]f.* js/' changes.txt; then
+            echo "js/ changed, restarting game server"
+            ssh -i ~/.ssh/id_ed25519 game@${{ secrets.VPS_HOST }} "sudo /bin/systemctl restart frontline"
+          else
+            echo "No js/ changes, server not restarted"
+          fi
