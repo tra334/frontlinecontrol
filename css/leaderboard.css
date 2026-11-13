@@ -32,3 +32,8 @@
 .lb-jobsview .lb-cr{display:none}
 .lb-jobsview .lb-row{grid-template-columns:28px 36px minmax(0,1fr) 96px 56px}
 @media (max-width:519px){.lb-jobsview .lb-row{grid-template-columns:24px 32px minmax(0,1fr) 48px}}
+
+/* Earnings tab: the Jobs column is hidden */
+.lb-earnview .lb-jobs{display:none}
+.lb-earnview .lb-row{grid-template-columns:28px 36px minmax(0,1fr) 110px}
+@media (max-width:519px){.lb-earnview .lb-row{grid-template-columns:24px 32px minmax(0,1fr) 84px}}
