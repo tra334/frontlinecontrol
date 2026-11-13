@@ -583,12 +583,6 @@ body.logged-out main{max-width:none}
     // ----- map dropdown: stations only, tap one to see and edit its vehicles -----
     const stdd = $("#stdd"), stmapEl = $("#stmap");
     let stmap = null;
-    const stPos = s => {
-      const la = [s.lat, s.latitude, s.y], lo = [s.lon, s.lng, s.longitude, s.x];
-      const a = la.find(v => typeof v === "number" || (typeof v === "string" && v !== "" && !isNaN(+v)));
-      const b = lo.find(v => typeof v === "number" || (typeof v === "string" && v !== "" && !isNaN(+v)));
-      return a == null || b == null ? null : [+a, +b];
-    };
     const initMap = () => {
       if (stmap) { stmap.invalidateSize(); return; }
       if (!stmapEl) return;
@@ -597,17 +591,14 @@ body.logged-out main{max-width:none}
       L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, referrerPolicy: "origin", attribution: "© OpenStreetMap contributors" }).addTo(stmap);
       const pts = [];
       st.forEach(s => {
-        const ll = stPos(s);
-        if (!ll) return;
+        if (s.lat == null || s.lon == null) return;
+        const ll = [s.lat, s.lon];
         pts.push(ll);
         const icon = L.divIcon({ className: "", html: `<div class="smk">${SVI[s.sv] || "🏢"}</div>`, iconSize: [30, 30], iconAnchor: [15, 15] });
         L.marker(ll, { icon, title: s.name }).addTo(stmap).on("click", () => openStation(s.id));
       });
       if (pts.length) stmap.fitBounds(pts, { maxZoom: 13, padding: [24, 24] });
-      else {
-        const keys = st[0] ? Object.keys(st[0]).join(", ") : "no stations";
-        stmapEl.insertAdjacentHTML("afterend", '<div class="mu" style="padding-top:0">No stations have map positions yet. Fields on the first station: ' + esc(keys) + '</div>');
-      }
+      else stmapEl.insertAdjacentHTML("afterend", '<div class="mu" style="padding-top:0">No stations have map positions yet.</div>');
     };
     if (stdd) {
       stdd.addEventListener("toggle", () => { cur.mapOpen = stdd.open; if (stdd.open) initMap(); });
