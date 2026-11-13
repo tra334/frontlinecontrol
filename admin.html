@@ -541,7 +541,7 @@ body.logged-out main{max-width:none}
       <div class="m"><b>${esc(v.cs)} <span class="tag ${v.status === "idle" ? "t-idle" : "t-busy"}" style="margin-left:2px">${esc(String(v.status).toUpperCase())}</span></b><span class="mu">${esc(v.type)}</span></div>
       <div class="acts admin-only"><button class="btn sm gha" data-mv="${v.id}">Move</button><button class="btn sm ghr" data-dv="${v.id}">Delete</button></div></div>`;
     sb.innerHTML = `<input id="vf" type="search" placeholder="Filter stations or vehicles, e.g. FP12, ambulance" value="${esc(cur.filter || "")}" style="margin-bottom:12px" autocomplete="off">
-      <details class="stdd" id="stdd" ${cur.mapOpen ? "open" : ""}><summary>Map of stations (${st.filter(s => s.lat != null && s.lon != null).length})</summary><div id="stmap" class="stmap"></div><div class="mu">Tap a station to see its vehicles and edit them.</div></details>
+      <details class="stdd" id="stdd" ${cur.mapOpen ? "open" : ""}><summary>Map of stations, hospitals &amp; prisons</summary><div id="stmap" class="stmap"></div><div class="mu">Tap a station to see its vehicles and edit them. 🏥 hospitals and 🔒 prisons can be deleted from their popup.</div></details>
       <h3 style="margin-top:4px">Stations (${st.length}) · Vehicles (${all.length})</h3>
       ${shown.length ? shown.map(s => { const vs = at(s).filter(match); return `<div class="card" style="padding:12px 14px">
         <div class="item" style="padding:0 0 10px;border:0"><div class="ico">${SVI[s.sv] || "🏢"}</div><div class="m"><b>${esc(s.name)}</b><span class="mu">${esc(s.type)} · ${vs.length} vehicle${vs.length === 1 ? "" : "s"}</span></div>
@@ -597,12 +597,27 @@ body.logged-out main{max-width:none}
         const icon = L.divIcon({ className: "", html: `<div class="smk">${SVI[s.sv] || "🏢"}</div>`, iconSize: [30, 30], iconAnchor: [15, 15] });
         L.marker(ll, { icon, title: s.name }).addTo(stmap).on("click", () => openStation(s.id));
       });
+      hs.forEach(h => {
+        if (h.lat == null || h.lon == null) return;
+        pts.push([h.lat, h.lon]);
+        const icon = L.divIcon({ className: "", html: `<div class="smk">${h.type === "Prison" ? "🔒" : "🏥"}</div>`, iconSize: [30, 30], iconAnchor: [15, 15] });
+        L.marker([h.lat, h.lon], { icon, title: h.name }).addTo(stmap).on("click", () => openHospital(h.id));
+      });
       if (pts.length) stmap.fitBounds(pts, { maxZoom: 13, padding: [24, 24] });
-      else stmapEl.insertAdjacentHTML("afterend", '<div class="mu" style="padding-top:0">No stations have map positions yet.</div>');
+      else stmapEl.insertAdjacentHTML("afterend", '<div class="mu" style="padding-top:0">Nothing on the map has a position yet.</div>');
     };
     if (stdd) {
       stdd.addEventListener("toggle", () => { cur.mapOpen = stdd.open; if (stdd.open) initMap(); });
       if (cur.mapOpen) initMap();
+    }
+
+    function openHospital(id) {
+      const h = hs.find(x => x.id === id); if (!h) return;
+      modal.innerHTML = `<div class="box"><div style="display:flex;gap:10px;align-items:center"><div class="ico">${h.type === "Prison" ? "🔒" : "🏥"}</div><div style="flex:1;min-width:0"><div style="font-size:18px;font-weight:700">${esc(h.name)}</div><div class="mu">${esc(h.type)}</div></div></div>
+        <div class="acts admin-only" style="margin-top:12px"><button class="btn sm ghr" data-dh="${h.id}">Delete</button></div>
+        <button class="btn" id="hno" style="width:100%;margin-top:14px">Close</button></div>`;
+      modal.classList.add("on"); $("#hno").onclick = closeModal;
+      wire(modal);
     }
 
     function openStation(id) {
