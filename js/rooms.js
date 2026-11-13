@@ -1,5 +1,5 @@
 /* ===== Multiplayer Rooms (invite codes, ally map, shared missions) =====
-   Requires: signed-in user (Supabase), tables from supabase_rooms.sql
+   Requires: signed-in user. Rooms live on the game server (/api/rooms/*), not in Supabase; Supabase is only used for sign-in.
    Design:
    - Create / join room with 6-char code
    - Publish stations + unit positions as presence
@@ -63,20 +63,31 @@
     } catch (e) {}
   }
 
-  /* ---------- REST helpers (reuse sb from cloud.js) ---------- */
-  async function rest(path, o) {
-    return sb("/rest/v1/" + path, Object.assign({ auth: 1 }, o || {}));
-  }
-  async function rpc(fn, body) {
-    return sb("/rest/v1/rpc/" + fn, { method: "POST", auth: 1, body: body || {} });
+  /* ---------- Server helper: /api/rooms/* on the game server (sign-in token from cloud.js) ---------- */
+  async function api(path, body, o) {
+    if (!AU) throw { status: 401, message: "Not signed in" };
+    if (AU.expires_at - 30 < Date.now() / 1000) await sb("/auth/v1/user", { auth: 1 }); // refreshes the login token only when it is about to expire
+    const base = window.FC_API || "https://api.frontlinecontrol.co.uk";
+    let r;
+    try {
+      r = await fetch(base + "/api/rooms" + path, {
+        method: body === undefined ? "GET" : "POST",
+        headers: { Authorization: "Bearer " + AU.access_token, "Content-Type": "application/json" },
+        body: body === undefined ? undefined : JSON.stringify(body),
+        keepalive: !!(o && o.keepalive)
+      });
+    } catch (e) { throw { status: 0, message: "Can't reach the game server" }; }
+    const j = await r.json().catch(() => ({ ok: false, reason: "bad reply from server" }));
+    if (!r.ok || !j.ok) throw { status: r.status, message: j.reason || ("Server error " + r.status) };
+    return j;
   }
 
   /* ---------- Room lifecycle ---------- */
   async function createRoom(name, isPublic) {
     if (!myId()) throw { message: "Sign in to create a room." };
     if (inRoom()) throw { message: "You're already in a room. Leave it before joining or creating another." };
-    const r = await rpc("create_room", { p_name: (name || "Room").slice(0, 40), p_public: !!isPublic });
-    room = Array.isArray(r) ? r[0] : r;
+    const r = await api("", { name: (name || "Room").slice(0, 40), public: !!isPublic });
+    room = r.room;
     if (!room || !room.id) throw { message: "Could not create room." };
     saveRoomLocal();
     await refreshAll();
@@ -90,14 +101,8 @@
     if (inRoom()) throw { message: "You're already in a room. Leave it before joining or creating another." };
     const c = String(code || "").trim().toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
     if (c.length < 4) throw { message: "Enter a valid room code." };
-    const rows = await rest("rooms?code=eq." + encodeURIComponent(c) + "&deleted_at=is.null&select=id,code,name,host_id");
-    const r = rows && rows[0];
+    const r = (await api("/join", { code: c })).room;
     if (!r) throw { message: "No room found with that code." };
-    await rest("room_members?on_conflict=room_id,user_id", {
-      method: "POST",
-      headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
-      body: { room_id: r.id, user_id: myId(), display_name: myName(), last_seen: new Date().toISOString() }
-    });
     room = r;
     saveRoomLocal();
     await refreshAll();
@@ -110,8 +115,8 @@
   async function loadPublicRooms() {
     if (!myId() || inRoom()) return;
     try {
-      const rows = await rpc("list_open_rooms");
-      publicRooms = Array.isArray(rows) ? rows : [];
+      const j = await api("/open");
+      publicRooms = Array.isArray(j.rooms) ? j.rooms : [];
     } catch (e) {
       publicRooms = publicRooms || [];
     }
@@ -140,7 +145,7 @@
   async function requestJoin(roomId) {
     if (!myId()) throw { message: "Sign in to request to join." };
     if (inRoom()) throw { message: "You're already in a room. Leave it before joining or creating another." };
-    await rpc("request_join_room", { p_room_id: roomId, p_display_name: myName() });
+    await api("/" + encodeURIComponent(roomId) + "/request", {});
     toast("Request sent to the room host");
     await loadPublicRooms();
   }
@@ -148,8 +153,8 @@
   // Used once the host has accepted a request: the caller is now a member, so the code can be read.
   async function enterRoom(roomId) {
     if (inRoom() && room.id !== roomId) throw { message: "You're already in a room. Leave it before joining or creating another." };
-    const rows = await rest("rooms?id=eq." + encodeURIComponent(roomId) + "&select=id,code,name,host_id");
-    const r = rows && rows[0];
+    const me = await api("/me");
+    const r = me.room && me.room.id === roomId ? me.room : null;
     if (!r) throw { message: "Your request hasn't been accepted yet." };
     room = r;
     saveRoomLocal();
@@ -158,21 +163,13 @@
     toast("Joined room " + room.code);
   }
 
-  async function fetchJoinRequests() {
-    if (!inRoom() || room.host_id !== myId()) { joinRequests = []; return; }
-    try {
-      const rows = await rpc("list_join_requests", { p_room_id: room.id });
-      joinRequests = Array.isArray(rows) ? rows : [];
-    } catch (e) {
-      joinRequests = [];
-    }
-  }
+  // Join requests arrive with the room state (host only); see fetchState().
+  const fetchJoinRequests = () => fetchState();
 
   async function respondRequest(requestId, accept) {
-    await rpc("respond_join_request", { p_request_id: requestId, p_accept: !!accept });
+    await api("/requests/" + encodeURIComponent(requestId), { accept: !!accept });
     toast(accept ? "Request accepted" : "Request declined");
-    await fetchJoinRequests();
-    await fetchMembers();
+    await fetchState(true);
   }
 
   // One delegated handler for the whole panel body, so re-rendered buttons keep working.
@@ -204,18 +201,10 @@
     stopLoops();
     _leaving = true;
     // Leaving on purpose removes our membership and our presence row (stations included).
+    // The server removes our membership and our presence row (stations included) in one step.
     try {
-      await rest("room_members?room_id=eq." + rid + "&user_id=eq." + myId(), { method: "DELETE" });
-    } catch (e) {}
-    try {
-      const gone = await rest("room_presence?room_id=eq." + rid + "&user_id=eq." + myId() + "&select=user_id", {
-        method: "DELETE",
-        headers: { Prefer: "return=representation" }
-      });
-      // If Supabase has no DELETE policy this succeeds but removes 0 rows. Readers ignore
-      // non-members anyway (see fetchPresence), so this is only a warning for the console.
-      if (Array.isArray(gone) && !gone.length) console.warn("room_presence delete removed 0 rows - check the DELETE policy / member_left trigger");
-    } catch (e) { console.error("Presence delete failed", e); }
+      await api("/" + rid + "/leave", {});
+    } catch (e) { console.error("Leave failed", e); }
     _leaving = false;
     // If host leaves and no members, room can stay; host transfer is out of scope for v1
     room = null;
@@ -240,23 +229,21 @@
       // New browser / cleared storage: the room is remembered per browser, but membership lives on the
       // server, so look up the room this account is still a member of.
       try {
-        const mm = await rest("room_members?user_id=eq." + myId() + "&select=room_id&order=last_seen.desc&limit=1");
-        if (mm && mm[0] && mm[0].room_id) {
-          const rr = await rest("rooms?id=eq." + mm[0].room_id + "&deleted_at=is.null&select=id,code,name,host_id");
-          if (rr && rr[0]) { room = rr[0]; saveRoomLocal(); }
-        }
+        const me = await api("/me");
+        if (me && me.room) { room = me.room; saveRoomLocal(); }
       } catch (e) {}
     }
     if (!room) return;
     try {
-      const rows = await rest("room_members?room_id=eq." + room.id + "&user_id=eq." + myId() + "&select=room_id");
-      if (!rows || !rows.length) {
+      const me = await api("/me");
+      if (!me.room || me.room.id !== room.id) {
         // Not a member any more (left, kicked, or room deleted): forget the saved room.
         // Never re-add membership automatically, or a stale browser can re-join a room.
         room = null;
         saveRoomLocal();
         return;
       }
+      room = me.room;
       await refreshAll();
       startLoops();
     } catch (e) {
@@ -288,8 +275,8 @@
 
   async function refreshAll() {
     if (!inRoom()) return;
-    const membersP = fetchMembers();
-    await Promise.all([membersP, fetchPresence(membersP), fetchMissions(), fetchChat(), fetchJoinRequests()]);
+    await fetchState();
+    if (!inRoom()) return; // the room was deleted or we were removed while loading
     applySharedMissions();
     syncAllyMarkers();
     tickAllyUnits();
@@ -303,47 +290,55 @@
     } catch (e) {}
   }
 
-  async function fetchMembers() {
-    const rows = await rest("room_members?room_id=eq." + room.id + "&select=user_id,display_name,last_seen,joined_at&order=joined_at.asc");
-    members = rows || [];
-    // touch own last_seen
-    try {
-      await rest("room_members?room_id=eq." + room.id + "&user_id=eq." + myId(), {
-        method: "PATCH",
-        headers: { Prefer: "return=minimal" },
-        body: { last_seen: new Date().toISOString(), display_name: myName() }
-      });
-    } catch (e) {}
+  /* One call brings everything the room screen needs: members, allies' stations, shared calls, new chat
+     and (host only) join requests. Allies' vehicle data is the big part, so it is asked for only for players
+     whose row has changed since we last saw it. Only CURRENT MEMBERS are ever shown: someone who left
+     (or was removed) disappears from the map at once. */
+  let _stP = null;
+  function fetchState(fresh) {
+    if (_stP) return fresh ? _stP.catch(() => {}).then(() => fetchState()) : _stP;
+    _stP = _fetchState().finally(() => { _stP = null; });
+    return _stP;
   }
+  // the old per-table fetchers all mean "refresh the room state" now
+  const fetchMembers = () => fetchState(), fetchPresence = () => fetchState(), fetchMissions = () => fetchState(true);
 
-  /* Stations = last-known (kept while the player is a member, even if offline).
-     Units (the big route data) are only downloaded when a player's row has changed since we last
-     saw it, so offline players cost nothing after the first fetch.
-     Only CURRENT MEMBERS are shown: someone who left (or was removed) disappears from the map even if
-     their presence row could not be deleted on the server. */
-  async function fetchPresence(membersP) {
+  async function _fetchState() {
     const rid = room.id;
-    const rows = await rest("room_presence?room_id=eq." + rid + "&select=user_id,display_name,stations,updated_at");
-    if (membersP) { try { await membersP; } catch (e) {} }
+    const lastId = roomChat.length ? roomChat[roomChat.length - 1].id : 0;
+    let j;
+    try {
+      j = await api("/" + rid + "/state?after=" + lastId);
+    } catch (e) {
+      if (e && (e.status === 403 || e.status === 404) && room && room.id === rid) {
+        // room deleted, or we are no longer a member
+        room = null; members = []; presence = {}; roomMissions = []; roomChat = []; joinRequests = [];
+        chatUnread = 0; chatSeenAt = 0; chatInitDone = false;
+        saveRoomLocal(); stopLoops(); clearAllyMarkers();
+        try { paint(); } catch (x) {}
+        toast("You're no longer in that room");
+      }
+      throw e;
+    }
     if (!room || room.id !== rid) return; // left / switched room while loading
-    const memberIds = new Set((members || []).map(m => m.user_id));
-    const useMembers = memberIds.size > 0; // if the member list failed to load, don't hide everyone
-    const list = (rows || []).filter(r => r.user_id !== myId() && (!useMembers || memberIds.has(r.user_id)));
+    members = j.members || [];
+    joinRequests = Array.isArray(j.requests) ? j.requests : [];
+    roomMissions = j.missions || [];
 
-    // which players' units do we need to (re)download?
+    // which allies' units do we need to (re)download?
+    const list = j.presence || [];
     const need = list.filter(r => {
       const prev = presence[r.user_id];
       return !(prev && prev.updated_at === r.updated_at && prev._uOk);
-    }).map(r => r.user_id).filter(id => /^[0-9a-f-]{36}$/i.test(String(id)));
-    const fresh = {};
+    }).map(r => r.user_id);
+    let fresh = {};
     if (need.length) {
       try {
-        const ur = await rest("room_presence?room_id=eq." + rid + "&user_id=in.(" + need.join(",") + ")&select=user_id,units,updated_at");
-        (ur || []).forEach(u => { fresh[u.user_id] = u; });
+        // "after" is set past every chat id so this second reply carries no chat again
+        fresh = (await api("/" + rid + "/state?after=9000000000000000&units=" + need.join(","))).units || {};
       } catch (e) { console.error("Presence units fetch failed", e); }
       if (!room || room.id !== rid) return;
     }
-
     const map = {};
     const unitCut = Date.now() - STALE_UNIT_MS;
     list.forEach(r => {
@@ -354,68 +349,36 @@
       else if (prev && prev._uOk) { units = prev.units; uOk = true; }
       else { units = []; uOk = false; }
       let stations = r.stations;
-      if (typeof stations === "string") {
-        try { stations = JSON.parse(stations); } catch (e) { stations = []; }
-      }
-      if (typeof units === "string") {
-        try { units = JSON.parse(units); } catch (e) { units = []; }
-      }
       if (!Array.isArray(stations)) stations = [];
       if (!Array.isArray(units)) units = [];
       // use the newest updated_at we saw, so a units row fetched a moment later is not re-fetched forever
       const upd = (f && f.updated_at && f.updated_at > r.updated_at) ? f.updated_at : r.updated_at;
       const ts = upd ? Date.parse(upd) : 0;
-      const online = ts && ts >= unitCut;
       map[r.user_id] = {
         user_id: r.user_id,
         display_name: r.display_name || "Ally",
         stations: stations,
         units: units, // keep last units payload; live layer decides online vs extrapolate
-        online: !!online,
+        online: !!(ts && ts >= unitCut),
         updated_at: upd,
         _uOk: uOk
       };
     });
     presence = map;
     tickAllyUnits();
-  }
-
-  async function fetchMissions() {
-    const rows = await rest(
-      "room_missions?room_id=eq." + room.id +
-      "&status=in.(open,working)&select=id,owner_id,owner_name,local_mid,k,la,lo,loc,cad,xb,hid,xn,status,end_at,reward,contributors,created_at&order=created_at.desc&limit=40"
-    );
-    roomMissions = rows || [];
+    takeChat(j.chat || [], lastId);
   }
 
   /* ---------- Chat ---------- */
-  const CHAT_COLS = "id,user_id,display_name,body,created_at";
-  const CHAT_PAGE = 60;   // rows to pull on the first load after joining
-  const CHAT_CATCHUP = 200; // cap on a single delta fetch (e.g. after the tab was backgrounded a while)
   const CHAT_KEEP = 200;  // how much history to keep in memory/DOM client-side
 
-  async function fetchChat() {
-    const lastId = roomChat.length ? roomChat[roomChat.length - 1].id : 0;
-    let rows;
-    if (!lastId) {
-      // First load after joining/reconnecting: grab the most recent page as a baseline.
-      rows = await rest(
-        "room_chat?room_id=eq." + room.id +
-        "&select=" + CHAT_COLS + "&order=id.desc&limit=" + CHAT_PAGE
-      );
-      rows = (rows || []).slice().reverse();
-    } else {
-      // Every poll after that: only ask for what's actually new, instead of
-      // re-downloading the whole window every 4 seconds.
-      rows = await rest(
-        "room_chat?room_id=eq." + room.id +
-        "&id=gt." + lastId + "&select=" + CHAT_COLS + "&order=id.asc&limit=" + CHAT_CATCHUP
-      );
-      rows = rows || [];
-    }
+  const fetchChat = () => fetchState();
+
+  // Called with the chat rows from a state reply: the latest page on first load, only what is new afterwards.
+  function takeChat(rows, lastId) {
     if (!rows.length) {
       if (!chatInitDone) chatInitDone = true;
-      return; // nothing changed — cheap poll, no re-render needed
+      return; // nothing changed, no re-render needed
     }
     roomChat = lastId ? roomChat.concat(rows) : rows;
     if (roomChat.length > CHAT_KEEP) roomChat = roomChat.slice(roomChat.length - CHAT_KEEP);
@@ -441,9 +404,8 @@
   async function sendChat(text) {
     const body = String(text || "").trim().replace(/\s+/g, " ").slice(0, 240);
     if (!body || !inRoom()) return false;
-    const row = { room_id: room.id, user_id: myId(), display_name: myName(), body };
-    await rest("room_chat", { method: "POST", headers: { Prefer: "return=minimal" }, body: row });
-    await fetchChat();
+    await api("/" + room.id + "/chat", { body });
+    await fetchState(true);
     bumpRoomUi();
     return true;
   }
@@ -723,20 +685,9 @@
 
   async function publishPresence() {
     if (_leaving || !inRoom() || !gameReady()) return;
-    const body = {
-      room_id: room.id,
-      user_id: myId(),
-      display_name: myName(),
-      stations: snapshotStations(),
-      units: snapshotUnits(40),
-      updated_at: new Date().toISOString()
-    };
+    const body = { stations: snapshotStations(), units: snapshotUnits(40) };
     try {
-      await rest("room_presence?on_conflict=room_id,user_id", {
-        method: "POST",
-        headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
-        body
-      });
+      await api("/" + room.id + "/presence", body);
     } catch (e) {
       console.error("Presence publish failed", e);
       if (Date.now() - _presErrAt > 30000) {
@@ -758,28 +709,21 @@
     const ka = !!(opts && opts.keepalive);
     stopPresenceLoop(); // a periodic publish must not land after this and mark us online again
     _finalAt = Date.now();
-    const stale = new Date(Date.now() - STALE_UNIT_MS - 1000).toISOString();
+    // The server marks the vehicles and the member dot stale itself (final: true), and leaves the stations alone.
     let units = snapshotUnits(0);
-    let body = { room_id: room.id, user_id: myId(), units, updated_at: stale };
+    let body = { final: true, units };
     if (ka) { // keepalive requests are size-limited: thin the routes until it fits
       for (const pts of [160, 100, 70, 48, 32, 20, 12, 6]) {
         if (JSON.stringify(body).length <= FINAL_BODY_MAX) break;
         units = snapshotUnits(pts);
-        body = { room_id: room.id, user_id: myId(), units, updated_at: stale };
+        body = { final: true, units };
       }
       if (JSON.stringify(body).length > FINAL_BODY_MAX) { // last resort: drop parked vehicles, keep the moving ones
         units = snapshotUnits(12, true);
-        body = { room_id: room.id, user_id: myId(), units, updated_at: stale };
+        body = { final: true, units };
       }
     }
-    const hdr = { Prefer: "resolution=merge-duplicates,return=minimal" };
-    const p1 = rest("room_presence?on_conflict=room_id,user_id", { method: "POST", headers: hdr, body, keepalive: ka });
-    // Member list "online" dot goes grey immediately too
-    const p2 = rest("room_members?room_id=eq." + room.id + "&user_id=eq." + myId(), {
-      method: "PATCH", headers: { Prefer: "return=minimal" }, keepalive: ka,
-      body: { last_seen: new Date(Date.now() - STALE_MEMBER_MS - 1000).toISOString() }
-    });
-    try { await Promise.all([p1, p2]); } catch (e) { console.error("Final presence failed", e); }
+    try { await api("/" + room.id + "/presence", body, { keepalive: ka }); } catch (e) { console.error("Final presence failed", e); }
   }
 
   /* ---------- Shared missions ---------- */
@@ -795,9 +739,6 @@
     const existing = roomMissions.find(x => x.owner_id === myId() && x.local_mid === m.id && x.status !== "done" && x.status !== "cancelled");
     if (existing) { toast("Already shared."); return; }
     const row = {
-      room_id: room.id,
-      owner_id: myId(),
-      owner_name: myName(),
       local_mid: m.id,
       k: m.k,
       la: m.la,
@@ -807,22 +748,16 @@
       xb: m.xb || 0,
       hid: m.hid || null,
       xn: m.xn || null,
-      status: "open",
-      reward: roomPay(m.k, typeof rank === "function" ? rank() : 0, m.xb),
-      contributors: []
+      reward: roomPay(m.k, typeof rank === "function" ? rank() : 0, m.xb)
     };
-    const ins = await rest("room_missions", {
-      method: "POST",
-      headers: { Prefer: "return=representation" },
-      body: row
-    });
-    const created = Array.isArray(ins) ? ins[0] : ins;
+    const ins = await api("/" + room.id + "/missions", row);
+    const created = ins.mission;
     if (created && created.id) {
       m.roomId = created.id;
       m.shared = 1;
       dirty = true;
-      toast("Mission shared with room");
-      await fetchMissions();
+      toast(ins.existing ? "Already shared." : "Mission shared with room");
+      await fetchState(true);
       applySharedMissions();
       bumpRoomUi();
     }
@@ -927,12 +862,8 @@
       const isProxy = !!m.roomOwner;           // someone else's call that we worked on
       const selfSent = !!(snap && snap.sent);
       const selfOn = !!(snap && snap.scene);
-      // Contributors already reported to the server + anyone currently shown on this call
-      let list = [];
-      try {
-        const rows = await rest("room_missions?id=eq." + m.roomId + "&select=contributors");
-        if (rows && rows[0] && Array.isArray(rows[0].contributors)) list = rows[0].contributors.slice();
-      } catch (e) {}
+      // Everyone we can see on this call; the server merges this with who it already knows about
+      const list = [];
       const add = (uid, name, on) => {
         const i = list.findIndex(c => c.user_id === uid);
         if (i >= 0) { if (on) list[i].on_scene = true; }
@@ -946,16 +877,7 @@
           }
         });
       });
-      await rest("room_missions?id=eq." + m.roomId, {
-        method: "PATCH",
-        headers: { Prefer: "return=minimal" },
-        body: {
-          status: "done",
-          reward: amount,
-          contributors: list,
-          updated_at: new Date().toISOString()
-        }
-      });
+      await api("/" + room.id + "/missions/" + m.roomId + "/complete", { reward: amount, contributors: list });
       // The owner was already paid by the normal completion; an ally who worked the call
       // locally is paid here (the normal completion skips paying shared copies).
       if (selfSent) await claimReward(m.roomId, amount, m.k, isProxy);
@@ -971,16 +893,10 @@
     if (!myId() || !missionId) return false;
     if (claimedLocal.has(missionId)) return false;
     try {
-      await rest("room_reward_claims", {
-        method: "POST",
-        headers: { Prefer: "return=minimal" },
-        body: { mission_id: missionId, user_id: myId(), amount: amount || 0 }
-      });
+      const c = await api("/" + room.id + "/missions/" + missionId + "/claim", { amount: amount || 0 });
+      if (!c.claimed) { claimedLocal.add(missionId); return false; } // already claimed (here or on another device)
     } catch (e) {
-      // unique violation = already claimed (here or on another device)
-      if (e && e.status === 409) claimedLocal.add(missionId);
-      else if (e && /duplicate|unique/i.test(String(e.message || ""))) claimedLocal.add(missionId);
-      else console.error("Claim failed", e);
+      console.error("Claim failed", e);
       return false;
     }
     claimedLocal.add(missionId);
@@ -1023,30 +939,19 @@
       if (S.rcs) Object.keys(S.rcs).forEach(id => { if (S.rcs[id].t < now() - 6048e5) delete S.rcs[id]; });
       const ids = new Set(Object.keys(S.rcs || {}));
       (S.ms || []).forEach(m => { if (m.roomId) ids.add(m.roomId); });
-      const SEL = "&select=id,k,status,reward,xb,contributors,owner_id,updated_at,local_mid,la,lo";
       const rows = new Map();
-      const recent = await rest("room_missions?room_id=eq." + room.id + "&status=eq.done" + SEL + "&order=updated_at.desc&limit=20");
-      (recent || []).forEach(r => { rows.set(r.id, r); const d = Date.parse(r.updated_at); if (d) doneAtById[r.id] = d; });
-      /* my own shared calls that lost their link to the room row (e.g. an older save was loaded): look the
-         finished ones up by owner so they can be re-linked and settled below */
-      if ((S.ms || []).some(m => !m.roomId && !m.roomOwner && m.ans)) {
-        const mine = await rest("room_missions?room_id=eq." + room.id + "&owner_id=eq." + myId() + "&status=in.(done,cancelled)" + SEL + "&order=updated_at.desc&limit=20");
-        (mine || []).forEach(r => { rows.set(r.id, r); if (r.status === "done") { const d = Date.parse(r.updated_at); if (d) doneAtById[r.id] = d; } });
-      }
       const ask = Array.from(ids).filter(id => /^[0-9a-f-]{36}$/i.test(String(id)));
-      if (ask.length) {
-        const got = await rest("room_missions?id=in.(" + ask.join(",") + ")" + SEL);
-        if (Array.isArray(got)) {
-          got.forEach(r => { rows.set(r.id, r); if (r.status === "done") { const d = Date.parse(r.updated_at); if (d) doneAtById[r.id] = d; } });
-          // proxies whose room call no longer exists: stand them down, no reward
-          ask.forEach(id => {
-            if (rows.has(id)) return;
-            const local = (S.ms || []).find(x => x.roomId === id && x.roomOwner);
-            if (local && typeof recall === "function") { try { recall(local, 1); } catch (e) {} }
-            if (S.rcs) delete S.rcs[id];
-          });
-        }
-      }
+      // one call: the room's recent finished calls, my own finished/cancelled calls, and the ids I hold
+      const got = (await api("/" + room.id + "/missions/settle", { ids: ask })).missions;
+      if (!Array.isArray(got)) return;
+      got.forEach(r => { rows.set(r.id, r); if (r.status === "done") { const d = Date.parse(r.updated_at); if (d) doneAtById[r.id] = d; } });
+      // proxies whose room call no longer exists: stand them down, no reward
+      ask.forEach(id => {
+        if (rows.has(id)) return;
+        const local = (S.ms || []).find(x => x.roomId === id && x.roomOwner);
+        if (local && typeof recall === "function") { try { recall(local, 1); } catch (e) {} }
+        if (S.rcs) delete S.rcs[id];
+      });
       for (const rm of rows.values()) {
         const isOwner = rm.owner_id === myId();
         let local = (S.ms || []).find(x => x.roomId === rm.id);
@@ -1083,6 +988,7 @@
           }
           try { recall(local); } catch (e) {}
         }
+        if (rm.claimed) { claimedLocal.add(rm.id); if (S.rcs) delete S.rcs[rm.id]; } // the server says we were already paid
         if (!eligible || claimedLocal.has(rm.id)) continue;
         const kk = rm.k != null ? rm.k : (S.rcs && S.rcs[rm.id] && S.rcs[rm.id].k);
         const myAmt = (kk != null && T[kk]) ? roomPay(kk, isOwner ? (typeof rank === "function" ? rank() : 0) : rankFor(rm.id), rm.xb) : (rm.reward || 0);
@@ -1101,20 +1007,8 @@
     if (!sent.length) return;
     const onScene = sent.filter(u => u.st === "scene");
     try {
-      const rows = await rest("room_missions?id=eq." + m.roomId + "&select=contributors,status");
-      const rm = rows && rows[0];
-      if (!rm || rm.status === "done" || rm.status === "cancelled") return;
-      const list = Array.isArray(rm.contributors) ? rm.contributors.slice() : [];
-      const idx = list.findIndex(c => c.user_id === myId());
-      const entry = { user_id: myId(), name: myName(), on_scene: onScene.length > 0 || !!(idx >= 0 && list[idx].on_scene) };
-      if (idx >= 0) list[idx] = entry; else list.push(entry);
-      const body = { contributors: list, updated_at: new Date().toISOString() };
-      if (rm.status === "open" && onScene.length) body.status = "working";
-      await rest("room_missions?id=eq." + m.roomId, {
-        method: "PATCH",
-        headers: { Prefer: "return=minimal" },
-        body
-      });
+      // the server merges us into the contributors and moves the call to "working" once someone is on scene
+      await api("/" + room.id + "/missions/" + m.roomId + "/contribute", { on_scene: onScene.length > 0 });
     } catch (e) {}
   }
 
@@ -1479,7 +1373,7 @@
       if (!confirm("Delete this room for everyone? Members will be removed. Rewards already earned are kept.")) return;
       dl.disabled = true;
       try {
-        await rpc("delete_room", { p_room_id: room.id });
+        await api("/" + room.id + "/delete", {});
         await leaveRoom();
         toast("Room deleted");
       } catch (e) {
