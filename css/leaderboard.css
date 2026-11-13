@@ -1,6 +1,6 @@
 /* Ranks tab leaderboard */
 .lb .row{align-items:baseline}
-.lb-tbl{font-size:14px}
+.lb-tbl{font-size:14px;margin-top:12px}
 .lb-row{display:grid;grid-template-columns:28px 36px minmax(0,1fr) 96px 104px 56px;align-items:center;gap:8px;padding:8px 6px;border-top:1px solid var(--bd);border-radius:8px}
 .lb-head{border-top:0;padding-top:0;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--mu)}
 .lb-pos{font-variant-numeric:tabular-nums;font-weight:600;color:var(--mu)}
@@ -22,3 +22,8 @@
   .lb-rank{display:none}
   .lb-name small{display:block}
 }
+
+/* Earnings / Jobs done and period buttons */
+.lb-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.lb-chip{padding:6px 12px;border-radius:999px;border:1px solid var(--bd);background:transparent;color:var(--tx);font:600 13px system-ui,sans-serif;cursor:pointer}
+.lb-chip.on{background:var(--p);border-color:var(--p);color:#fff}
