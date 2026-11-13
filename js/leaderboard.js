@@ -84,7 +84,7 @@
     const meRow = me && !inTop && loadedKey === key() ? '<div class="lb-gap">…</div>' + rowHtml(me) : "";
 
     return '<div class="card lb" style="border-left-color:var(--p)">' +
-      '<div class="row"><span class="t">Leaderboard</span><span class="mu">Top 50</span></div>' +
+      '<div class="row"><span class="t">' + lci("trophy") + ' Leaderboard</span><span class="mu">Top 50</span></div>' +
       chips(METRICS, sort, "sort") + chips(PERIODS, period, "period") +
       '<div class="lb-tbl">' + head + body + meRow + "</div></div>";
   }

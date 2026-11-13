@@ -6,6 +6,7 @@
    (Lucide versions - flame, ambulance, siren, hospital, columns-4 - are available as the optional "Lucide" building icon style, see ICO in state.js.) */
 const LI={
   "user-group":'<path d="M17 21v-1a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v1"/><path d="M19 10h1a2 2 0 0 1 2 2v1"/><path d="M5 10H4a2 2 0 0 0-2 2v1"/><circle cx="12" cy="11" r="3"/><circle cx="18" cy="4" r="2"/><circle cx="6" cy="4" r="2"/>',
+  "trophy":'<path d="M10 14.66v1.626a2 2 0 0 1-.976 1.696A5 5 0 0 0 7 21.978"/><path d="M14 14.66v1.626a2 2 0 0 0 .976 1.696A5 5 0 0 1 17 21.978"/><path d="M18 9h1.5a1 1 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M6 9a6 6 0 0 0 12 0V3a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1z"/><path d="M6 9H4.5a1 1 0 0 1 0-5H6"/>',
   "truck":'<path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2"/><path d="M15 18H9"/><path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14"/><circle cx="17" cy="18" r="2"/><circle cx="7" cy="18" r="2"/>',
   "siren-off":'<path d="M12 12v6"/><path d="M12 2v1"/><path d="M12.707 7.05a5 5 0 0 1 4.243 4.243"/><path d="M17 17v1H7a2 2 0 0 0-2 2v1a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2"/><path d="M18.5 4.5 18 5"/><path d="M2 12h1"/><path d="m2 2 20 20"/><path d="M21 12h1"/><path d="M7 18v-6a5 5 0 0 1 1.464-3.536"/>',
   "ban":'<circle cx="12" cy="12" r="10"/><path d="m4.9 4.9 14.2 14.2"/>',
