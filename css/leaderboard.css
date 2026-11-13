@@ -1,0 +1,24 @@
+/* Ranks tab leaderboard */
+.lb .row{align-items:baseline}
+.lb-tbl{font-size:14px}
+.lb-row{display:grid;grid-template-columns:28px 36px minmax(0,1fr) 96px 104px 56px;align-items:center;gap:8px;padding:8px 6px;border-top:1px solid var(--bd);border-radius:8px}
+.lb-head{border-top:0;padding-top:0;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--mu)}
+.lb-pos{font-variant-numeric:tabular-nums;font-weight:600;color:var(--mu)}
+.lb-av{position:relative;width:36px;height:36px;border-radius:50%;background:var(--bd);color:var(--tx);display:grid;place-items:center;font-weight:700;font-size:14px;overflow:hidden;flex:none}
+.lb-name{min-width:0;display:flex;flex-direction:column;overflow:hidden}
+.lb-name b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.lb-name small{display:none;color:var(--mu);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-rank{color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lb-cr,.lb-jobs{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.lb-cr{font-weight:600}
+.lb-me{background:color-mix(in srgb,var(--p) 14%,transparent);box-shadow:inset 0 0 0 1px var(--p)}
+.lb-me .lb-pos{color:var(--p)}
+.lb-gap{text-align:center;color:var(--mu);padding:2px 0}
+.lb-msg{padding:14px 6px;color:var(--mu);text-align:center}
+/* phones: drop the Rank column and show the rank under the name, so nothing scrolls sideways */
+@media (max-width:519px){
+  .lb-row{grid-template-columns:24px 32px minmax(0,1fr) 84px 48px;gap:6px}
+  .lb-av{width:32px;height:32px}
+  .lb-rank{display:none}
+  .lb-name small{display:block}
+}
