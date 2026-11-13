@@ -27,3 +27,8 @@
 .lb-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .lb-chip{padding:6px 12px;border-radius:999px;border:1px solid var(--bd);background:transparent;color:var(--tx);font:600 13px system-ui,sans-serif;cursor:pointer}
 .lb-chip.on{background:var(--p);border-color:var(--p);color:#fff}
+
+/* Jobs tab: the Earned column is hidden */
+.lb-jobsview .lb-cr{display:none}
+.lb-jobsview .lb-row{grid-template-columns:28px 36px minmax(0,1fr) 96px 56px}
+@media (max-width:519px){.lb-jobsview .lb-row{grid-template-columns:24px 32px minmax(0,1fr) 48px}}
