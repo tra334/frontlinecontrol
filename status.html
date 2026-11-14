@@ -6,9 +6,9 @@
 <meta name="description" content="Live status of Frontline Control: game server, sign-in, saves and rooms.">
 <title>Status · Frontline Control</title>
 <style>
-:root{--bg:#f4f6fa;--card:#fff;--tx:#0f172a;--mu:#64748b;--bd:#e2e8f0;--gn:#16a34a;--am:#d97706;--rd:#dc2626;--bl:#2563eb}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#080d18;--card:#111a2c;--tx:#e8edf6;--mu:#8b9ab5;--bd:#22304d;--gn:#4ade80;--am:#fbbf24;--rd:#f87171;--bl:#4f8cff}}
-:root[data-theme="dark"]{--bg:#080d18;--card:#111a2c;--tx:#e8edf6;--mu:#8b9ab5;--bd:#22304d;--gn:#4ade80;--am:#fbbf24;--rd:#f87171;--bl:#4f8cff}
+:root{--ab:#fff8eb;--abd:#f3d9a4;--bg:#f4f6fa;--card:#fff;--tx:#0f172a;--mu:#64748b;--bd:#e2e8f0;--gn:#16a34a;--am:#d97706;--rd:#dc2626;--bl:#2563eb}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--ab:#2a2112;--abd:#5a4520;--bg:#080d18;--card:#111a2c;--tx:#e8edf6;--mu:#8b9ab5;--bd:#22304d;--gn:#4ade80;--am:#fbbf24;--rd:#f87171;--bl:#4f8cff}}
+:root[data-theme="dark"]{--ab:#2a2112;--abd:#5a4520;--bg:#080d18;--card:#111a2c;--tx:#e8edf6;--mu:#8b9ab5;--bd:#22304d;--gn:#4ade80;--am:#fbbf24;--rd:#f87171;--bl:#4f8cff}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
 main{max-width:640px;margin:0 auto;padding:24px 16px}
@@ -41,6 +41,14 @@ h2{font-size:16px;margin:24px 0 10px}
 .upd li{font-size:14px;margin-top:6px}
 .tag{font-size:12px;color:var(--mu);border:1px solid var(--bd);border-radius:99px;padding:1px 8px;margin-left:6px}
 .inc summary{padding:12px 0}.inc .det{margin-left:0}
+.act{background:var(--ab);border:1px solid var(--abd);border-radius:14px;padding:4px 16px;margin-bottom:22px}
+.act details{border-bottom-color:var(--abd)}.act .nm{font-weight:600}
+.past{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:0 16px;margin-bottom:18px}
+.past>summary{padding:14px 0}.past>summary .nm{font-weight:600;font-size:16px}
+.past .list{border-top:1px solid var(--bd)}
+.past .list summary{padding:12px 0}.past .list .nm{font-weight:500}
+.ic.sm{width:20px;height:20px}
+.when{display:block;font-size:13px;color:var(--mu);font-weight:400}
 </style>
 </head>
 <body>
@@ -50,9 +58,9 @@ h2{font-size:16px;margin:24px 0 10px}
     <a href="https://frontlinecontrol.co.uk">Back to the game</a>
   </header>
   <div id="overall" class="banner loading"><span id="bi"></span><span id="bt">Checking the game…</span></div>
+  <div id="active"></div>
   <div id="components"></div>
-  <h2>Incidents</h2>
-  <div class="card" id="incidents"><div class="mu" style="padding:12px 0">Loading…</div></div>
+  <div id="past"></div>
   <p class="mu" id="meta"></p>
 </main>
 <script>
@@ -84,6 +92,35 @@ h2{font-size:16px;margin:24px 0 10px}
       <div class="det"><p>${esc(DESC[k] || "Part of the Frontline Control service.")}</p>${extra}${HINT[st] ? `<p>${esc(HINT[st])}</p>` : ""}<p>Last checked ${esc(when(s.checked))}.</p></div></details>`;
   }
 
+  const DAY = 864e5, PAST_DAYS = 30;
+  const isOpen = i => i.status !== "resolved";
+  const ico20 = st => ico(st).replace('class="ic ', 'class="ic sm ');
+  const clock = t => new Date(t).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  const stamp = i => { const t = Date.parse(i.updated_at || i.created_at); return t || 0; };
+  // when a resolved incident ended: the "resolved" update if there is one, else its last change
+  const endOf = i => { const u = (i.updates || []).filter(x => x.status === "resolved" && x.at).map(x => Date.parse(x.at)).filter(Boolean).sort((a, b) => b - a)[0]; return u || stamp(i); };
+  function span(i, end) {
+    if (!i.created_at) return "";
+    const a = new Date(i.created_at), b = new Date(end);
+    if (!end || isNaN(b)) return when(i.created_at);
+    return when(i.created_at) + " to " + (a.toDateString() === b.toDateString() ? clock(b) : when(b));
+  }
+  const updates = i => { const u = (i.updates || []).filter(x => x.body); return u.length ? `<ul class="upd">${u.map(x => `<li><span class="mu">${esc(when(x.at))}</span> · ${esc(STATUS_WORDS[x.status] || x.status)}: ${esc(x.body)}</li>`).join("")}</ul>` : ""; };
+
+  function drawIncidents(all) {
+    const active = all.filter(isOpen).sort((a, b) => stamp(b) - stamp(a));
+    const cut = Date.now() - PAST_DAYS * DAY;
+    const past = all.filter(i => !isOpen(i)).map(i => ({ i, end: endOf(i) })).filter(x => !x.end || x.end >= cut).sort((a, b) => b.end - a.end);
+    document.getElementById("active").innerHTML = active.length ? `
+      <div class="grp" style="margin-top:0"><h2>Active incidents</h2><span class="mu">${active.length} ongoing</span></div>
+      <div class="act">${active.map(i => `<details class="inc" open><summary>${ico("degraded")}<span class="nm">${esc(i.title)}<span class="tag">${esc(STATUS_WORDS[i.status] || i.status)}</span></span><span class="chev"></span></summary>
+        <div class="det"><p>Posted ${esc(when(i.created_at))}${i.updated_at && i.updated_at !== i.created_at ? " · updated " + esc(when(i.updated_at)) : ""}</p>${updates(i)}</div></details>`).join("")}</div>` : "";
+    document.getElementById("past").innerHTML = past.length ? `
+      <details class="past"><summary><span class="nm">Past incidents</span><span class="mu">${past.length} resolved</span><span class="chev"></span></summary>
+        <div class="list">${past.map(x => `<details class="inc"><summary>${ico20("operational")}<span class="nm">${esc(x.i.title)}<span class="when">${esc(span(x.i, x.end))}</span></span><span class="tag">Resolved</span><span class="chev"></span></summary>
+          <div class="det">${updates(x.i) || '<p>No further details.</p>'}</div></details>`).join("")}</div></details>` : "";
+  }
+
   function draw(s) {
     const o = document.getElementById("overall");
     o.className = "banner " + (s.overall || "loading");
@@ -98,12 +135,7 @@ h2{font-size:16px;margin:24px 0 10px}
       return `<div class="grp"><h2>${esc(g[0])}</h2><span class="mu">${ok} of ${g[1].length} operational</span></div>
         <div class="card">${g[1].map(k => comp(k, c[k], s)).join("")}</div>`;
     }).join("");
-    const inc = s.incidents || [];
-    document.getElementById("incidents").innerHTML = inc.length ? inc.map(i => `
-      <details class="inc"${i.status !== "resolved" ? " open" : ""}><summary>${ico(i.status === "resolved" ? "operational" : "degraded")}<span class="nm">${esc(i.title)}<span class="tag">${esc(STATUS_WORDS[i.status] || i.status)}</span></span><span class="chev"></span></summary>
-        <div class="det"><p>${esc(when(i.created_at))}${i.updated_at !== i.created_at ? " · updated " + esc(when(i.updated_at)) : ""}</p>
-        <ul class="upd">${(i.updates || []).filter(u => u.body).map(u => `<li><span class="mu">${esc(when(u.at))}</span> · ${esc(STATUS_WORDS[u.status] || u.status)}: ${esc(u.body)}</li>`).join("")}</ul></div>
-      </details>`).join("") : '<div class="mu" style="padding:12px 0">No incidents reported.</div>';
+    drawIncidents(s.incidents || []);
     document.getElementById("meta").textContent = "Last checked " + when(s.checked) + " · refreshes every minute.";
   }
 
