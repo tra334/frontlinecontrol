@@ -25,7 +25,7 @@
   let chatSeenAt = 0;       // ms epoch of the newest message the player has viewed
   let chatUnread = 0;       // messages received since chatSeenAt
   let chatOpen = false;     // true while the Rooms panel is on screen (any tab)
-  let rmTab = "ov";         // active tab in the mobile Rooms panel: "ov" (Overview) | "chat" | "map"
+  let rmTab = "ov";         // active tab in the mobile Rooms panel: "ov" (Overview) | "chat" | "map" | "inv" (Invite)
   let chatInitDone = false; // false until the first fetchChat() after joining/reconnecting
   let pollTimer = 0;
   let presenceTimer = 0;
@@ -35,6 +35,10 @@
   let showAllyMissions = true;
   let publicRooms = null;   // open rooms for the browse list (null = not loaded yet)
   let joinRequests = [];    // host only: pending join requests for the current room
+  let invites = [];         // room invites sent to me that I haven't answered yet
+  let invSeen = new Set();  // invite ids already announced with a toast this page load
+  let invSearch = { rid: "", q: "", res: null, busy: false, err: "" }; // Invite tab: current search text + results
+  let invTimer = 0;
   let doneAtById = {};  // shared call id -> ms epoch it finished (so offline vehicles can be shown standing down then)
   let claimedLocal = new Set(); // mission ids already paid locally this session
   let lastUi = "";
@@ -142,6 +146,143 @@
     if (el) el.innerHTML = openListHtml();
   }
 
+  /* ---------- Invites: search a player by username, send an invite, they accept from their Rooms panel ---------- */
+  async function loadInvites(quiet) {
+    if (!myId()) { invites = []; return; }
+    let j;
+    try { j = await api("/invites"); } catch (e) { return; }
+    const list = Array.isArray(j.invites) ? j.invites : [];
+    const fresh = list.filter(i => !invSeen.has(i.id));
+    list.forEach(i => invSeen.add(i.id));
+    invites = list;
+    if (fresh.length && !quiet && !inRoom()) {
+      const f = fresh[0];
+      toast((f.from_name || "A player") + " invited you to " + (f.room_name || "a room") + (fresh.length > 1 ? " (+" + (fresh.length - 1) + " more)" : "") + " – open Rooms to accept");
+    }
+    const el = document.getElementById("rm_inv_in");
+    if (el) el.innerHTML = invitesHtml();
+    syncNavBadges();
+  }
+
+  function invitesHtml() {
+    if (inRoom() || !invites.length) return "";
+    return `<div class="rm-hd" style="margin:6px 0 8px"><span>INVITES</span><span>${invites.length} waiting</span></div>
+      <div class="rm-card" style="margin-bottom:6px">${invites.map(i => `<div class="rm-per rm-room">
+        <span class="rm-nm"><b>${esc(i.room_name || "Room")}</b><small>Invited by ${esc(i.from_name || "a player")}</small></span>
+        <span class="rm-req-b"><button type="button" class="rm-btn indigo" data-rm-invyes="${esc(i.id)}" data-rm-invroom="${esc(i.room_id)}">Accept</button><button type="button" class="rm-btn rm-btn-dim" data-rm-invno="${esc(i.id)}">Decline</button></span>
+      </div>`).join("")}</div>`;
+  }
+
+  async function acceptInvite(id, roomId) {
+    await api("/invites/" + encodeURIComponent(id), { accept: true });
+    invites = invites.filter(i => i.id !== id);
+    await enterRoom(roomId);
+  }
+
+  async function declineInvite(id) {
+    await api("/invites/" + encodeURIComponent(id), { accept: false });
+    invites = invites.filter(i => i.id !== id);
+    toast("Invite declined");
+  }
+
+  async function runInviteSearch() {
+    const q = invSearch.q.trim(), rid = room && room.id;
+    if (!rid) return;
+    if (q.length < 2) { invSearch.res = null; invSearch.err = ""; renderInviteResults(); return; }
+    invSearch.busy = true; renderInviteResults();
+    try {
+      const j = await api("/search?room=" + encodeURIComponent(rid) + "&q=" + encodeURIComponent(q));
+      if (invSearch.q.trim() !== q) return; // the player kept typing: a newer search is on its way
+      invSearch.res = Array.isArray(j.players) ? j.players : []; invSearch.err = "";
+    } catch (e) { invSearch.res = []; invSearch.err = (e && e.message) || "Search failed"; }
+    invSearch.rid = rid; invSearch.busy = false; renderInviteResults();
+  }
+
+  function inviteResultsHtml() {
+    if (!room || invSearch.rid !== room.id && invSearch.res) return "";
+    if (invSearch.err) return `<div class="rm-empty"><span>${esc(invSearch.err)}</span></div>`;
+    if (invSearch.busy && !invSearch.res) return `<div class="rm-empty"><span>Searching…</span></div>`;
+    if (invSearch.q.trim().length < 2) return `<div class="rm-empty"><b>Find a player</b><span>Type at least 2 letters of their username. Everyone with an account can be invited.</span></div>`;
+    if (!invSearch.res) return "";
+    if (!invSearch.res.length) return `<div class="rm-empty"><b>No players found</b><span>Check the spelling of the username.</span></div>`;
+    return `<div class="rm-card">${invSearch.res.map(p => {
+      const nm = p.username || "Controller";
+      const btn = p.is_member ? `<button type="button" class="rm-btn rm-btn-off" disabled>In room</button>`
+        : p.is_invited ? `<button type="button" class="rm-btn rm-btn-off" disabled>Invited</button>`
+        : `<button type="button" class="rm-btn indigo" data-rm-inv="${esc(p.user_id)}">Invite</button>`;
+      return `<div class="rm-per">
+        <span class="rm-av">${esc(nm.trim().charAt(0).toUpperCase() || "C")}${window.fcAvatar ? fcAvatar.img(p.user_id) : ""}</span>
+        <span class="rm-nm">${esc(nm)}</span>${btn}
+      </div>`;
+    }).join("")}</div>`;
+  }
+
+  function renderInviteResults() {
+    const el = document.getElementById("rm_inv_res");
+    if (el) el.innerHTML = inviteResultsHtml();
+  }
+
+  async function inviteFromSearch(btn) {
+    const to = btn.getAttribute("data-rm-inv");
+    if (!to || !room) return;
+    btn.disabled = true;
+    try {
+      await api("/" + encodeURIComponent(room.id) + "/invite", { to });
+      const p = (invSearch.res || []).find(x => x.user_id === to);
+      if (p) p.is_invited = true;
+      toast("Invite sent" + (p && p.username ? " to " + p.username : ""));
+    } catch (err) {
+      btn.disabled = false;
+      toast((err && err.message) || "Could not send invite");
+    }
+    renderInviteResults();
+  }
+
+  function bindInviteTab() {
+    const inp = document.getElementById("rm_inv_q");
+    if (!inp) return;
+    inp.oninput = () => {
+      invSearch.q = inp.value;
+      clearTimeout(invTimer);
+      invTimer = setTimeout(() => { runInviteSearch().catch(() => {}); }, 300);
+    };
+    inp.onkeydown = e => { if (e.key === "Enter") { clearTimeout(invTimer); runInviteSearch().catch(() => {}); } };
+  }
+
+  // Invite buttons on the bottom nav / header: the count shows chat unread in a room, waiting invites when not in one
+  function syncNavBadges() {
+    ["nav_rm", "hd_rm"].forEach(id => {
+      const b = document.getElementById(id);
+      if (!b) return;
+      b.classList.toggle("in", inRoom());
+      const n = b.querySelector(".rmn");
+      if (n) {
+        const cnt = inRoom() ? chatUnread : invites.length;
+        n.hidden = !(cnt > 0 && !chatOpen);
+        n.textContent = cnt > 99 ? "99+" : cnt;
+      }
+    });
+    const badge = document.getElementById("room_badge");
+    if (badge) {
+      badge.style.display = inRoom() ? "inline-flex" : "none";
+      badge.textContent = inRoom() ? ("ROOM " + room.code + (chatUnread ? " · 💬" + chatUnread : "")) : "";
+    }
+  }
+
+  // The panel sits on a mobile tab layout (one tab at a time) that fixes.css only knows for Overview / Chat / Map: add the Invite tab
+  (function injectInviteCss() {
+    if (document.getElementById("rm_inv_css")) return;
+    const st = document.createElement("style"); st.id = "rm_inv_css";
+    st.textContent = `
+#room_ov .rm-inv-box{display:flex;gap:8px}
+#room_ov #rm_inv_q{flex:1;min-width:0;height:46px;padding:0 16px;border-radius:23px;border:1px solid #2f3c58;background:var(--card);color:var(--tx);font:400 16px system-ui}
+@media(max-width:999px){
+  #room_ov .rmg.rm-t-ov [data-sec="inv"],#room_ov .rmg.rm-t-map [data-sec="inv"],#room_ov .rmg.rm-t-chat [data-sec="inv"]{display:none}
+  #room_ov .rmg.rm-t-inv [data-sec="ov"],#room_ov .rmg.rm-t-inv [data-sec="map"],#room_ov .rmg.rm-t-inv .rmg-r{display:none}
+}`;
+    document.head.appendChild(st);
+  })();
+
   async function requestJoin(roomId) {
     if (!myId()) throw { message: "Sign in to request to join." };
     if (inRoom()) throw { message: "You're already in a room. Leave it before joining or creating another." };
@@ -174,13 +315,17 @@
 
   // One delegated handler for the whole panel body, so re-rendered buttons keep working.
   async function onPanelClick(e) {
-    const t = e.target.closest && e.target.closest("[data-rm-req],[data-rm-enter],[data-rm-accept],[data-rm-decline]");
+    const iv = e.target.closest && e.target.closest("[data-rm-inv]");
+    if (iv) { inviteFromSearch(iv); return; } // updates the button in place, so the search box isn't wiped by a re-render
+    const t = e.target.closest && e.target.closest("[data-rm-req],[data-rm-enter],[data-rm-accept],[data-rm-decline],[data-rm-invyes],[data-rm-invno]");
     if (!t) return;
     t.disabled = true;
     try {
       if (t.hasAttribute("data-rm-req")) await requestJoin(t.getAttribute("data-rm-req"));
       else if (t.hasAttribute("data-rm-enter")) await enterRoom(t.getAttribute("data-rm-enter"));
       else if (t.hasAttribute("data-rm-accept")) await respondRequest(t.getAttribute("data-rm-accept"), true);
+      else if (t.hasAttribute("data-rm-invyes")) await acceptInvite(t.getAttribute("data-rm-invyes"), t.getAttribute("data-rm-invroom"));
+      else if (t.hasAttribute("data-rm-invno")) await declineInvite(t.getAttribute("data-rm-invno"));
       else await respondRequest(t.getAttribute("data-rm-decline"), false);
     } catch (err) {
       toast((err && err.message) || "Something went wrong");
@@ -1176,12 +1321,18 @@
       const ci0 = document.getElementById("rm_chat_in");
       const draft = ci0 ? ci0.value : "";
       const hadFocus = !!ci0 && document.activeElement === ci0;
+      const iq0 = document.getElementById("rm_inv_q"); // same for a half-typed username search
+      const iqFocus = !!iq0 && document.activeElement === iq0;
       const sl0 = el.querySelector(".rmg-l");
       const st0 = sl0 ? sl0.scrollTop : 0;
       el.innerHTML = roomPanelInner();
       bindRoomPanel();
       const sl1 = el.querySelector(".rmg-l");
       if (sl1 && st0) sl1.scrollTop = st0; // a background poll shouldn't throw the player back to the top
+      if (iqFocus) {
+        const iq1 = document.getElementById("rm_inv_q");
+        if (iq1) { iq1.focus(); try { iq1.setSelectionRange(iq1.value.length, iq1.value.length); } catch (e) {} }
+      }
       if (draft) {
         const ci1 = document.getElementById("rm_chat_in");
         if (ci1) {
@@ -1190,19 +1341,8 @@
         }
       }
     }
-    // Rooms buttons (bottom nav on mobile, header on desktop): highlight when in a room, show unread chat count
-    ["nav_rm", "hd_rm"].forEach(id => {
-      const b = document.getElementById(id);
-      if (!b) return;
-      b.classList.toggle("in", inRoom());
-      const n = b.querySelector(".rmn");
-      if (n) { n.hidden = !(inRoom() && chatUnread > 0 && !chatOpen); n.textContent = chatUnread > 99 ? "99+" : chatUnread; }
-    });
-    const badge = document.getElementById("room_badge");
-    if (badge) {
-      badge.style.display = inRoom() ? "inline-flex" : "none";
-      badge.textContent = inRoom() ? ("ROOM " + room.code + (chatUnread ? " · 💬" + chatUnread : "")) : "";
-    }
+    // Rooms buttons (bottom nav on mobile, header on desktop): highlight when in a room, show unread chat count / waiting invites
+    syncNavBadges();
   }
 
   /* Wide two-column layout (desktop) only applies once the player is in a room */
@@ -1218,6 +1358,7 @@
     }
     if (!inRoom()) {
       return `<div style="padding:12px 4px">
+        <div id="rm_inv_in">${invitesHtml()}</div>
         <div style="font-size:13px;opacity:.85;margin-bottom:12px;line-height:1.45">Create a room and share the code so friends can join. You'll see each other's stations and vehicles on the map, and can share missions to work together. Everyone who has a unit on scene when a shared mission completes gets <b>100% of the reward</b>.</div>
         <label style="font:600 12px system-ui;opacity:.7">Room name</label>
         <input id="rm_name" maxlength="40" placeholder="My control room" style="width:100%;margin:4px 0 8px;padding:10px;border-radius:8px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font:600 14px system-ui;box-sizing:border-box">
@@ -1270,7 +1411,7 @@
     const mkTab = (id, label) => `<button type="button" role="tab" data-rm-tab="${id}" aria-selected="${rmTab === id}">${label}</button>`;
     const sw = (id, label, on) => `<label class="rm-sw" for="${id}"><span>${label}</span><input type="checkbox" id="${id}" ${on ? "checked" : ""}></label>`;
     return `<div class="rmg rm-t-${rmTab}">
-      <div class="rm-tabs" role="tablist">${mkTab("ov", "Overview")}${mkTab("chat", "Chat")}${mkTab("map", "Map")}</div>
+      <div class="rm-tabs" role="tablist">${mkTab("ov", "Overview")}${mkTab("chat", "Chat")}${mkTab("map", "Map")}${mkTab("inv", "Invite")}</div>
       <div class="rmg-l">
         <section class="rm-sec" data-sec="ov">
           <div class="rm-wel">
@@ -1299,6 +1440,13 @@
             ${sw("rm_fv", "Ally vehicles", showAllyVehicles)}
             ${sw("rm_fm", "Shared mission pins", showAllyMissions)}
           </div>
+        </section>
+        <section class="rm-sec" data-sec="inv">
+          <div class="rm-hd"><span>INVITE A PLAYER</span></div>
+          <div class="rm-inv-box">
+            <input id="rm_inv_q" maxlength="30" value="${esc(invSearch.q)}" placeholder="Search by username…" aria-label="Search players by username" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
+          </div>
+          <div id="rm_inv_res">${inviteResultsHtml()}</div>
         </section>
       </div><div class="rmg-r">
         <div class="rm-hd rm-hd-chat"><span>ROOM CHAT</span></div>
@@ -1389,7 +1537,8 @@
     const hl = document.getElementById("rm_hd_leave");
     if (hl) hl.onclick = doLeave;
 
-    // Tabs (Overview / Chat / Map) – mobile layout; switching only toggles classes, no re-render
+    bindInviteTab();
+    // Tabs (Overview / Chat / Map / Invite) – mobile layout; switching only toggles classes, no re-render
     document.querySelectorAll("#room_ov [data-rm-tab]").forEach(b => {
       b.onclick = () => {
         rmTab = b.dataset.rmTab;
@@ -1726,6 +1875,7 @@
     },
     code: () => (room && room.code) || null,
     listOpen: loadPublicRooms,
+    invites: loadInvites,
     shareBtnHtml,
     roomUnits,
     sceneRows,
@@ -1752,6 +1902,7 @@
     patchRecall();
     if (AU && myId()) rejoinIfNeeded();
     bumpRoomUi();
+    loadInvites().catch(() => {});
     if (_lifecycleBound) return;
     _lifecycleBound = true;
     // Leaving (tab closed, app backgrounded): send the exact position + route right now.
@@ -1766,6 +1917,12 @@
     window.addEventListener("pageshow", e => { if (e.persisted && inRoom()) startPresenceLoop(); });
   }
   let _lifecycleBound = false;
+
+  // Check for new room invites every 20 seconds while signed in and not in a room (the toast and the Rooms button count come from this)
+  setInterval(() => {
+    if (!AU || !myId() || inRoom() || document.visibilityState === "hidden") return;
+    loadInvites().catch(() => {});
+  }, 20000);
 
   // Try immediately and after startGame
   if (document.readyState === "complete") setTimeout(onGameReady, 500);
