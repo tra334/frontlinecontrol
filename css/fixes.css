@@ -333,13 +333,13 @@ select.asg:focus-visible{outline:2px solid var(--p);outline-offset:2px}
 .sfsec{display:flex;justify-content:space-between;margin:12px 0 2px;color:var(--mu);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
 
 /* ===== Ranks tab: pinned current rank, dropdown sections, insignia ===== */
-.rk-pin{position:sticky;top:0;z-index:2;background:var(--card);border-left:4px solid var(--a);border-radius:12px;padding:12px;margin-bottom:10px;box-shadow:0 4px 10px rgba(0,0,0,.12)}
+.rk-top{background:var(--card);border-left:4px solid var(--a);border-radius:12px;padding:12px;margin-bottom:10px}
 .rk-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .rk-txt{flex:1;min-width:0}
 .rk-name{font-weight:700;font-size:17px}
 .rk-mult{white-space:nowrap}
-.rk-pin .bar{margin-top:10px}
-.rk-pin .row{display:flex;justify-content:space-between;gap:8px;margin-top:4px}
+.rk-top .bar{margin-top:10px}
+.rk-top .row{display:flex;justify-content:space-between;gap:8px;margin-top:4px}
 .rk-all{margin-top:12px}
 .rk-all>summary{cursor:pointer;font-weight:700;padding:8px 0;list-style:none}
 .rk-all>summary::-webkit-details-marker{display:none}
