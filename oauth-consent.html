@@ -49,7 +49,7 @@ async function finish(session){
   msg("Signing you in to the forum…");
   const {data,error}=await sb.auth.oauth.getAuthorizationDetails(authId);
   if(error)return msg("Couldn't start sign-in: "+error.message);
-  if(data.redirect_url||data.redirect_uri)return location.replace(data.redirect_url||data.redirect_uri); // already approved
+  if(data.redirect_url)return location.replace(data.redirect_url); // already approved: Supabase gives the full link with code + state
   const r=await sb.auth.oauth.approveAuthorization(authId); // first-party app: approve automatically
   if(r.error)msg("Couldn't finish sign-in: "+r.error.message);
 }
