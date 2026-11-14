@@ -317,3 +317,17 @@ nav{background:var(--card)}
 #acct #ac_av{position:relative;cursor:pointer;flex:none;display:inline-flex}
 #acct #ac_av .fcav-ed{position:absolute;right:-2px;bottom:-2px;width:22px;height:22px;border-radius:50%;background:var(--ac,#2563eb);color:#fff;display:grid;place-items:center;border:2px solid var(--card)}
 #acct #ac_av .fcav-ed svg{width:12px;height:12px}
+
+/* ---- staff: "Assign to…" vehicle picker. Same look as the Train / Unassign buttons beside it (button.s.g): grey --bd fill, no border, 9px radius, same text size and padding. The chevron is the only extra. ---- */
+select.asg{appearance:none;-webkit-appearance:none;-moz-appearance:none;width:auto;min-width:0;max-width:170px;margin:0;padding:5px 26px 5px 9px;border:0;border-radius:9px;background:var(--bd) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 8px center/11px 11px;color:var(--tx);font:600 12px system-ui;line-height:1.2;cursor:pointer}
+select.asg:disabled{opacity:.4;cursor:not-allowed}
+select.asg:focus-visible{outline:2px solid var(--p);outline-offset:2px}
+/* wide desktop scales the buttons with --ui; scale the picker the same way. The global select rule forces 16px (stops iOS zooming on focus), so on phones the text stays 16px. */
+@media(min-width:1000px){select.asg{font-size:calc(var(--ui)*.85)!important;padding:calc(var(--ui)*.4) calc(var(--ui)*2.1) calc(var(--ui)*.4) calc(var(--ui)*.7)}}
+
+/* ---- staff panel: status tabs (All / Spare / On vehicles / In training) and section headers ---- */
+.sftabs{display:flex;gap:2px;border-bottom:1px solid var(--bd);margin:0 0 4px;overflow-x:auto}
+.sftabs button{background:none;color:var(--mu);border-radius:0;border-bottom:2px solid transparent;padding:8px 10px;font:600 13px system-ui;white-space:nowrap;cursor:pointer}
+.sftabs button .mu{font-weight:500}
+.sftabs button.on{color:var(--tx);border-bottom-color:var(--a)}
+.sfsec{display:flex;justify-content:space-between;margin:12px 0 2px;color:var(--mu);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
