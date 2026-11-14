@@ -1,0 +1,70 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Forum sign in – Frontline Control</title>
+<style>
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#04070d;color:#eef1f8;font:15px system-ui}
+.c{width:100%;max-width:360px;margin:16px;background:#060b16;border:1px solid #17233d;border-radius:12px;padding:20px}
+h1{font-size:18px;margin:0 0 12px;text-align:center}
+input,button{width:100%;box-sizing:border-box;padding:10px;margin-bottom:8px;border-radius:8px;font:inherit}
+input{border:1px solid #1d2c4a;background:#03060d;color:#eef1f8}
+button{border:0;background:#244fae;color:#fff;font-weight:700;cursor:pointer}
+#m{min-height:20px;font-size:13px;color:#f0594b;margin-bottom:8px}
+</style>
+<div class="c">
+  <h1>Sign in to the forum</h1>
+  <div id="m"></div>
+  <div id="f" hidden>
+    <input id="e" type="email" placeholder="Email" autocomplete="email">
+    <input id="p" type="password" placeholder="Password" autocomplete="current-password">
+    <button id="go">Sign in</button>
+  </div>
+  <button id="rs" hidden>Resend confirmation email</button>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.95.3/dist/umd/supabase.js"></script>
+<script>
+// Host on the SAME origin as the game. In Supabase: Authentication > OAuth Server > Authorization Path = /oauth-consent.html
+const SB_URL="https://sexintgplgiyrunglvtq.supabase.co",SB_KEY="sb_publishable_HoTQ6sXBqCFyt5fUUs7-iQ_7SD4qZVn",SES_KEY="ukd_sb_session";
+const sb=supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+const authId=new URLSearchParams(location.search).get("authorization_id");
+const $=s=>document.querySelector(s),msg=t=>$("#m").textContent=t;
+let email="";
+
+function keep(s){ // store in the same format the game uses
+  localStorage.setItem(SES_KEY,JSON.stringify({access_token:s.access_token,refresh_token:s.refresh_token,expires_at:s.expires_at,user:s.user}));
+}
+async function existing(){
+  let s;try{s=JSON.parse(localStorage.getItem(SES_KEY)||"null")}catch(e){}
+  if(!s)return null;
+  const {data,error}=await sb.auth.setSession({access_token:s.access_token,refresh_token:s.refresh_token});
+  if(error||!data.session)return null;
+  keep(data.session);return data.session;
+}
+async function finish(session){
+  const u=session.user;
+  // Only confirmed emails may continue (Discourse links accounts by email)
+  if(!u.email_confirmed_at){
+    email=u.email;msg("Please confirm your email first (check your inbox), then try again.");$("#rs").hidden=false;return;
+  }
+  msg("Signing you in to the forum…");
+  const {data,error}=await sb.auth.oauth.getAuthorizationDetails(authId);
+  if(error)return msg("Couldn't start sign-in: "+error.message);
+  if(data.redirect_url||data.redirect_uri)return location.replace(data.redirect_url||data.redirect_uri); // already approved
+  const r=await sb.auth.oauth.approveAuthorization(authId); // first-party app: approve automatically
+  if(r.error)msg("Couldn't finish sign-in: "+r.error.message);
+}
+$("#rs").onclick=async()=>{
+  const {error}=await sb.auth.resend({type:"signup",email});
+  msg(error?"Couldn't send the email – try again later.":"Confirmation email sent.");
+};
+$("#go").onclick=async()=>{
+  const {data,error}=await sb.auth.signInWithPassword({email:$("#e").value.trim(),password:$("#p").value});
+  if(error)return msg("Wrong email or password.");
+  keep(data.session);$("#f").hidden=true;finish(data.session);
+};
+(async()=>{
+  if(!authId)return msg("Open this page from the forum's Log in button.");
+  const s=await existing();
+  if(s)finish(s);else $("#f").hidden=false;
+})();
+</script>
