@@ -331,3 +331,29 @@ select.asg:focus-visible{outline:2px solid var(--p);outline-offset:2px}
 .sftabs button .mu{font-weight:500}
 .sftabs button.on{color:var(--tx);border-bottom-color:var(--a)}
 .sfsec{display:flex;justify-content:space-between;margin:12px 0 2px;color:var(--mu);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+
+/* ===== Ranks tab: pinned current rank, dropdown sections, insignia ===== */
+.rk-pin{position:sticky;top:0;z-index:2;background:var(--card);border-left:4px solid var(--a);border-radius:12px;padding:12px;margin-bottom:10px;box-shadow:0 4px 10px rgba(0,0,0,.12)}
+.rk-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.rk-txt{flex:1;min-width:0}
+.rk-name{font-weight:700;font-size:17px}
+.rk-mult{white-space:nowrap}
+.rk-pin .bar{margin-top:10px}
+.rk-pin .row{display:flex;justify-content:space-between;gap:8px;margin-top:4px}
+.rk-all{margin-top:12px}
+.rk-all>summary{cursor:pointer;font-weight:700;padding:8px 0;list-style:none}
+.rk-all>summary::-webkit-details-marker{display:none}
+.rk-all-body{margin-top:6px}
+.rk-item{padding:10px 0;border-bottom:1px solid var(--bd)}
+.rk-item:last-child{border-bottom:0}
+.rk-item.locked{opacity:.6}
+.rk-row{display:flex;align-items:center}
+.rk-line{display:flex;justify-content:space-between;gap:8px}
+.rk-sec>summary{cursor:pointer;list-style:none;align-items:center}
+.rk-sec>summary::-webkit-details-marker{display:none}
+.rk-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:10px 0 4px}
+.rk-day{text-align:center;padding:6px 2px;border-radius:8px;border:1px solid var(--bd);font-size:11px;color:var(--mu)}
+.rk-day b{display:block;color:var(--tx);font-size:12px;margin-top:2px}
+.rk-day.done{background:var(--a);border-color:var(--a);color:#fff}
+.rk-day.done b{color:#fff}
+.rk-day.cur{border:2px solid var(--p)}
