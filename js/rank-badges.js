@@ -19,7 +19,7 @@
     const a = [1, 3, 5].map(k => parseInt(hex.substr(k, 2), 16)), b = [1, 3, 5].map(k => parseInt(to.substr(k, 2), 16));
     return "#" + a.map((v, k) => Math.round(v + (b[k] - v) * t).toString(16).padStart(2, "0")).join("");
   };
-  function rankBadge(i, locked) {
+  function rankBadge(i, locked, gap) {
     const sz = 26 + i * 4, col = locked ? "#94a3b8" : TIER[i], id = "rb" + i + (locked ? "l" : "");
     const gold = i === 5 && !locked;
     const stops = gold
@@ -28,7 +28,7 @@
     const glow = gold ? '<feDropShadow dx="0" dy="0" stdDeviation="2" flood-color="#f5c542" flood-opacity=".55"/>' : "";
     const defs = `<defs><linearGradient id="${id}g" x1="0" y1="0" x2="0" y2="1">${stops}</linearGradient><filter id="${id}f" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="2" stdDeviation="1.3" flood-color="#000" flood-opacity=".35"/>${glow}</filter></defs>`;
     const rim = gold ? '<circle cx="20" cy="20" r="19" fill="none" stroke="#8a6512" stroke-width="1"/>' : "";
-    return `<svg class="rkbadge" width="${sz}" height="${sz}" viewBox="0 0 40 40" style="flex:none;margin-right:8px;overflow:visible;opacity:${locked ? 0.5 : 1}" aria-hidden="true">${defs}<g filter="url(#${id}f)">${SHAPES[i](`url(#${id}g)`)}</g>${rim}<ellipse cx="20" cy="10" rx="10" ry="4.5" fill="#fff" opacity="${gold ? 0.45 : 0.28}"/></svg>`;
+    return `<svg class="rkbadge" width="${sz}" height="${sz}" viewBox="0 0 40 40" style="flex:none;vertical-align:middle;margin-right:${gap == null ? 8 : gap}px;overflow:visible;opacity:${locked ? 0.5 : 1}" aria-hidden="true">${defs}<g filter="url(#${id}f)">${SHAPES[i](`url(#${id}g)`)}</g>${rim}<ellipse cx="20" cy="10" rx="10" ry="4.5" fill="#fff" opacity="${gold ? 0.45 : 0.28}"/></svg>`;
   }
   window.rankBadge = rankBadge;
 })();
