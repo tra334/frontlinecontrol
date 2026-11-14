@@ -8,8 +8,13 @@
 
   // URL of a player's picture
   const url = id => API + "/api/avatar/" + encodeURIComponent(id) + (id === myId() && ver ? "?v=" + ver : "");
-  // An <img> to place on top of a letter/icon. If the player has no picture it removes itself.
-  const img = id => ID.test(String(id || "")) ? '<img class="fcav" alt="" loading="lazy" decoding="async" src="' + url(id) + '" onerror="this.remove()">' : "";
+  // An <img> to place on top of a letter/icon. If the player has no picture it removes itself, and the game then stops
+  // asking for that player's picture for 10 minutes (otherwise every refresh of a list asks again and logs another error).
+  const none = new Map(); // player id -> when the server said "no picture"
+  const NONE_MS = 10 * 60 * 1000;
+  const has404 = id => { const t = none.get(String(id).toLowerCase()); return !!t && Date.now() - t < NONE_MS; };
+  const gone = el => { try { none.set(String(el.dataset.id || "").toLowerCase(), Date.now()); el.remove(); } catch (e) { /* ignore */ } };
+  const img = id => ID.test(String(id || "")) && !has404(id) ? '<img class="fcav" data-id="' + id + '" alt="" loading="lazy" decoding="async" src="' + url(id) + '" onerror="fcAvatar.gone(this)">' : "";
   // Round avatar for the signed-in player (icon underneath, picture on top)
   const mine = n => '<i class="fcav-w" style="width:' + n + "px;height:" + n + 'px">' + AVSVG(n) + img(myId()) + "</i>"; // an <i>, not a <span>: the phone layout hides every span inside the account button
 
@@ -46,6 +51,7 @@
 
   function refresh() {
     ver = Date.now();
+    if (myId()) none.delete(String(myId()).toLowerCase()); // my own picture just changed: ask for it again
     try { const e = document.querySelector("#rk"); if (e) { e.dataset.k = ""; acctLabel(); } } catch (x) { /* ignore */ }
     try { if (document.querySelector("#acct") && document.querySelector("#ac_av")) openAcct(); } catch (x) { /* ignore */ }
   }
@@ -69,5 +75,5 @@
     catch (e) { say((e && e.message) || "Couldn't remove it"); }
   }
 
-  window.fcAvatar = { url, img, mine, pick, remove };
+  window.fcAvatar = { url, img, mine, pick, remove, gone };
 })();
