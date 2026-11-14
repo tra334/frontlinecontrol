@@ -85,8 +85,7 @@
   };
 
   /* put the card at the top of the Ranks & rewards tab */
-  const origRk = window.rkH;
-  window.rkH = function () { return cardHtml() + origRk.apply(this, arguments); };
+  window.gbCardHtml = cardHtml;   // the Ranks tab (rank-tab.js) places the offers itself
 
   setInterval(refresh, POLL_MS);
   const first = setInterval(() => { if (ready()) { clearInterval(first); refresh(); } }, 1500);

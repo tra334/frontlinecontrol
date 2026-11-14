@@ -89,8 +89,7 @@
   }
 
   /* put the leaderboard at the top of the Ranks tab (wraps the rewards card that bonus.js added) */
-  const origRk = window.rkH;
-  window.rkH = function () { return lbHtml() + origRk.apply(this, arguments); };
+  window.lbHtml = lbHtml;   // the Ranks tab (rank-tab.js) places the board itself
 
   setInterval(() => { if (typeof tab !== "undefined" && tab === "r") refresh(); }, POLL_MS);
 })();
