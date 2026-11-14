@@ -19,9 +19,8 @@
     const a = [1, 3, 5].map(k => parseInt(hex.substr(k, 2), 16)), b = [1, 3, 5].map(k => parseInt(to.substr(k, 2), 16));
     return "#" + a.map((v, k) => Math.round(v + (b[k] - v) * t).toString(16).padStart(2, "0")).join("");
   };
-  let seq = 0;
   function rankBadge(i, locked) {
-    const sz = 26 + i * 4, col = locked ? "#94a3b8" : TIER[i], id = "rb" + (++seq);
+    const sz = 26 + i * 4, col = locked ? "#94a3b8" : TIER[i], id = "rb" + i + (locked ? "l" : "");
     const gold = i === 5 && !locked;
     const stops = gold
       ? '<stop offset="0" stop-color="#fff6c9"/><stop offset="0.3" stop-color="#f5d46b"/><stop offset="0.6" stop-color="#c8951f"/><stop offset="1" stop-color="#5c3d07"/>'

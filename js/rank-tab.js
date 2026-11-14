@@ -1,5 +1,5 @@
 /* Ranks tab layout.
-   Top: the current rank, pinned and always open, with a "View all ranks" dropdown.
+   Top: the current rank, with a "View all ranks" dropdown.
    Then dropdowns in order: Leaderboard, Daily bonus, Rank-up bonus (only when one is waiting), Dev bonus (hidden once claimed), Shop. */
 (function () {
   "use strict";
@@ -19,6 +19,12 @@
   const rkUnlock = R => [R.veh.length ? "Vehicles: " + R.veh.join(", ") : "", R.tr.length ? "Training: " + R.tr.join(", ") : ""].filter(Boolean).join(" · ") || "No new unlocks";
   const rkPend = () => rank() - (S.rcl || 0);
   const SUM = 'style="cursor:pointer;font-weight:700;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:8px"';
+
+  // Open/closed state of each dropdown is remembered, so the tab can be rebuilt without closing what the player opened
+  const rkOpen = {};
+  document.addEventListener("toggle", e => { const d = e.target; if (d && d.dataset && d.dataset.rk) rkOpen[d.dataset.rk] = d.open; }, true);
+  const rkDet = (key, defOpen, attrs, inner) =>
+    `<details data-rk="${key}" ${(key in rkOpen ? rkOpen[key] : defOpen) ? "open" : ""} ${attrs}>${inner}</details>`;
 
   function rkDays() {
     const d = drState();
@@ -44,11 +50,12 @@
     const prog = nx
       ? `<div class="bar"><i style="width:${rkPct()}%"></i></div><div class="row"><span class="mu">${S.done} of ${nx.jobs} jobs</span><span class="mu">Next: ${esc(nx.name)}</span></div>`
       : `<div class="mu">Top rank reached</div>`;
-    const all = `<details class="rk-all"><summary>View all ranks ›</summary><div class="rk-all-body">${rkRanks().map(X => `
-      <div class="rk-item${rkState(X.i) === "locked" ? " locked" : ""}">
-        <div class="rk-row">${rankBadge(X.i, rkState(X.i) === "locked")}<div style="flex:1;min-width:0"><div class="rk-line"><b>${esc(X.name)}</b><span class="mu">${X.jobs} jobs · ×${X.mult.toFixed(2)}</span></div><div class="mu">${esc(rkUnlock(X))}</div></div></div>
-      </div>`).join("")}</div></details>`;
-    return `<div class="rk-pin">${head}${prog}${all}</div>`;
+    const items = rkRanks().map(X => {
+      const locked = rkState(X.i) === "locked";
+      return `<div class="rk-item${locked ? " locked" : ""}"><div class="rk-row">${rankBadge(X.i, locked)}<div style="flex:1;min-width:0"><div class="rk-line"><b>${esc(X.name)}</b><span class="mu">${X.jobs} jobs · ×${X.mult.toFixed(2)}</span></div><div class="mu">${esc(rkUnlock(X))}</div></div></div></div>`;
+    }).join("");
+    const all = rkDet("all", false, 'class="rk-all"', `<summary>View all ranks ›</summary><div class="rk-all-body">${items}</div>`);
+    return `<div class="rk-top">${head}${prog}${all}</div>`;
   }
 
   window.rkH = function () {
@@ -57,11 +64,11 @@
     const staffClaim = typeof claimH === "function" ? claimH() : "";
     const d = drState(), p = rkPend();
 
-    const lbSec = lb ? `<details open class="card rk-sec"><summary ${SUM}><span class="t">${lci("trophy")} Leaderboard</span><span class="mu">Top 50</span></summary><div style="margin-top:10px">${lb}</div></details>` : "";
-    const dailySec = `<details class="card rk-sec" style="border-left:4px solid var(--a)"><summary ${SUM}><span class="t">${lci("gift")} Daily bonus</span><span class="mu">${d.can ? "Claim " + money(drAmt(d.day)) : "Claimed today"}</span></summary><div style="margin-top:10px">${rkDays()}<div style="margin-top:8px">${rkDailyBtn()}</div></div></details>`;
-    const bonusSec = p > 0 ? `<details class="card rk-sec" style="border-left:4px solid var(--ac)"><summary ${SUM}><span class="t">${lci("medal")} Rank-up bonus</span><span class="mu">${p} to claim</span></summary><div style="margin-top:10px">${rkBonusBtn()}</div></details>` : "";
-    const devSec = S.dv ? "" : `<details class="card rk-sec" style="border-left:4px solid #eab308"><summary ${SUM}><span class="t">${lci("wrench")} Dev bonus</span><span class="mu">${money(DEVBONUS)} · one-time</span></summary><div style="margin-top:10px"><button class="s" onclick="claimDev()">Claim ${money(DEVBONUS)}</button></div></details>`;
-    const shopSec = `<details class="card rk-sec"><summary ${SUM}><span class="t">${lci("car-front")} Shop</span><span class="mu">Upgrades</span></summary><div style="margin-top:10px">${atpH()}</div></details>`;
+    const lbSec = lb ? rkDet("lb", true, 'class="card rk-sec"', `<summary ${SUM}><span class="t">${lci("trophy")} Leaderboard</span><span class="mu">Top 50</span></summary><div style="margin-top:10px">${lb}</div>`) : "";
+    const dailySec = rkDet("daily", false, 'class="card rk-sec" style="border-left:4px solid var(--a)"', `<summary ${SUM}><span class="t">${lci("gift")} Daily bonus</span><span class="mu">${d.can ? "Claim " + money(drAmt(d.day)) : "Claimed today"}</span></summary><div style="margin-top:10px">${rkDays()}<div style="margin-top:8px">${rkDailyBtn()}</div></div>`);
+    const bonusSec = p > 0 ? rkDet("rankup", false, 'class="card rk-sec" style="border-left:4px solid var(--ac)"', `<summary ${SUM}><span class="t">${lci("medal")} Rank-up bonus</span><span class="mu">${p} to claim</span></summary><div style="margin-top:10px">${rkBonusBtn()}</div>`) : "";
+    const devSec = S.dv ? "" : rkDet("dev", false, 'class="card rk-sec" style="border-left:4px solid #eab308"', `<summary ${SUM}><span class="t">${lci("wrench")} Dev bonus</span><span class="mu">${money(DEVBONUS)} · one-time</span></summary><div style="margin-top:10px"><button class="s" onclick="claimDev()">Claim ${money(DEVBONUS)}</button></div>`);
+    const shopSec = rkDet("shop", false, 'class="card rk-sec"', `<summary ${SUM}><span class="t">${lci("car-front")} Shop</span><span class="mu">Upgrades</span></summary><div style="margin-top:10px">${atpH()}</div>`);
 
     return `<div class="rk-tab">${staffClaim}${offers}${rkCurrent()}${lbSec}${dailySec}${bonusSec}${devSec}${shopSec}</div>`;
   };
