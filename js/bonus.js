@@ -4,20 +4,32 @@
   let offers = [];            // unclaimed, active bonuses
   let busy = false;
 
+  /* Bonuses live on the game server (GET /api/bonuses, POST /api/bonuses/claim); sign-in is the only thing that still uses Supabase */
+  async function gb(path, body) {
+    if (AU.expires_at - 30 < Date.now() / 1000) await sb("/auth/v1/user", { auth: 1 }); // refreshes the login token only when it is about to expire
+    const base = window.FC_API || "https://api.frontlinecontrol.co.uk";
+    let r;
+    try {
+      r = await fetch(base + "/api/bonuses" + path, {
+        method: body === undefined ? "GET" : "POST",
+        headers: { Authorization: "Bearer " + AU.access_token, "Content-Type": "application/json" },
+        body: body === undefined ? undefined : JSON.stringify(body)
+      });
+    } catch (e) { throw { status: 0, message: "Can't reach the game server" }; }
+    const j = await r.json().catch(() => ({ ok: false, reason: "bad reply from server" }));
+    if (!r.ok || !j.ok) throw { status: r.status, message: j.reason || ("Server error " + r.status) };
+    return j;
+  }
+
   const ready = () => typeof AU !== "undefined" && AU && AU.user && AU.user.id && gameOn && S;
 
   async function refresh() {
     if (busy || !ready()) return;
     busy = true;
     try {
-      const iso = encodeURIComponent(new Date().toISOString());
-      const [bs, cs] = await Promise.all([
-        sb("/rest/v1/global_bonuses?select=id,title,amount,ends_at&starts_at=lte." + iso + "&ends_at=gt." + iso + "&order=ends_at.asc", { auth: 1 }),
-        sb("/rest/v1/global_bonus_claims?select=bonus_id&user_id=eq." + AU.user.id, { auth: 1 })
-      ]);
-      const got = new Set((cs || []).map(c => c.bonus_id));
+      const j = await gb("");
       const prev = new Set(offers.map(o => o.id));
-      offers = (bs || []).filter(b => !got.has(b.id));
+      offers = j.bonuses || [];
       if (offers.some(o => !prev.has(o.id))) {
         try { toast("A bonus is waiting for you – open Ranks to claim it"); } catch (e) {}
       }
@@ -50,14 +62,11 @@
       return;
     }
     try {
-      /* claim row first: the (bonus_id,user_id) primary key stops double claims */
-      await sb("/rest/v1/global_bonus_claims", {
-        method: "POST", auth: 1,
-        headers: { Prefer: "return=minimal" },
-        body: { bonus_id: id, user_id: AU.user.id }
-      });
+      /* the server records the claim first: one claim per player, so a second try is refused */
+      const r = await gb("/claim", { id });
+      if (r.bonus && Number.isFinite(+r.bonus.amount)) o.amount = +r.bonus.amount;
     } catch (e) {
-      if (e && (e.status === 409 || /duplicate|unique/i.test(String(e.message || "")))) {
+      if (e && /already claimed/i.test(String(e.message || ""))) {
         toast("You've already claimed that bonus.");
       } else {
         console.error("Bonus claim failed", e);
