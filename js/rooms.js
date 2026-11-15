@@ -982,6 +982,9 @@
   /* Did this player send any unit to this shared call? (en route or on scene) */
   const sentUnits = m => (S.un || []).filter(u => u.mid === m.id && (u.st === "out" || u.st === "scene"));
 
+  /* The owner of a shared call is only paid if one of their OWN units is on scene and is one of the call's required types. */
+  const ownerWorked = m => !!m && (typeof ownReq === "function" ? ownReq(m) : sentUnits(m).some(u => u.st === "scene"));
+
   /* Pay on a room call follows the rank of whoever worked it: the rank this player had when
      they first sent a unit (saved in S.rcs), otherwise their current rank. */
   const rankFor = id => (S.rcs && S.rcs[id] && S.rcs[id].r != null) ? S.rcs[id].r : (typeof rank === "function" ? rank() : 0);
@@ -1116,8 +1119,9 @@
         const sentNow = !!(local && sentUnits(local).length);
         const listed = (rm.contributors || []).some(c => c.user_id === myId());
         const marked = !!(S.rcs && S.rcs[rm.id]);
-        // Owner: if their own copy is already gone they were paid by the normal completion.
-        const eligible = isOwner ? !!local : (sentNow || listed || marked);
+        // Owner: if their own copy is already gone they were paid by the normal completion; if it is still here they are
+        // only paid when one of their own units is on scene as a required type (not merely because they shared it).
+        const eligible = isOwner ? (!!local && ownerWorked(local)) : (sentNow || listed || marked);
         if (local && typeof recall === "function") {
           // finish it on our screen as a normal completed call: units stand down and return to base
           // (the flag stops the recall hook from reporting this completion back to the room)
