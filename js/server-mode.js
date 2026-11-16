@@ -111,7 +111,7 @@
     setTD = function (id, v) { if (!mm(id) || !v) return; act({ type: "settd", mid: id, v: String(v) }); if (curM === id && !$("#modal").hidden) closeM(); else paint(); };
     declineQ = function (id) { const m = mm(id); if (!m || m.ans) return; const e = $("#toast"); if (e && !e.hidden) { clearTimeout(tt); e.hidden = true; } act({ type: "decline", mid: id }); };
     skipM = function (id) { const m = mm(id); if (!m || !m.ans) return;
-      confirmDlg("Skip this call?", "Are you sure you want to skip <b>" + T[m.k][1] + "</b>? It will be dropped with no reward (free, £0).", "Skip call", () => { act({ type: "skip", mid: id }); }, "#92400e"); };
+      confirmDlg("Skip this call?", "Are you sure you want to skip <b>" + T[m.k][1] + "</b>? It will be dropped with no reward (free, £0).", "Skip call", () => { if (window.Rooms && Rooms.callSkipped) Rooms.callSkipped(m); act({ type: "skip", mid: id }); }, "#92400e"); };
     cancelU = function (id, all, st) { const m = mm(curM); if (!m) return;
       const us = S.un.filter(u => u.mid === m.id && canC(u) && (!st || u.st === st) && (all || u.id === id)); if (!us.length) return;
       if (all && !confirm("Cancel all " + us.length + " unit" + (us.length > 1 ? "s" : "") + " on this call?")) return;
