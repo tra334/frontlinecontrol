@@ -10,8 +10,11 @@
 const HIRE=1500,
  /* per level: desks, avg pickup (s), gap between questions (s), price to REACH this level, what the script adds */
  LV=[{d:2,pick:6,gap:3.2,cost:0},{d:4,pick:3,gap:2.6,cost:30000},{d:6,pick:2,gap:2.0,cost:80000},{d:8,pick:1,gap:1.5,cost:180000}];
-/* every operator asks the full question set at every level; these go first when the call has them, in this order: "Is the patient breathing and conscious?" (QS 8), then "What's happened?" (QS 1) */
-const FIRST=[8,1];
+/* every operator asks the full question set at every level; these go first when the call has them (standard or a custom-mission version with the same wording), in this order: "Is the patient breathing and conscious?", then "What's happened?" */
+/* matched by wording (not QS index) so a custom mission's own version of these questions, which sits at the end of QS, is still asked first */
+const nq=t=>String(t||"").toLowerCase().replace(/[\u2018\u2019']/g,"").replace(/[^a-z0-9 ]+/g," ").replace(/\s+/g," ").trim();
+const FIRST=["Is the patient breathing and conscious?","What\u2019s happened?"].map(nq);
+const firstRank=i=>{const r=FIRST.indexOf(nq(QS[i][0]));return r<0?9:r};
 const easy=()=>window.FC_DIFF!=="hard";
 const ready=()=>typeof S!=="undefined"&&S&&typeof gameOn!=="undefined"&&gameOn;
 
@@ -33,7 +36,7 @@ function script(m){
   if(typeof cqShow==="function"&&!cqShow(tp,q,i))return;
   /* vehicle-reveal questions: cqShow (scenarios.js) only lets them through when the player can use a revealed unit */
   out.push(i)});
- return out.sort((a,b)=>{const pa=FIRST.indexOf(a),pb=FIRST.indexOf(b);return(pa<0?9:pa)-(pb<0?9:pb)||a-b})}
+ return out.sort((a,b)=>firstRank(a)-firstRank(b)||a-b)}
 const asked=(m,i)=>m.qa.some(x=>x[0]===QS[i][0]);
 
 /* same effect as the Ask buttons in the call window */
