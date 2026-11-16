@@ -39,6 +39,8 @@
   let invSeen = new Set();  // invite ids already announced with a toast this page load
   let invSearch = { rid: "", q: "", res: null, busy: false, err: "" }; // Invite tab: current search text + results
   let invTimer = 0;
+  let roomMissionsOk = false; // true once the room's live call list has been fetched (so a missing call really means it ended)
+  let goneById = {};    // shared call id -> true once it was skipped / cancelled (offline allies' vehicles on it are hidden)
   let doneAtById = {};  // shared call id -> ms epoch it finished (so offline vehicles can be shown standing down then)
   let claimedLocal = new Set(); // mission ids already paid locally this session
   let lastUi = "";
@@ -469,6 +471,8 @@
     members = j.members || [];
     joinRequests = Array.isArray(j.requests) ? j.requests : [];
     roomMissions = j.missions || [];
+    roomMissionsOk = Array.isArray(j.missions);
+    roomMissions.forEach(r => { if (r && r.status === "cancelled") goneById[r.id] = true; });
 
     // which allies' units do we need to (re)download?
     const list = j.presence || [];
@@ -655,6 +659,16 @@
     let rt = expandRt(u.rt);
     let handEnd = (st === "hand") ? (+u.ht || (t0 + HAND_MS)) : 0;
     const me = +u.me || 0;
+
+    // the call was skipped / cancelled: this vehicle is no longer going to (or at) it. Hide it rather than
+    // keep drawing the old route; it reappears at the station once its owner is back online.
+    if (u.rm && (st === "out" || st === "scene")) {
+      if (goneById[u.rm]) return null;
+      // The room's live list only holds open / working calls. A call missing from it has ended (skipped,
+      // cancelled or finished). Where we know when it finished the code below turns the vehicle round at
+      // that moment; otherwise (skipped, or server mode) hide it instead of driving on to the old call.
+      if (roomMissionsOk && !doneAtById[u.rm] && !roomMissions.some(r => r && r.id === u.rm)) return null;
+    }
 
     for (let guard = 0; guard < 8; guard++) {
       const speed = baseSpeed * ((typeof roadF === "function") ? roadF(u.ty, st) : 1); // speed for the status this pass is in
@@ -1092,7 +1106,7 @@
       // one call: the room's recent finished calls, my own finished/cancelled calls, and the ids I hold
       const got = (await api("/" + room.id + "/missions/settle", { ids: ask })).missions;
       if (!Array.isArray(got)) return;
-      got.forEach(r => { rows.set(r.id, r); if (r.status === "done") { const d = Date.parse(r.updated_at); if (d) doneAtById[r.id] = d; } });
+      got.forEach(r => { rows.set(r.id, r); if (r.status === "done") { const d = Date.parse(r.updated_at); if (d) doneAtById[r.id] = d; } else if (r.status === "cancelled") goneById[r.id] = true; });
       // proxies whose room call no longer exists: stand them down, no reward
       ask.forEach(id => {
         if (rows.has(id)) return;
@@ -1867,6 +1881,8 @@
     join: joinRoom,
     leave: leaveRoom,
     share: shareMission,
+    // called the moment this player skips a shared call, so allies' offline vehicles stop heading to it straight away
+    callSkipped: function (m) { try { if (m && m.roomId) { goneById[m.roomId] = true; tickAllyUnits(); syncAllyMarkers(); } } catch (e) {} },
     // Awaited by signOut(): sends the final position before the session is destroyed
     flush: async () => { try { await publishFinal({ keepalive: false }); } finally { stopLoops(); } },
     inRoom: () => inRoom(),
