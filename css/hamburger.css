@@ -168,7 +168,7 @@
 
 /* mobile: run the menu under the glass nav so no map shows through, and un-highlight Map while the menu is open */
 @media(max-width:999px){
-  #hb_menu{bottom:0;z-index:5}   /* nav is z-index 6, so it stays on top */
+  #hb_menu{bottom:0}   /* menu is z-index 15: above the tab screens (10), below the nav (20) */
 }
 body:has(#hb_menu:not([hidden])) nav button.on{
   color:var(--navmu,var(--mu));background:none;box-shadow:none;
