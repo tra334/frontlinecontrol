@@ -9,7 +9,7 @@
 @media(max-width:999px){
   /* the bar floats above the bottom edge instead of sitting flush on it */
   nav{
-    left:12px!important;right:12px!important;bottom:calc(env(safe-area-inset-bottom,0px) + 12px)!important;
+    left:12px!important;right:12px!important;bottom:calc(env(safe-area-inset-bottom,0px) + 6px)!important;
     top:auto;max-width:none;margin:0;
     display:flex;align-items:stretch;gap:2px;padding:5px;
     background:var(--navg);
