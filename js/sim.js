@@ -29,20 +29,15 @@ const ownOK=t=>{if(t[0]==="a"&&ownN("dca")<1)return false;const dn=t[3].dca||0;i
 const ownNeed=t=>{const o={};Object.entries(t[3]).forEach(([k,n])=>{if(k.startsWith("tr:")){o[k]=n;return}const c=ownN(k);if(c>0)o[k]=Math.min(n,c)});return o};
 const noAmb=m=>!m.roomId&&T[m.k][0]==="a"&&ownN("dca")<1;
 const isShort=(t,nd)=>Object.entries(t[3]).some(([k,n])=>!k.startsWith("tr:")&&(nd[k]||0)<n);
-/* control rooms (control-rooms.js): with no rooms defined everything below behaves as before */
-const crOn=()=>!!(window.ControlRooms&&ControlRooms.roomsOn());
-const crRoom=s=>crOn()?ControlRooms.roomOfSt(s):null;
-const crStations=t=>S.st.filter(x=>x.sv===t[0]&&(!crOn()||(crRoom(x)&&ControlRooms.roomCovers(crRoom(x),t))));
-const crOK=t=>!crOn()||crStations(t).length>0;
 async function spawn(fk){if(spb)return;spb=1;if(fk===undefined)S.next=now()+rateMs();
 try{const svs=new Set(S.st.map(s=>s.sv)),rk=rank();
-const pool=T.filter(t=>!t.off&&Object.entries(t[3]).every(([k,n])=>kr(k)<=rk&&svs.has(ks(k,t))&&(!k.startsWith("tr:")||S.un.filter(u=>has(u,k)).length>=n))&&ownOK(t)&&crOK(t));if(fk===undefined&&!pool.length)return;if(fk!==undefined&&(!ownOK(T[fk])||!crOK(T[fk])))return;
-const t=fk===undefined?pick(pool):T[fk],k=T.indexOf(t),own=crStations(t),b=fk===undefined||!own.length?pick(own.length?own:S.st):pick(own);const crR=b?crRoom(b):null;let la,lo,loc=null;{let po=typeof poiPick==="function"?poiPick(t,b):null;if(!po&&typeof prisonLookup==="function"&&typeof isPrisonT==="function"&&isPrisonT(t))po=await prisonLookup(b);if(po){la=po.la;lo=po.lo;loc=await addr(la,lo);if(po.nm)loc.s=po.nm+", "+loc.s}}
+const pool=T.filter(t=>!t.off&&Object.entries(t[3]).every(([k,n])=>kr(k)<=rk&&svs.has(ks(k,t))&&(!k.startsWith("tr:")||S.un.filter(u=>has(u,k)).length>=n))&&ownOK(t));if(fk===undefined&&!pool.length)return;if(fk!==undefined&&!ownOK(T[fk]))return;
+const t=fk===undefined?pick(pool):T[fk],k=T.indexOf(t),own=S.st.filter(x=>x.sv===t[0]),b=fk===undefined||!own.length?pick(S.st):pick(own);let la,lo,loc=null;{let po=typeof poiPick==="function"?poiPick(t,b):null;if(!po&&typeof prisonLookup==="function"&&typeof isPrisonT==="function"&&isPrisonT(t))po=await prisonLookup(b);if(po){la=po.la;lo=po.lo;loc=await addr(la,lo);if(po.nm)loc.s=po.nm+", "+loc.s}}
 for(let i=0;i<5&&!loc&&1;i++){[la,lo]=offKm(b);const sn=await snap(la,lo);if(sn&&sn.name&&sn.d<400){la=sn.la;lo=sn.lo;loc=await addr(la,lo,sn.name)}}
 if(!loc){const bl=land(b.lat,b.lon);for(let i=0;i<12;i++){[la,lo]=offKm(b);if(!bl||land(la,lo))break}if(bl&&!land(la,lo)){la=b.lat;lo=b.lon}loc={s:Math.ceil(R(1,98))+" "+pick(ROADS),t:near(la,lo),pc:fpc(la,lo),rd:"",fk:1}}
 const kd=t[0]==="a"||Math.random()<.5?"h":"w";let hn=kd==="h"||t[0]==="a"?(t[0]==="a"?{rrv:1}:{dca:1}):t[0]==="p"?{arv:1}:{icu:1};
 if(!Object.keys(hn).every(x=>U[x][3]<=rk))hn=null;if(hn){hn=Object.fromEntries(Object.entries(hn).filter(([x])=>ownN(x)>0));if(!Object.keys(hn).length)hn=null}if(t[1]==="Welfare check"||(t.qa&&t.qa.length))hn=null;
-const NEED=ownNeed(t),SHORT=isShort(t,NEED);S.ms.push({id:S.nid++,k,cr:crR?crR.id:0,la,lo,loc:loc.s+", "+loc.t+", "+loc.pc,adr:loc,adc:0,cn:pick(NM)+" "+pick(NS),ph:newPh(),cad:cadGen(),born:now(),ans:0,end:0,qa:[],hid:hn?{k:kd,n:hn}:null,rev:0,need:NEED,short:SHORT});
+const NEED=ownNeed(t),SHORT=isShort(t,NEED);S.ms.push({id:S.nid++,k,la,lo,loc:loc.s+", "+loc.t+", "+loc.pc,adr:loc,adc:0,cn:pick(NM)+" "+pick(NS),ph:newPh(),cad:cadGen(),born:now(),ans:0,end:0,qa:[],hid:hn?{k:kd,n:hn}:null,rev:0,need:NEED,short:SHORT});
 log("📞 Incoming 999 call – answer it!",1);ctoast(S.ms[S.ms.length-1]);return 1}finally{spb=0}}
 const eta=(u,m)=>km(upos(u),mp(m))*(SP[u.ty]>=150?1:1.3)/(SP[u.ty]*spd())*3600;
 const dd=u=>(now()-u.t0)/3.6e6*SP[u.ty]*spd()*roadF(u.ty,u.st);
