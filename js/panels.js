@@ -1,3 +1,5 @@
+/* control rooms: a call only takes units from its own room, unless that room allows pulls from outside (within its cap) */
+const unitInCR=(u,m)=>!(window.ControlRooms&&ControlRooms.roomsOn())||ControlRooms.unitAllowedFor(u,m);
 function declineQ(id){const m=mm(id);if(!m||m.ans)return;log("❌ 999 call declined");S.ms=S.ms.filter(x=>x!==m);const e=$("#toast");if(e&&!e.hidden){clearTimeout(tt);e.hidden=true}dirty=true}
 function hideCT(id){const e=$("#toast");if(e&&e.dataset.cm==String(id)){clearTimeout(tt);clearInterval(window._ctI);e.hidden=true;delete e.dataset.cm}}
 function openQ(id){const m=mm(id);if(!m)return;si=0;if(curM!==id)sel=new Set();curM=id;if(!m.ans){m.ans=1;m.born=now();log("☎ 999 call answered");dirty=true}hideCT(id);$("#modal").hidden=false;drawQ()}
@@ -40,9 +42,9 @@ function unq(id){Promise.resolve(unqueueUnits([id])).then(()=>rdPick())}
 const tg=id=>{sel.has(id)?sel.delete(id):sel.add(id);rdPick()};
 /* vehicle picker shown in the right column of the call sheet on wide screens (hidden on mobile by CSS) */
 function rdPick(){if(document.querySelector("#sheet .qpick"))drawQ();else drawD()}
-function pickH(m){const nd=shown(m),us=S.un.filter(free).sort((a,b)=>need(nd,b)-need(nd,a)||eta(a,m)-eta(b,m));
+function pickH(m){const nd=shown(m),us=S.un.filter(u=>free(u)&&unitInCR(u,m)).sort((a,b)=>need(nd,b)-need(nd,a)||eta(a,m)-eta(b,m));
 return `<div class="qpick"><div class="t" style="font-size:15px">${lci("truck")} Vehicles</div><div class="mu" style="margin:4px 0 8px">Available &amp; returning units (${us.length}). <span class="nstar">★</span> = needed.</div><div class="qact" style="display:flex;gap:8px;justify-content:flex-start;margin-bottom:6px"><button class="g" onclick="auto()">Auto</button><button onclick="go()" ${sel.size&&m.adc?"":"disabled"}>Dispatch${sel.size?" ("+sel.size+")":""}</button></div>`+(us.length?lim(us,"qp"+m.id,u=>`<label class="ur"><input type="checkbox" ${sel.has(u.id)?"checked":""} onchange="tg(${u.id})"><span style="flex:1"><b>${u.cs}</b> ${U[u.ty][1]}<br><span class="mu">${u.st==="back"?lci("undo-2")+" Returning to ":""}${stn(u.sid).name}${u.tr.length?" · "+lci("graduation-cap")+" "+u.tr.map(k=>TR[k][0]).join(", "):""}</span></span><span class="mu">${Math.round(km(upos(u),mp(m)))} km · ~${Math.ceil(eta(u,m)/60)} min${need(nd,u)?NSTAR:""}</span></label>`,"xpQ"):`<div class="mu">No units free right now.</div>`)+busyH(m)+`</div>`}
-function auto(){const m=mm(curM);sel=new Set();const nd={...shown(m)};for(const k in nd)nd[k]-=asg(m,k);S.un.filter(free).sort((a,b)=>eta(a,m)-eta(b,m)).forEach(u=>{const q=Object.keys(nd).filter(k=>nd[k]>0&&has(u,k));if(q.length){q.forEach(k=>nd[k]--);sel.add(u.id)}});rdPick()}
+function auto(){const m=mm(curM);sel=new Set();const nd={...shown(m)};for(const k in nd)nd[k]-=asg(m,k);S.un.filter(u=>free(u)&&unitInCR(u,m)).sort((a,b)=>eta(a,m)-eta(b,m)).forEach(u=>{const q=Object.keys(nd).filter(k=>nd[k]>0&&has(u,k));if(q.length){q.forEach(k=>nd[k]--);sel.add(u.id)}});rdPick()}
 function go(){const m=mm(curM);if(m){const qs=[];sel.forEach(id=>{const u=S.un.find(x=>x.id===id);if(!u)return;if(free(u))send(u,m);else if(canQ(u)&&u.mid!==m.id)qs.push(u.id)});if(sel.size){m.hw=1}if(qs.length)queueUnits(m.id,qs);if(sel.size>1)setTimeout(()=>log("📻 Control → all units on "+T[m.k][1]+": "+sel.size+" units assigned. Update on arrival.",1,m.id),3500)}closeM();persist()}
 let upop=0;
 function openU(id){upop=upop===id?0:id;sync()}

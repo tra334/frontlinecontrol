@@ -102,6 +102,7 @@
     buy = function (sid, ty) { act({ type: "buy", sid, ty }); };
     place = async function (la, lo, cn) {
       if (!bm) return; const sv = bm; bm = null;
+      if (sv === "cr") { if (window.ControlRooms) ControlRooms.placeBuilding(la, lo); return; }
       let name = cn; if (!name) { const loc = await nearPlace(la, lo); name = loc + " " + (HN[sv] || SN[sv]); }
       act({ type: "build", sv, lat: la, lon: lo, name });
     };
