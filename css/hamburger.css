@@ -1,0 +1,167 @@
+/* Menu: profile, rank, stats, bonuses, play, save, account, dev tools and reset. Opens from the hamburger beside the avatar in the header. */
+#hb_btn{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:none;width:38px;height:38px;margin-left:10px;padding:0;border:1px solid var(--bd);border-radius:10px;background:none;color:var(--tx);cursor:pointer;-webkit-tap-highlight-color:transparent}
+#hb_btn:active{transform:scale(.94)}
+#hb_btn.on{background:rgba(91,141,239,.18);color:var(--p)}
+#hb_btn .hb_dot{position:absolute;top:5px;right:5px;width:10px;height:10px;border-radius:50%;background:#ef4444;border:2px solid var(--card);box-sizing:border-box}
+#hb_btn .hb_dot[hidden]{display:none}
+
+#hb_menu{display:block;position:fixed;left:0;right:0;top:var(--hh,52px);bottom:var(--nh,48px);z-index:15;overflow:auto;-webkit-overflow-scrolling:touch;background:var(--bg);color:var(--tx);padding:14px 14px calc(var(--nh,70px) + 16px)}
+#hb_menu[hidden]{display:none}
+/* fill the whole panel: no narrow centred column */
+#hb_menu>*{width:100%;box-sizing:border-box}
+#hb_menu .hb_card{background:var(--card);border:1px solid var(--bd);border-radius:18px;overflow:hidden;margin-bottom:12px}
+#hb_menu .hb_pad{padding:14px 16px}
+@media(min-width:1000px){
+  /* on desktop the same menu slides in as a panel on the right */
+  #hb_menu{left:auto;width:440px;border-left:1px solid var(--bd);box-shadow:-12px 0 32px rgba(0,0,0,.35)}
+}
+@media(max-width:999px){
+  nav button[data-t="r"],nav #nav_rm{display:none!important}
+}
+
+/* profile */
+#hb_menu .hb_prof{display:flex;align-items:center;gap:16px;padding:18px 16px}
+#hb_menu .hb_av{flex:none;width:68px;height:68px;margin:0;padding:0;border:0;background:none;border-radius:50%;cursor:pointer;position:relative;display:flex}
+#hb_menu .hb_av>*{width:68px!important;height:68px!important}
+#hb_menu .hb_pn{flex:1;min-width:0;line-height:1.3}
+#hb_menu .hb_pn b{display:flex;align-items:center;gap:8px;font-size:22px;font-weight:700;min-width:0}
+#hb_menu .hb_pn b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hb_menu .hb_ed{flex:none;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:rgba(128,128,128,.15);color:var(--mu);cursor:pointer}
+#hb_menu .hb_pn small{display:block;margin-top:2px;font-size:14px;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hb_menu .hb_roles{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+
+/* rank */
+#hb_menu .hb_rankcard{padding:16px;cursor:pointer}
+#hb_menu .hb_rank_top{display:flex;align-items:center;gap:12px}
+#hb_menu .hb_rank_t{flex:1;min-width:0}
+#hb_menu .hb_rank_t small{display:block;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}
+#hb_menu .hb_rank_t b{display:block;font-size:22px;font-weight:700;line-height:1.2;white-space:normal;overflow:visible;overflow-wrap:anywhere}
+#hb_menu .hb_bar2{height:8px;margin:14px 0 8px;background:var(--bd);border-radius:5px;overflow:hidden}
+#hb_menu .hb_bar2 i{display:block;height:100%;background:var(--a)}
+#hb_menu .hb_sub2{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13px;color:var(--mu)}
+#hb_menu .hb_sub2 span:last-child{display:inline-flex;align-items:center;gap:2px;color:var(--p);font-weight:700;white-space:nowrap}
+
+/* stats grid */
+#hb_menu .hb_grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:18px}
+#hb_menu .hb_tile{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+#hb_menu .hb_tile small{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--mu)}
+#hb_menu .hb_tile b{font-size:18px;font-weight:700;overflow-wrap:anywhere}
+#hb_menu .hb_tile.hb_wide{grid-column:1/-1}
+#hb_menu .hb_mini{align-self:flex-start;margin-top:6px;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:0;border-radius:999px;background:var(--bd);color:var(--tx);font:700 13px system-ui;cursor:pointer}
+
+/* rows */
+#hb_menu .hb_row{display:flex;align-items:center;gap:14px;width:100%;box-sizing:border-box;margin:0;padding:14px 16px;border:0;border-radius:0;border-bottom:1px solid var(--bd);background:none;color:var(--tx);font:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#hb_menu .hb_card>.hb_row:last-child,#hb_menu .hb_card>*:last-child>.hb_row:last-child{border-bottom:0}
+#hb_menu .hb_row:active{background:rgba(128,128,128,.12)}
+#hb_menu .hb_ic{flex:none;width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(128,128,128,.13);color:var(--p)}
+#hb_menu .hb_ic.y{color:#eab308}
+#hb_menu .hb_t{flex:1;min-width:0;line-height:1.3}
+#hb_menu .hb_t b{display:block;font-size:18px;font-weight:500}
+#hb_menu .hb_t small{display:block;margin-top:1px;font-size:14px;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hb_menu .hb_pill{flex:none;min-width:26px;padding:3px 11px;border-radius:999px;background:var(--p);color:#fff;font:700 14px/1.35 system-ui;text-align:center;box-sizing:border-box}
+#hb_menu .hb_pill.g{background:var(--a);color:#06220f}
+#hb_menu .hb_pill.m{background:rgba(128,128,128,.25);color:var(--mu);font-size:12px;letter-spacing:.04em;text-transform:uppercase}
+#hb_menu .hb_chev{flex:none;color:var(--mu);opacity:.8;display:flex}
+#hb_menu .hb_row.off{opacity:.45;cursor:default}
+#hb_menu .hb_row.off:active{background:none}
+#hb_menu .hb_row.off .hb_ic{color:var(--mu)}
+#hb_menu .hb_sw{flex:none;position:relative;width:46px;height:26px;border-radius:13px;background:var(--bd)}
+#hb_menu .hb_sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s}
+#hb_menu .hb_sw.on{background:var(--a)}
+#hb_menu .hb_sw.on::after{left:23px}
+#hb_menu .hb_sec{margin:22px 4px 8px;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mu)}
+#hb_menu .hb_note{font-size:13px;color:var(--mu);line-height:1.4;padding:0 4px 10px}
+
+/* speed */
+#hb_menu .hb_t b{display:block}
+#hb_menu .hb_chips{display:flex;gap:6px;margin-top:10px}
+#hb_menu .hb_chip{flex:1;padding:9px 4px;border:0;border-radius:10px;background:var(--bd);color:var(--tx);font:800 13px system-ui;cursor:pointer}
+#hb_menu .hb_chip.on{background:var(--ac,#2563eb);color:#fff}
+
+/* danger zone */
+#hb_menu .hb_danger{border:1px solid #dc2626;border-radius:18px;padding:16px;background:rgba(220,38,38,.08);margin-bottom:12px}
+#hb_menu .hb_dz{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#dc2626;margin-bottom:8px}
+#hb_menu .hb_cta{width:100%;margin:0;padding:14px;border:0;border-radius:14px;background:var(--a);color:#06220f;font:700 17px system-ui;cursor:pointer}
+#hb_menu .hb_cta.danger{background:#dc2626;color:#fff}
+#hb_menu .hb_cta:disabled{opacity:.5}
+
+/* in-panel page bar */
+#hb_menu #hb_sub{min-height:100%}
+#hb_menu .hb_bar{position:sticky;top:-14px;z-index:3;display:flex;align-items:center;gap:10px;margin:-14px -14px 14px;padding:12px 14px;background:var(--bg);border-bottom:1px solid var(--bd)}
+#hb_menu .hb_back{flex:none;width:38px;height:38px;padding:0;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);display:flex;align-items:center;justify-content:center;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#hb_menu .hb_back:active{transform:scale(.94)}
+#hb_menu .hb_bt{font-size:20px;font-weight:700;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hb_menu .hb_page[hidden],#hb_menu .hb_ov[hidden]{display:none!important}
+
+/* bonus pages */
+#hb_menu .hb_hero{display:flex;align-items:center;gap:14px;padding:18px;background:var(--card);border:1px solid var(--bd);border-radius:18px;margin-bottom:12px}
+#hb_menu .hb_hero_t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+#hb_menu .hb_hero_t small{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}
+#hb_menu .hb_hero_t b{font-size:28px;font-weight:700;letter-spacing:-.015em;line-height:1.15}
+#hb_menu .hb_hero_t span{font-size:14px;color:var(--mu)}
+#hb_menu .hb_days{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px}
+#hb_menu .hb_day{padding:10px 8px;border:1px solid var(--bd);border-radius:14px;background:var(--card);text-align:center;display:flex;flex-direction:column;gap:2px}
+#hb_menu .hb_day small{font-size:12px;color:var(--mu)}
+#hb_menu .hb_day b{font-size:16px}
+#hb_menu .hb_day.done{opacity:.45}
+#hb_menu .hb_day.cur{border:2px solid var(--a);background:rgba(34,197,94,.12)}
+#hb_menu .hb_act{margin-bottom:12px}
+#hb_menu .hb_panel{background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:14px 16px;margin-bottom:12px}
+#hb_menu .hb_list{background:var(--card);border:1px solid var(--bd);border-radius:18px;overflow:hidden;margin-bottom:12px}
+#hb_menu .hb_list .rk-item{padding:12px 16px;border-bottom:1px solid var(--bd)}
+#hb_menu .hb_list .rk-item:last-child{border-bottom:0}
+#hb_menu .hb_shop .card{border-left-width:0!important;border-radius:18px;margin-bottom:12px}
+
+/* Settings, Job logs, Manual spawn, Debug log: shown inside the panel instead of as floating windows */
+#hb_menu .hb_ov{position:static!important;inset:auto!important;z-index:auto!important;background:none!important;display:block!important;padding:0!important;overflow:visible!important;margin:0!important}
+#hb_menu .hb_ov>div{max-width:none!important;max-height:none!important;width:100%!important;margin:0!important;padding:0 0 calc(var(--nh,70px) + 16px)!important;border:0!important;border-radius:0!important;background:none!important;box-shadow:none!important;overflow:visible!important;flex:none!important}
+#hb_menu #setov>div>div:first-child,#hb_menu #joblogs>div>div:first-child{display:none!important}
+#hb_menu .hb_ov .cx,#hb_menu #set_x,#hb_menu #jl_x,#hb_menu #ac_x,#hb_menu #ms_x{display:none!important}
+
+/* tabs */
+#hb_menu .hb_tabs{display:flex;gap:4px;margin:0 0 14px;padding:4px;background:var(--card);border:1px solid var(--bd);border-radius:14px}
+#hb_menu .hb_tab{position:relative;flex:1;margin:0;padding:10px 4px;border:0;border-radius:10px;background:none;color:var(--mu);font:600 15px system-ui;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#hb_menu .hb_tab.on{background:var(--bd);color:var(--tx)}
+#hb_menu .hb_tdot{position:absolute;top:8px;right:calc(50% - 30px);width:8px;height:8px;border-radius:50%;background:#ef4444}
+#hb_menu .hb_chev.open{transform:rotate(90deg)}
+#hb_menu .hb_row.danger .hb_t b,#hb_menu .hb_row.danger .hb_ic{color:#ef4444}
+#hb_menu .hb_row.danger .hb_ic{background:rgba(220,38,38,.12)}
+
+/* panes: one at a time on phones (driven by the tabs), all three side by side on desktop */
+#hb_menu .hb_dtop,#hb_menu .hb_ph{display:none}
+#hb_menu .hb_pane{display:none}
+#hb_menu .hb_panes[data-tab="ov"] .hb_pane[data-p="ov"],#hb_menu .hb_panes[data-tab="pl"] .hb_pane[data-p="pl"],#hb_menu .hb_panes[data-tab="ac"] .hb_pane[data-p="ac"]{display:block}
+@media(min-width:1000px){
+  #hb_menu{left:24px;right:24px;top:calc(var(--hh,52px) + 12px);bottom:24px;width:auto;padding:0 28px 28px;border:1px solid var(--bd);border-radius:20px;box-shadow:0 24px 64px rgba(0,0,0,.5)}
+  #hb_menu .hb_tabs{display:none}
+  #hb_menu .hb_dtop{position:sticky;top:0;z-index:4;display:flex;align-items:center;gap:12px;margin:0 -28px 22px;padding:16px 28px;background:var(--bg);border-bottom:1px solid var(--bd)}
+  #hb_menu .hb_dt{display:inline-flex;align-items:center;gap:12px;color:var(--p)}
+  #hb_menu .hb_dt b{font-size:22px;font-weight:700;color:var(--tx)}
+  #hb_menu .hb_esc{margin-left:auto;font-size:13px;color:var(--mu)}
+  #hb_menu .hb_x{flex:none;width:40px;height:40px;margin:0;padding:0;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);display:flex;align-items:center;justify-content:center;cursor:pointer}
+  #hb_menu .hb_panes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:32px;align-items:start}
+  #hb_menu .hb_panes .hb_pane{display:block}
+  #hb_menu .hb_ph{display:block;margin:0 4px 10px;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mu)}
+  #hb_menu .hb_ph+.hb_sec{margin-top:0}
+  #hb_menu .hb_bar{top:0;margin:0 -28px 18px;padding:14px 28px}
+  #hb_menu #hb_sub>.hb_pages{max-width:760px;margin:0 auto}
+}
+
+/* edit-photo badge on the avatar (signed-in players) */
+#hb_menu .hb_avb{position:absolute;right:-2px;bottom:-2px;width:26px;height:26px;border-radius:50%;background:var(--p);color:#fff;display:flex;align-items:center;justify-content:center;border:2px solid var(--card);box-sizing:border-box}
+/* pending bonuses: a line under the rank card with a claim button */
+#hb_menu .hb_pend{display:flex;flex-direction:column;gap:8px;margin:-4px 0 12px}
+#hb_menu .hb_claim{display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box;margin:0;padding:12px 14px;border:1px solid rgba(52,194,106,.45);border-radius:14px;background:rgba(34,197,94,.12);color:var(--tx);font:inherit;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#hb_menu .hb_claim:active{transform:scale(.99)}
+#hb_menu .hb_claim span{flex:1;min-width:0;font-size:15px}
+#hb_menu .hb_claim span b{font-weight:700}
+#hb_menu .hb_claim em{flex:none;font-style:normal;padding:6px 14px;border-radius:999px;background:var(--a);color:#06220f;font:700 13px system-ui}
+#hb_menu .hb_av>.hb_avb{width:26px!important;height:26px!important}
+#hb_menu .hb_row.danger .hb_t small{white-space:normal;overflow:visible;text-overflow:clip}
+
+/* Sign out / Sign in, on their own */
+#hb_menu .hb_signout{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;box-sizing:border-box;margin:0 0 12px;padding:15px;border:2px solid var(--p);border-radius:14px;background:none;color:var(--p);font:700 17px system-ui;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#hb_menu .hb_signout.out{border-color:#dc2626;background:rgba(220,38,38,.08);color:#ef4444}
+#hb_menu .hb_signout:active{transform:scale(.99)}
+#hb_menu .hb_so{display:inline-flex;align-items:center;gap:6px;margin:8px 0 0;padding:6px 14px;border:1px solid var(--p);border-radius:999px;background:none;color:var(--p);font:700 13px system-ui;cursor:pointer}
+#hb_menu .hb_so.out{border-color:#dc2626;color:#ef4444}

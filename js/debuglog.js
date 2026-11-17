@@ -146,8 +146,8 @@
     mk("Refresh", draw);
     mk("Clear", () => { clear(); draw(); }, "#dc2626");
     box.append(head, sub, pre, btns); ov.appendChild(box);
-    ov.addEventListener("click", e => { if (e.target === ov) ov.remove(); });
-    document.body.appendChild(ov); draw();
+    ov.addEventListener("click", e => { if (e.target === ov && !ov.dataset.host) ov.remove(); });
+    fcMount(ov, "Debug log"); draw();
   }
 
   window.DebugLog = { add: (m, t) => add(t || "info", m), report, open: openUI, clear, list: () => list.slice() };

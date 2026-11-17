@@ -72,4 +72,44 @@
 
     return `<div class="rk-tab">${staffClaim}${offers}${rkCurrent()}${lbSec}${dailySec}${bonusSec}${devSec}${shopSec}</div>`;
   };
+
+  /* Flat in-panel versions for the mobile hamburger menu. No dropdowns: everything on the page is visible at once. */
+  const hbRankItems = () => rkRanks().map(X => {
+    const locked = rkState(X.i) === "locked";
+    return `<div class="rk-item${locked ? " locked" : ""}"><div class="rk-row">${rankBadge(X.i, locked)}<div style="flex:1;min-width:0"><div class="rk-line"><b>${esc(X.name)}</b><span class="mu">${X.jobs} jobs · ×${X.mult.toFixed(2)}</span></div><div class="mu">${esc(rkUnlock(X))}</div></div></div></div>`;
+  }).join("");
+  window.rkFlatH = function () {
+    const r = rank(), R = rkRanks()[r], nx = rkRanks()[r + 1];
+    const prog = nx
+      ? `<div class="bar"><i style="width:${rkPct()}%"></i></div><div class="row"><span class="mu">${S.done} of ${nx.jobs} jobs</span><span class="mu">Next: ${esc(nx.name)}</span></div>`
+      : `<div class="mu">Top rank reached</div>`;
+    return `<div class="hb_hero">${rankBadge(r, false)}<div class="hb_hero_t"><small>Current rank</small><b>${esc(R.name)}</b><span>×${R.mult.toFixed(2)} on all calls</span></div></div><div class="hb_panel">${prog}</div><div class="hb_list">${hbRankItems()}</div>`;
+  };
+  window.rkDailyH = function () {
+    const d = drState();
+    const tiles = [1, 2, 3, 4, 5, 6, 7].map(n => {
+      const done = d.can ? n < d.day : n <= d.day, cur = d.can && n === d.day;
+      return `<div class="hb_day${done ? " done" : ""}${cur ? " cur" : ""}"><small>Day ${n}</small><b>£${drAmt(n) / 1000}k</b></div>`;
+    }).join("");
+    const head = d.can
+      ? `<small>Ready to claim</small><b>${money(drAmt(d.day))}</b><span>Day ${d.day} of 7</span>`
+      : `<small>Claimed today</small><b>Come back tomorrow</b><span>Next: ${money(drAmt(d.day % 7 + 1))}</span>`;
+    const btn = d.can ? `<button class="hb_cta" onclick="claimDaily()">Claim ${money(drAmt(d.day))}</button>` : "";
+    return `<div class="hb_hero"><div class="hb_hero_t">${head}</div></div><div class="hb_days">${tiles}</div><div class="hb_act">${btn}</div>`;
+  };
+  window.rkRankUpH = function () {
+    const p = rkPend();
+    const head = p > 0
+      ? `<small>Rank-up bonus</small><b>${money(rbSum(S.rcl || 0, rank()))}</b><span>${p} bonus${p > 1 ? "es" : ""} waiting</span>`
+      : `<small>Rank-up bonus</small><b>Nothing waiting</b><span>Reach the next rank to earn another</span>`;
+    const btn = p > 0 ? `<button class="hb_cta" onclick="claimRank()">Claim ${p} bonus${p > 1 ? "es" : ""}</button>` : "";
+    return `<div class="hb_hero"><div class="hb_hero_t">${head}</div></div><div class="hb_act">${btn}</div>`;
+  };
+  window.rkDevH = function () {
+    const head = S.dv
+      ? `<small>One-time bonus</small><b>Already claimed</b>`
+      : `<small>One-time bonus</small><b>${money(DEVBONUS)}</b><span>Can only be claimed once</span>`;
+    const btn = S.dv ? "" : `<button class="hb_cta" onclick="claimDev()">Claim ${money(DEVBONUS)}</button>`;
+    return `<div class="hb_hero"><div class="hb_hero_t">${head}</div></div><div class="hb_act">${btn}</div>`;
+  };
 })();

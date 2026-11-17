@@ -58,7 +58,7 @@ function poiBind(ov,draw){const h=ov.querySelector("#set_poih");if(h)h.onclick=(
 ov.querySelectorAll("[data-poi]").forEach(b=>b.onclick=()=>poiStart(b.dataset.poi))}
 /* ---- placement mode (reuses the draggable pin) ---- */
 function poiStart(id){if(!poiT(id)||poiCnt(id)>=POI_MAX)return;bm=null;mv=null;pm={t:id,n:0};
-const so=$("#setov");if(so)so.remove();const a=$("#ac_x");if(a){let e=a;while(e.parentNode&&e.parentNode!==document.body)e=e.parentNode;if(e.parentNode===document.body)e.remove()}
+const so=$("#setov");if(so)so.remove();const a=$("#ac_x");if(a){const ao=$("#acct");if(ao)ao.remove()}
 $("#fabm").hidden=true;try{closeM()}catch(e){}setTab("m");paint();toast("Drag the pin or tap the map, then press Place POI.")}
 function poiExit(){pm=null;paint();const n=0;refreshSettings()}
 function poiType(v){if(!pm||!poiT(v))return;pm.t=v;paint()}
