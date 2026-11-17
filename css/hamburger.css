@@ -15,8 +15,9 @@
   /* on desktop the same menu slides in as a panel on the right */
   #hb_menu{left:auto;width:440px;border-left:1px solid var(--bd);box-shadow:-12px 0 32px rgba(0,0,0,.35)}
 }
+nav button[data-t="r"]{display:none!important}  /* Ranks tab: everything lives in the menu now */
 @media(max-width:999px){
-  nav button[data-t="r"],nav #nav_rm{display:none!important}
+  nav #nav_rm{display:none!important}
 }
 
 /* profile */
@@ -132,7 +133,7 @@
 #hb_menu .hb_pane{display:none}
 #hb_menu .hb_panes[data-tab="ov"] .hb_pane[data-p="ov"],#hb_menu .hb_panes[data-tab="pl"] .hb_pane[data-p="pl"],#hb_menu .hb_panes[data-tab="ac"] .hb_pane[data-p="ac"]{display:block}
 @media(min-width:1000px){
-  #hb_menu{left:24px;right:24px;top:calc(var(--hh,52px) + 12px);bottom:24px;width:auto;padding:0 28px 28px;border:1px solid var(--bd);border-radius:20px;box-shadow:0 24px 64px rgba(0,0,0,.5)}
+  #hb_menu{z-index:25;left:24px;right:24px;top:calc(var(--hh,52px) + 12px);bottom:24px;width:auto;padding:0 28px 28px;border:1px solid var(--bd);border-radius:20px;box-shadow:0 24px 64px rgba(0,0,0,.5)}
   #hb_menu .hb_tabs{display:none}
   #hb_menu .hb_dtop{position:sticky;top:0;z-index:4;display:flex;align-items:center;gap:12px;margin:0 -28px 22px;padding:16px 28px;background:var(--bg);border-bottom:1px solid var(--bd)}
   #hb_menu .hb_dt{display:inline-flex;align-items:center;gap:12px;color:var(--p)}
@@ -173,3 +174,6 @@
 body:has(#hb_menu:not([hidden])) nav button.on{
   color:var(--navmu,var(--mu));background:none;box-shadow:none;
 }
+
+/* leaderboard page inside the menu */
+#hb_menu .hb_lb .card{margin:0 0 12px;border-radius:18px}
