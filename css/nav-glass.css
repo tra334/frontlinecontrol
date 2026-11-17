@@ -9,12 +9,12 @@
 @media(max-width:999px){
   /* the bar floats above the bottom edge instead of sitting flush on it */
   nav{
-    left:12px!important;right:12px!important;bottom:calc(env(safe-area-inset-bottom,0px) + 6px)!important;
+    left:8px!important;right:8px!important;bottom:env(safe-area-inset-bottom,0px)!important;
     top:auto;max-width:none;margin:0;
     display:flex;align-items:stretch;gap:2px;padding:5px;
     background:var(--navg);
     -webkit-backdrop-filter:blur(22px) saturate(180%);backdrop-filter:blur(22px) saturate(180%);
-    border:1px solid var(--navbd);border-radius:24px;
+    border:1px solid var(--navbd);border-radius:24px 24px 0 0;
     box-shadow:0 10px 30px rgba(15,23,42,.18),0 2px 6px rgba(15,23,42,.08),inset 0 1px 0 rgba(255,255,255,.28);
   }
   nav button{
