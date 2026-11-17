@@ -80,8 +80,7 @@
         method: body === undefined ? "GET" : "POST",
         headers: { Authorization: "Bearer " + AU.access_token, "Content-Type": "application/json" },
         body: body === undefined ? undefined : JSON.stringify(body),
-        keepalive: !!(o && o.keepalive),
-        signal: AbortSignal.timeout ? AbortSignal.timeout(20000) : undefined
+        keepalive: !!(o && o.keepalive)
       });
     } catch (e) { throw { status: 0, message: "Can't reach the game server" }; }
     const j = await r.json().catch(() => ({ ok: false, reason: "bad reply from server" }));
@@ -402,18 +401,17 @@
   }
 
   /* ---------- Polling ---------- */
-  let _pollBusy = false, _presBusy = false; // in-flight guards: never stack up polls or presence publishes
   function startLoops() {
     stopLoops();
     if (!inRoom()) return;
-    pollTimer = setInterval(() => { if (_pollBusy) return; _pollBusy = true; refreshAll().catch(() => {}).finally(() => { _pollBusy = false; }); }, POLL_MS);
+    pollTimer = setInterval(() => { refreshAll().catch(() => {}); }, POLL_MS);
     startPresenceLoop();
     refreshAll().catch(() => {});
   }
   function startPresenceLoop() {
     clearInterval(presenceTimer);
     if (!inRoom()) return;
-    presenceTimer = setInterval(() => { if (_presBusy) return; _presBusy = true; publishPresence().catch(() => {}).finally(() => { _presBusy = false; }); }, PRESENCE_MS);
+    presenceTimer = setInterval(() => { publishPresence().catch(() => {}); }, PRESENCE_MS);
     publishPresence().catch(() => {});
   }
   function stopPresenceLoop() { clearInterval(presenceTimer); presenceTimer = 0; }

@@ -21,7 +21,7 @@
   async function call(path, body) {
     await sb("/auth/v1/user", { auth: 1 });                       // refreshes the login token if it is about to expire
     const t0 = Date.now();
-    const r = await fetch(API + path, { method: body ? "POST" : "GET", headers: { Authorization: "Bearer " + AU.access_token, "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout ? AbortSignal.timeout(20000) : undefined });
+    const r = await fetch(API + path, { method: body ? "POST" : "GET", headers: { Authorization: "Bearer " + AU.access_token, "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
     const j = await r.json().catch(() => ({ ok: false, reason: "bad reply from server" })); j.http = r.status; j.t0 = t0; j.t1 = Date.now(); return j;
   }
   /* Game clock = server time. Each reply says what the server's clock read when it answered; the reply took
@@ -196,8 +196,7 @@
     setInterval(() => { for (const k in osmSent) delete osmSent[k]; }, 600000); // the server forgets map data on restart, so resend every 10 minutes                       // rooms.js uses this to ask the server to share a call
 
     // 3) pick up what the server is doing (calls arriving, units moving, jobs paid)
-    let polling = false; // only one state poll may wait in the queue at a time
-    const poll = () => { if (polling) return; polling = true; busy = busy.then(async () => { try { const j = await call("/api/state"); if (j.ok) apply(j); } catch (e) {} finally { polling = false; } }); };
+    const poll = () => { busy = busy.then(async () => { try { const j = await call("/api/state"); if (j.ok) apply(j); } catch (e) {} }); };
     setInterval(poll, 2000);
     document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") poll(); });   // refresh straight away on return
   }
