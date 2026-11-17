@@ -96,7 +96,7 @@ function trainC(id,k){const u=S.un.find(x=>x.id===id);if(!u||u.tr.includes(k)||S
 function train(id,k){const u=S.un.find(x=>x.id===id);if(!u||S.cr<TR[k][1]||u.tr.includes(k))return;S.cr-=TR[k][1];ldg("sp","Training: "+u.cs+" – "+TR[k][0],-TR[k][1]);u.tr.push(k);log("🎓 "+u.cs+" qualified: "+TR[k][0]);persist();$("#v").dataset.n="";paint();if(si)drawS();drawT()}
 function setTab(t){if(desk()&&(t==="c"||t==="l"))t="m";tab=t;document.querySelectorAll("nav button[data-t]").forEach(b=>b.classList.toggle("on",b.dataset.t===t));$("#v").hidden=t==="m"&&!desk();$("#v").dataset.k="";paint()}
 function goTab(t){setTab(t)}
-function lay(){const r=document.documentElement.style;r.setProperty("--hh",$("header").offsetHeight+"px");r.setProperty("--nh",$("nav").offsetHeight+"px")}
+function lay(){const r=document.documentElement.style,n=$("nav");r.setProperty("--hh",$("header").offsetHeight+"px");r.setProperty("--nh",(n.offsetHeight+(parseFloat(getComputedStyle(n).bottom)||0))+"px")}
 function buy(sid,ty){const c=U[ty][2];if(S.cr<c||U[ty][3]>rank()||!accepts(stn(sid)).includes(ty)||vehReason(stn(sid),ty)||needTrain(stn(sid),ty)||S.un.filter(u=>u.sid===sid).length>=cap(stn(sid)))return;S.cr-=c;ldg("sp","New unit: "+U[ty][4]+S.nid+" "+U[ty][1],-c);const id=S.nid++;S.un.push({id,ty,sid,cs:U[ty][4]+id,st:"idle",mid:0,tr:(U[ty][5]||[]).slice()});log("🚗✅ Unit purchased: "+U[ty][4]+id+" "+U[ty][1]);persist();$("#v").dataset.n="";paint();if(si)drawS()}
 // ---- added features ----
 const free=u=>(u.st==="idle"||u.st==="back")&&crewed(u)&&!u.oos;
