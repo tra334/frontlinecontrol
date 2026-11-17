@@ -42,7 +42,7 @@ function bnClean(s){return (s||"").replace(/[<>&"]/g,"").trim().slice(0,30).trim
 /* two steps after "Confirm and build": (1) optional name, (2) "are you sure?" then build. Blank name = default name. */
 function bpConfirm(){
 if(!bm||!bll)return;
-const sv=bm,la=bll[0],lo=bll[1],hosp=!!HN[sv],lb=hosp?HN[sv]:SN[sv],list=hosp?S.hs:S.st,price=prc(sv);
+const sv=bm,la=bll[0],lo=bll[1],hosp=!!HN[sv],lb=hosp?HN[sv]:(SN[sv]||bn(sv)),list=hosp?S.hs:S.st,price=prc(sv);
 let cn="",dflt=null,near=null;
 const dfn=n=>{let d=n+" "+lb;if(list.some(x=>x.name===d))d+=" #"+S.nid;return d};
 const ov=document.createElement("div");ov.id="nameov";ov.style.cssText="position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:16px";
