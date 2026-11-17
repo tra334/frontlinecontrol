@@ -50,7 +50,7 @@ function prog(o){const m=mm(o.mid);if(!m)return[0,0];const s=script(m);return[s.
 
 function pickUp(o,m){
  m.ans=1;m.born=now();m.ccop=o.n;o.mid=m.id;o.next=now()+lv().gap*1000*(.8+Math.random()*.4);
- log("☎ 999 call answered by "+o.n+" (control room desk "+o.desk+")");
+ log("☎ 999 call answered by "+o.n+" (operator desk "+o.desk+")");
  try{hideCT(m.id)}catch(e){}
  dirty=true}
 
@@ -126,7 +126,7 @@ function html(){
  if(!ready()||!easy()||!cc())return"";
  const c=cc(),L=lv(),n=c.ops.filter(o=>o.desk<=L.d).length,busy=c.ops.filter(o=>o.mid&&mm(o.mid)).length,
   up=c.lv<LV.length?LV[c.lv]:null;
- let h=`<div class="card cc"><div class="cch"><b>Frontline Control Room</b><span>Level ${c.lv}/${LV.length}</span></div>
+ let h=`<div class="card cc"><div class="cch"><b>Operator Desks</b><span>Level ${c.lv}/${LV.length}</span></div>
 <div class="ccs">${n}/${L.d} desks staffed · ${busy} on a call · pickup ~${L.pick.toFixed(1)}s · ${c.ans} call${c.ans===1?"":"s"} answered</div>
 <div class="ccscr">${lci("circle-help")}<span>Script: full question set · what happened / breathing first</span></div>
 <div class="cca"><div><b>Auto-answer</b><small>${c.on?"Operators pick up unanswered calls. You can still answer first.":"Operators are idle. You answer every call yourself."}</small></div><button class="ccon${c.on?"":" off"}" onclick="ccAuto()">${c.on?"ON":"OFF"}</button></div>
@@ -139,21 +139,21 @@ function html(){
   else h+=`<div class="ccd"><div class="dk">Desk ${d}</div><div class="nm">${esc2(o.n)}</div><span class="pill av">Available</span><div class="sb">${o.calls} call${o.calls===1?"":"s"} taken</div></div>`}
  h+=`</div>`;
  h+=up?`<button class="ccup" ${S.cr<up.cost?"disabled":""} onclick="ccUpg()">🎧 Upgrade: +2 desks, faster pickup &amp; questions · £${fmt(up.cost)}</button>`
-      :`<div class="ccmax">Control room fully upgraded</div>`;
+      :`<div class="ccmax">Operator desks fully upgraded</div>`;
  return h+`</div>`}
 
 /* ---------- actions ---------- */
 function refresh(){persist();lastKey="";try{$("#v").dataset.n="";paint()}catch(e){}}
-window.ccAuto=function(){if(srv()){SRV.act({type:"cc",op:"auto"});return}const c=cc();c.on=c.on?0:1;log(c.on?"🎧 Control room auto-answer ON":"🎧 Control room auto-answer OFF");refresh()};
+window.ccAuto=function(){if(srv()){SRV.act({type:"cc",op:"auto"});return}const c=cc();c.on=c.on?0:1;log(c.on?"🎧 Operator desks auto-answer ON":"🎧 Operator desks auto-answer OFF");refresh()};
 window.ccHire=function(d){if(srv()){SRV.act({type:"cc",op:"hire",desk:d});return}const c=cc();if(c.ops.some(o=>o.desk===d)||d>lv().d)return;
  if(S.cr<HIRE){toast("Not enough credits.");return}
  S.cr-=HIRE;const o={id:c.nid++,n:patName(),desk:d,calls:0,mid:0,next:0,rest:0};c.ops.push(o);
- ldg("sp","Control room operator hired: "+o.n,-HIRE);log("🎧 "+o.n+" hired as control room operator (desk "+d+", -£"+fmt(HIRE)+")");refresh()};
+ ldg("sp","Operator hired: "+o.n,-HIRE);log("🎧 "+o.n+" hired as an operator (desk "+d+", -£"+fmt(HIRE)+")");refresh()};
 window.ccUpg=function(){const c=cc();if(c.lv>=LV.length)return;const up=LV[c.lv];
  if(S.cr<up.cost){toast("Not enough credits.");return}
- const go=()=>{if(srv()){SRV.act({type:"cc",op:"upgrade"});return}S.cr-=up.cost;c.lv++;ldg("sp","Control room upgraded to level "+c.lv,-up.cost);log("🎧 Control room upgraded to level "+c.lv+" (-£"+fmt(up.cost)+"): "+LV[c.lv-1].d+" desks, faster pickup and questioning.");toast("Control room upgraded to level "+c.lv);refresh()};
+ const go=()=>{if(srv()){SRV.act({type:"cc",op:"upgrade"});return}S.cr-=up.cost;c.lv++;ldg("sp","Operator desks upgraded to level "+c.lv,-up.cost);log("🎧 Operator desks upgraded to level "+c.lv+" (-£"+fmt(up.cost)+"): "+LV[c.lv-1].d+" desks, faster pickup and questioning.");toast("Operator desks upgraded to level "+c.lv);refresh()};
  if(window._ccNoConfirm||typeof confirmDlg!=="function"){go();return}
- confirmDlg("Upgrade control room?","Upgrade to <b>level "+(c.lv+1)+"</b> for <b>£"+fmt(up.cost)+"</b>: "+LV[c.lv].d+" desks, faster pickup and quicker questioning.","Upgrade · £"+fmt(up.cost),go,"#3b5bdb")};
+ confirmDlg("Upgrade operator desks?","Upgrade to <b>level "+(c.lv+1)+"</b> for <b>£"+fmt(up.cost)+"</b>: "+LV[c.lv].d+" desks, faster pickup and quicker questioning.","Upgrade · £"+fmt(up.cost),go,"#3b5bdb")};
 
 /* server mode: tell the server which difficulty this session chose (it only runs operators in easy) */
 let sentD=null,sentAt=0;
