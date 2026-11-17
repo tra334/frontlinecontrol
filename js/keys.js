@@ -22,7 +22,7 @@
   /* ---------- cheat sheet ---------- */
   const SHEET = [
     ["Navigation", [
-      [["F"], "Fleet tab"], [["S"], "Stations tab"], [["R"], "Ranks tab"],
+      [["F"], "Fleet tab"], [["S"], "Stations tab"],
       [["M"], "Focus radio panel"], [["/"], "Address search (while placing)"],
       [["Shift+R"], "Rooms"], [["Shift+S"], "Settings"]]],
     ["Calls and incidents", [
@@ -215,7 +215,6 @@
     switch (k) {
       case "f": nav("m"); break;
       case "s": nav("s"); break;
-      case "r": nav("r"); break;
       case " ": nextCall(); break;
       case "n": stepIncident(1); break;
       case "p": stepIncident(-1); break;

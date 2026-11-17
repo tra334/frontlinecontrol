@@ -28,6 +28,7 @@
     bug: '<rect x="8" y="6" width="8" height="14" rx="4"/><path d="M5 10h3M16 10h3M5 16h3M16 16h3M9 3l1.5 3M15 3l-1.5 3"/>',
     speed: '<path d="M3.3 17A9 9 0 1 1 20.7 17"/><path d="M12 14l4-4"/>',
     warn: '<path d="M12 3 22 21H2z"/><path d="M12 10v5M12 18h.01"/>',
+    trophy: '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 4h3v2a3 3 0 0 1-3 3M7 4H4v2a3 3 0 0 0 3 3"/>',
     chev: '<path d="m9 18 6-6-6-6"/>'
   };
   const svg = (k, s) => `<svg width="${s || 22}" height="${s || 22}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[k]}</svg>`;
@@ -118,6 +119,7 @@ ${S.dv ? "" : row("dev", "wrench", "Dev bonus", money(typeof DEVBONUS === "numbe
 ${sec("Game")}
 <div class="hb_card">
 ${row("rooms", "rooms", "Rooms", rmSub, rmCount ? `<span class="hb_pill">${esc(rmCount)}</span>` : "")}
+${row("lb", "trophy", "Leaderboard", si ? "Top 50 players" : "Sign in to see rankings", "", si ? {} : { off: true })}
 ${row("shop", "shop", "Shop", "Upgrades")}
 ${row("logs", "log", "Job logs", "Past calls and earnings")}
 </div>`;
@@ -161,6 +163,7 @@ ${row("reset", "warn", "Reset game", "Wipes all progress. This cannot be undone.
     ranks: { t: "Ranks", html: () => window.rkFlatH ? rkFlatH() : "" },
     daily: { t: "Daily bonus", html: () => window.rkDailyH ? rkDailyH() : "" },
     rankup: { t: "Rank-up bonus", html: () => window.rkRankUpH ? rkRankUpH() : "" },
+    lb: { t: "Leaderboard", html: () => `<div class="hb_lb">${window.lbHtml && signedIn() ? lbHtml() : '<div class="hb_panel">Sign in to see the leaderboard.</div>'}</div>` },
     shop: { t: "Shop", html: () => `<div class="hb_shop">${typeof atpH === "function" ? atpH() : ""}</div>` },
     dev: { t: "Dev bonus", html: () => window.rkDevH ? rkDevH() : "" },
     set: { t: "Settings", mount: () => openSettings() },
