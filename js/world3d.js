@@ -73,11 +73,11 @@ function chooseMode(){return new Promise(res=>{
 })}
 
 /* ---------- difficulty chooser (asked right after Classic / 3D) ----------
-   Easy: operator desks answer calls and question callers; you dispatch.  Hard: no operators, you do it all. */
+   Easy: control room operators answer calls and question callers; you dispatch.  Hard: no operators, you do it all. */
 function chooseDiff(){return new Promise(res=>{
  const last=lsGet("fc_diff")==="hard"?"hard":"easy",ov=document.createElement("div");ov.id="w3ov";
  ov.innerHTML=`<div class="bx"><h1>Choose difficulty</h1><p class="sub">How much do you want to handle yourself?</p><div class="cards">
- <button class="cd${last==="easy"?" last":""}" data-m="easy"><i>🎧</i><b>Easy</b><span>Operator desks pick up unanswered 999 calls and question the caller for you. You just dispatch units.</span></button>
+ <button class="cd${last==="easy"?" last":""}" data-m="easy"><i>🎧</i><b>Easy</b><span>Control room operators pick up unanswered 999 calls and question the caller for you. You just dispatch units.</span></button>
  <button class="cd${last==="hard"?" last":""}" data-m="hard"><i>☎️</i><b>Hard</b><span>No operators. You answer every call, question the caller and dispatch.</span></button></div>
  <div class="tip">Press 1 or 2</div></div>`;
  document.body.appendChild(ov);
