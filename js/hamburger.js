@@ -168,11 +168,12 @@ ${row("reset", "warn", "Reset game", "Wipes all progress. This cannot be undone.
     dev: { t: "Dev bonus", html: () => window.rkDevH ? rkDevH() : "" },
     set: { t: "Settings", mount: () => openSettings() },
     logs: { t: "Job logs", mount: () => openJobLogs() },
-    mspawn: { t: "Manual spawn", mount: () => openMissionSpawn() },
+    mspawn: { t: "Manual spawn", mount: () => { close(); openMissionSpawn(); } },
     dbglog: { t: "Debug log", mount: () => { if (window.DebugLog) DebugLog.open(); else toast("Debug log not loaded"); } }
   };
 
   async function spawnRandom() {
+    close();
     if (!S.st.length) { toast("Build a station first."); return; }
     const ok = await spawn();
     if (!ok) toast("No mission can spawn with your current stations and rank.");
