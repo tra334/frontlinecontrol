@@ -274,3 +274,8 @@ body.qnp .qneed{display:none}
 .uq:focus{border-color:var(--rd-blue)}
 .uq::-webkit-search-cancel-button{filter:invert(.7)}
 @media(max-width:999px){.uq{font-size:16px;padding:8px 10px}}
+
+/* ===== call list card: no CAD on the card, one stripe only (state colour when responding/green), grade badge stays on one line ===== */
+#v .card .cad{display:none!important}
+#v .card.rs,#v .card.gn{box-shadow:none!important;border-left-width:4px}
+.gd{white-space:nowrap;flex:none}
