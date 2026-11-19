@@ -34,7 +34,11 @@
 
   function pickCard(m) {
     const nd = shown(m);
-    const us = S.un.filter(free).sort((a, b) => need(nd, b) - need(nd, a) || eta(a, m) - eta(b, m));
+    const all = S.un.filter(free).sort((a, b) => need(nd, b) - need(nd, a) || eta(a, m) - eta(b, m));
+    const q = window.__uqMid === m.id ? (window.__uq || "") : "";
+    const ql = q.trim().toLowerCase();
+    const us = ql ? all.filter((u) => [u.cs, U[u.ty][1], (stn(u.sid) || {}).name || ""].join(" ").toLowerCase().includes(ql)) : all;
+    const search = `<input id="uq" class="uq" type="search" inputmode="search" autocomplete="off" spellcheck="false" placeholder="Callsign, type or station" value="${esc(q)}" oninput="uqSet(this.value,${m.id})">`;
     const list = us.length
       ? lim(
           us,
@@ -46,11 +50,13 @@
           },
           "xpQ"
         )
-      : `<div class="qempty">No units free right now.</div>`;
+      : ql
+        ? `<div class="qempty">No units match “${esc(q.trim())}”.</div>`
+        : `<div class="qempty">No units free right now.</div>`;
     const bar = `<div class="qsel"><b>${sel.size}</b> selected<small>${sel.size ? "Ready to dispatch" : "Pick units below"}</small></div><div class="qbar"><button type="button" class="qb g" onclick="auto()">${lci("wand-sparkles", 14)} Auto-select <kbd>A</kbd></button><button type="button" class="qb go" onclick="go()" ${sel.size && m.adc ? "" : "disabled"}>${lci("send", 14)} Dispatch${sel.size ? " (" + sel.size + ")" : ""} <kbd>↵</kbd></button></div>`;
     window.__qbar = bar;
-    const body = `<div class="qlist" id="qpl">${list}${busyH(m)}</div><div class="qfoot">${bar}</div>`;
-    return card("truck", "Dispatch units", `${us.length} available`, body, "qdisp");
+    const body = `${search}<div class="qlist" id="qpl">${list}${busyH(m)}</div><div class="qfoot">${bar}</div>`;
+    return card("truck", "Dispatch units", ql ? `${us.length} of ${all.length}` : `${all.length} available`, body, "qdisp");
   }
 
   function respCard(m) {
@@ -88,9 +94,22 @@
     return card("radio", "Call radio", r.length || "", body, "qrad");
   }
 
+  window.uqSet = function uqSet(v, mid) {
+    window.__uqMid = mid;
+    window.__uq = v;
+    const el = document.getElementById("uq");
+    const pos = el ? el.selectionStart : null;
+    drawQ();
+    const next = document.getElementById("uq");
+    if (next) { next.focus(); if (pos !== null) next.setSelectionRange(pos, pos); }
+  };
+
   window.drawQ = function drawQ() {
     const m = mm(curM);
     if (!m) { closeM(); return; }
+    if (window.__uqMid !== m.id) { window.__uqMid = m.id; window.__uq = ""; }
+    const hadFocus = document.activeElement && document.activeElement.id === "uq";
+    const caret = hadFocus ? document.activeElement.selectionStart : null;
     const tp = T[m.k], n = 1 + 2 * m.qa.length + (m.hw ? 1 : 0), off = met(m);
     const pc = document.getElementById("clog"), same = !!pc && pc.dataset.mid == m.id;
     const ps = same ? pc.scrollTop : null, pn = same ? +pc.dataset.n : 0;
@@ -127,5 +146,6 @@
     if (cl) cl.scrollTop = ps === null || n > pn ? cl.scrollHeight : ps;
     const pl = document.getElementById("qpl");
     if (pl) pl.scrollTop = pls;
+    if (hadFocus) { const u = document.getElementById("uq"); if (u) { u.focus(); if (caret !== null) u.setSelectionRange(caret, caret); } }
   };
 })();
