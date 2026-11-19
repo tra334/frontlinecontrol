@@ -241,3 +241,36 @@ body.qnp .qneed{display:none}
 .qneed{margin-left:auto;align-self:center;flex:none;display:inline-grid;place-items:center;width:20px;height:20px;padding:0;border-radius:50%;font:800 12px/1 system-ui;color:#fbbf24;background:#f59e0b1f;border:1px solid #b7791f;letter-spacing:0;text-transform:none}
 .qu .qneed{order:2}
 .qu>.que{order:3}
+
+/* ===== mobile call window: full width, compact header, location/caller/pinged tightened ===== */
+@media(max-width:999px){
+ #modal:has(#sw .qhead){padding:0!important;align-items:flex-end}
+ #sw:has(.qhead){width:100vw!important;max-width:100vw!important;margin:0!important;border-radius:16px 16px 0 0;border-left:0;border-right:0}
+ #sheet:has(.qhead){padding:12px 12px calc(10px + env(safe-area-inset-bottom,0px))!important;border-radius:16px 16px 0 0}
+ #sheet:has(.qhead) ~ #xb,#sw:has(.qhead) #xb{top:10px!important;right:10px!important}
+ .qhead{padding-right:40px}
+ .qh1{gap:8px;flex-wrap:wrap;align-items:center}
+ .qh1 .qtitle{font-size:17px;line-height:1.2;min-width:0}
+ .qacts{margin-left:auto;display:flex;gap:6px}
+ .qdsp{padding:5px 10px;font-size:12px}
+ .qh2{gap:6px 10px;margin-top:4px;flex-wrap:wrap;font-size:12px}
+ .qh2 .qpill{display:none!important}
+ .qrw{font-size:13px;font-weight:600}
+ .qrem{font-size:12px}
+ .qinfo{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0 10px;background:var(--rd-card);border:1px solid var(--rd-bd);border-radius:12px;padding:8px 10px}
+ .qinfo .qi{background:none;border:0;padding:0;border-radius:0}
+ .qinfo .qi small{font-size:9px;margin-bottom:1px}
+ .qinfo .qi b{font-size:13px;line-height:1.3}
+ .qinfo .qi-loc{grid-column:1/-1;border-bottom:1px solid var(--rd-bd);padding-bottom:6px}
+ .qinfo .qi-loc b{font-size:15px}
+ .qinfo .qmono{font-size:10px;margin-left:2px;white-space:nowrap}
+ .qinfo .qadr{grid-column:1/-1;margin:0;padding:3px 8px;border-radius:8px;font-size:11.5px;justify-self:start}
+ #sheet .clog-long{max-height:200px}
+}
+
+/* ===== dispatch units search box ===== */
+.uq{display:block;width:100%;box-sizing:border-box;margin:0 0 8px;padding:7px 10px;border-radius:8px;border:1px solid var(--rd-bd);background:var(--rd-in);color:var(--rd-hi);font:12.5px system-ui;outline:none}
+.uq::placeholder{color:var(--rd-mu);opacity:.8}
+.uq:focus{border-color:var(--rd-blue)}
+.uq::-webkit-search-cancel-button{filter:invert(.7)}
+@media(max-width:999px){.uq{font-size:16px;padding:8px 10px}}
