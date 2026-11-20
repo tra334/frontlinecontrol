@@ -1,0 +1,23 @@
+name: Convert existing Frontline replies to whispers (one-off)
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (list only, change nothing)"
+        default: "true"
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: node .github/scripts/whisperize-existing.js
+        env:
+          DISCOURSE_URL: ${{ secrets.DISCOURSE_URL }}
+          DISCOURSE_API_KEY: ${{ secrets.DISCOURSE_API_KEY }}
+          FRONTLINE_USER: Frontline
+          DRY_RUN: ${{ inputs.dry_run }}
