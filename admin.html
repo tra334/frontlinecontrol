@@ -1078,7 +1078,7 @@ const MS_VRANK = {pump:0,rt:1,wc:2,alp:3,icu:4,fo:1,wf:2,wru:1,hmu:3,usar:4,irv:
     return `<h3>Roles</h3><div class="roles">${mgr}
       ${card("admin", IC.shield, "Admin", "Can do everything in this panel.", `<input type="checkbox" id="rl_a" ${has("admin") ? "checked" : ""}>`)}
       ${card("dev", IC.code, "Developer", "View games, give credits, spawn test calls, reset or delete saved games.", `<input type="checkbox" id="rl_d" ${has("developer") ? "checked" : ""}>`)}
-      ${card("alpha", IC.bug, "Alpha tester", "Red bug badge. Gets the in-game developer tools, but no admin panel access.", `<input type="checkbox" id="rl_al" ${has("alpha") ? "checked" : ""}>`)}
+      ${card("alpha", IC.bug, "Alpha Tester", "Gets the in-game developer tools, but no admin panel access.", `<input type="checkbox" id="rl_al" ${has("alpha") ? "checked" : ""}>`)}
     </div><button class="btn pri" id="rl_s" style="width:100%;margin-top:12px">Save roles</button>`;
   }
 
