@@ -103,7 +103,7 @@ body.dev-view .admin-only{display:none!important}
 .pill.info{background:var(--acs);color:var(--ac)}
 
 /* ===== refreshed look ===== */
-:root{--r:16px;--ow:#8b5cf6;--ows:rgba(139,92,246,.14);--dv:#06b6d4;--dvs:rgba(6,182,212,.14)}
+:root{--r:16px;--ow:#8b5cf6;--ows:rgba(139,92,246,.14);--dv:#06b6d4;--dvs:rgba(6,182,212,.14);--al:#ef4444;--als:rgba(239,68,68,.14)}
 body{background:radial-gradient(1100px 420px at 50% -120px,var(--acs),transparent 70%),var(--bg);background-attachment:fixed}
 header{padding:12px 18px}
 main{padding:20px 16px 40px}
@@ -133,6 +133,7 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
 .rb.owner{background:var(--ows);color:var(--ow)}
 .rb.admin{background:var(--acs);color:var(--ac)}
 .rb.dev{background:var(--dvs);color:var(--dv)}
+.rb.alpha{background:var(--als);color:var(--al)}
 
 /* role picker */
 .roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
@@ -147,6 +148,7 @@ h3::after{content:"";flex:1;height:1px;background:var(--bd)}
 .role .tick svg{width:14px;height:14px}
 .role.admin{--c:var(--ac);--tint:var(--acs)}
 .role.dev{--c:var(--dv);--tint:var(--dvs)}
+.role.alpha{--c:var(--al);--tint:var(--als)}
 .role:has(input:checked){border-color:var(--c);background:linear-gradient(160deg,var(--tint),transparent 75%),var(--card)}
 .role:has(input:checked) .tick{background:var(--c);border-color:var(--c);color:#fff}
 .role:has(input:focus-visible){outline:3px solid var(--tint);outline-offset:2px}
@@ -310,13 +312,14 @@ body.logged-out main{max-width:none}
     sshield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6l8-3z"/><path d="M12 8.5l1.1 2.3 2.5.3-1.8 1.7.5 2.5-2.3-1.2-2.3 1.2.5-2.5-1.8-1.7 2.5-.3z" fill="currentColor" stroke-width="1"/></svg>',
     shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>',
     code: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16"/></svg>',
+    bug: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 2 1.88 1.88M14.12 3.88 16 2M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6zM12 20v-9M6.53 9C4.6 8.8 3 7.1 3 5M6 13H2M3 21c0-2.1 1.7-3.9 3.8-4M20.97 5c0 2.1-1.6 3.8-3.5 4M22 13h-4M17.2 17c2.1.1 3.8 1.9 3.8 4"/></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg>',
     plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
     minus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"/></svg>',
     trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>'
   };
-  const badge = (k, txt) => `<span class="rb ${k}">${IC[k === "owner" ? "sshield" : k === "admin" ? "shield" : "code"]}${txt}</span>`;
-  const badges = u => (u.owner ? badge("owner", "MANAGER") : "") + ((u.roles || []).includes("admin") ? badge("admin", "ADMIN") : "") + ((u.roles || []).includes("developer") ? badge("dev", "DEV") : "");
+  const badge = (k, txt) => `<span class="rb ${k}">${IC[k === "owner" ? "sshield" : k === "admin" ? "shield" : k === "alpha" ? "bug" : "code"]}${txt}</span>`;
+  const badges = u => (u.owner ? badge("owner", "MANAGER") : "") + ((u.roles || []).includes("admin") ? badge("admin", "ADMIN") : "") + ((u.roles || []).includes("developer") ? badge("dev", "DEV") : "") + ((u.roles || []).includes("alpha") ? badge("alpha", "ALPHA TESTER") : "");
   let tab = "p", q = "", page = 1, timer = 0, me = null, cur = null; // cur = {id, data, view}
 
   function toast(m) { const t = $("#toast"); t.textContent = m; t.style.display = "block"; clearTimeout(toast.t); toast.t = setTimeout(() => { t.style.display = "none"; }, 3600); }
@@ -518,7 +521,7 @@ body.logged-out main{max-width:none}
         .then(x => { if (x) run({ type: "setrank", rank: auto ? null : +v, reason: $("#rk_why").value }); });
     };
     if ($("#rl_s")) $("#rl_s").onclick = () => {
-      const r = []; if ($("#rl_a").checked) r.push("admin"); if ($("#rl_d").checked) r.push("developer");
+      const r = []; if ($("#rl_a").checked) r.push("admin"); if ($("#rl_d").checked) r.push("developer"); if ($("#rl_al").checked) r.push("alpha");
       ask("Change roles?", "Set <b>" + esc(label) + "</b>'s roles to: " + esc(r.join(", ") || "none") + ".", { ok: "Save" }).then(x => { if (x) run({ type: "setroles", roles: r }); });
     };
     if ($("#deluser") && !$("#deluser").disabled) $("#deluser").onclick = () => ask("Delete " + label + "?", "This permanently deletes the <b>account</b> and saved game for <b>" + esc(u.email || label) + "</b>. This cannot be undone.", { ok: "Delete user", danger: 1, reason: 1 }).then(r => {
@@ -1069,11 +1072,13 @@ const MS_VRANK = {pump:0,rt:1,wc:2,alp:3,icu:4,fo:1,wf:2,wru:1,hmu:3,usar:4,irv:
       const list = mgr ? [mgr] : [];
       if (has("admin")) list.push('<div class="role admin" style="border-color:var(--c);cursor:default"><span class="sym">' + IC.shield + '</span><b>Admin</b><span class="d">Can do everything in this panel.</span></div>');
       if (has("developer")) list.push('<div class="role dev" style="border-color:var(--c);cursor:default"><span class="sym">' + IC.code + '</span><b>Developer</b><span class="d">Views games, gives credits, spawns test calls.</span></div>');
+      if (has("alpha")) list.push('<div class="role alpha" style="border-color:var(--c);cursor:default"><span class="sym">' + IC.bug + '</span><b>Alpha tester</b><span class="d">Gets the in-game developer tools (manual spawn, speed control).</span></div>');
       return `<h3>Roles</h3>` + (list.length ? `<div class="roles">${list.join("")}</div>` : '<div class="card mu">No staff role</div>');
     }
     return `<h3>Roles</h3><div class="roles">${mgr}
       ${card("admin", IC.shield, "Admin", "Can do everything in this panel.", `<input type="checkbox" id="rl_a" ${has("admin") ? "checked" : ""}>`)}
       ${card("dev", IC.code, "Developer", "View games, give credits, spawn test calls, reset or delete saved games.", `<input type="checkbox" id="rl_d" ${has("developer") ? "checked" : ""}>`)}
+      ${card("alpha", IC.bug, "Alpha tester", "Red bug badge. Gets the in-game developer tools, but no admin panel access.", `<input type="checkbox" id="rl_al" ${has("alpha") ? "checked" : ""}>`)}
     </div><button class="btn pri" id="rl_s" style="width:100%;margin-top:12px">Save roles</button>`;
   }
 
