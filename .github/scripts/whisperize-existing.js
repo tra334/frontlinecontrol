@@ -19,6 +19,7 @@ const headers = { "Api-Key": DISCOURSE_API_KEY, "Api-Username": FRONTLINE_USER, 
       if (!p.ok) { console.error(`post ${a.post_id}: ${p.status}`); continue; }
       const post = await p.json();
       if (post.post_type !== 1) continue; // already whisper / moderator action
+      if ((post.raw ?? "").includes("Browse files at this commit")) continue; // leave commit posts public
       console.log(`${dry ? "[dry run] would whisper" : "whispering"} post ${a.post_id} (topic ${a.topic_id})`);
       if (dry) { changed++; continue; }
       const u = await fetch(`${DISCOURSE_URL}/posts/${a.post_id}/post_type`, {
