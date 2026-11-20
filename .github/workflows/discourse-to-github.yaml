@@ -30,3 +30,5 @@ jobs:
           FEATURES_CATEGORY_ID: "8"   # Features category -> "Feature Request" header + "feature request" label
           IGNORE_USERS: "Frontline"
           ISSUE_STYLE: "card"   # "note" = callout header, "card" = table header
+          BUG_TRIGGER_TAG: "to-do"       # bug topic only becomes an issue once this tag is applied; "" = create immediately
+          FEATURE_TRIGGER_TAG: "planned" # feature topic only becomes an issue once this tag is applied; "" = create immediately
