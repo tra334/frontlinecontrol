@@ -29,7 +29,8 @@
     speed: '<path d="M3.3 17A9 9 0 1 1 20.7 17"/><path d="M12 14l4-4"/>',
     warn: '<path d="M12 3 22 21H2z"/><path d="M12 10v5M12 18h.01"/>',
     trophy: '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 4h3v2a3 3 0 0 1-3 3M7 4H4v2a3 3 0 0 0 3 3"/>',
-    chev: '<path d="m9 18 6-6-6-6"/>'
+    chev: '<path d="m9 18 6-6-6-6"/>',
+    trash: '<path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/>'
   };
   const svg = (k, s) => `<svg width="${s || 22}" height="${s || 22}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[k]}</svg>`;
   const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -144,6 +145,7 @@ ${row("devtools", "bug", "Developer tools", "For testing and troubleshooting", `
 ${devTools}` : ""}
 <div class="hb_card">
 ${row("reset", "warn", "Reset game", "Wipes all progress. This cannot be undone.", "", { danger: true })}
+${si ? row("delacct", "trash", "Delete account", "Permanently deletes your account and cloud data", "", { danger: true }) : ""}
 </div>`;
 
     const tabs = [["ov", "Overview", false], ["pl", "Play", pend > 0 || d.can || !!rmCount], ["ac", "Account", false]];
@@ -202,7 +204,8 @@ ${row("reset", "warn", "Reset game", "Wipes all progress. This cannot be undone.
     dbgtimer: () => { setSet("dbgInd", !getSet().dbgInd); dbgUp(); update(); },
     spd: el => { const p = setSpd(+el.dataset.n); if (p && p.then) p.then(update); update(); },
     rspawn: () => spawnRandom(),
-    reset: () => { close(); resetG(); }
+    reset: () => { close(); resetG(); },
+    delacct: () => { close(); if (window.fcDeleteAccount) fcDeleteAccount(); }
   };
 
   /* Called by the overlays (Settings, Logs, Manual spawn, Debug log) instead of appending to the body while the panel is open. */
