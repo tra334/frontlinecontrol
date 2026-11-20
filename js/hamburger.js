@@ -72,7 +72,7 @@
     const dep = S.un.filter(x => x.st !== "idle").length;
     const rn = $("#nav_rm .rmn"), rmCount = rn && !rn.hidden ? rn.textContent : "";
     const inRm = !!($("#nav_rm") && $("#nav_rm").classList.contains("in"));
-    const rmSub = inRm ? "You're in a room" : rmCount ? rmCount + " invite" + (rmCount === "1" ? "" : "s") + " waiting" : "Create or join a room";
+    const rmSub = !si ? "Sign up to use Rooms" : inRm ? "You're in a room" : rmCount ? rmCount + " invite" + (rmCount === "1" ? "" : "s") + " waiting" : "Create or join a room";
     let av = esc(initials(name));
     if (si && window.fcAvatar) { try { av = fcAvatar.mine(68); } catch (e) {} }
     const since = u && u.created_at ? new Date(u.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "–";
@@ -118,7 +118,7 @@ ${S.dv ? "" : row("dev", "wrench", "Dev bonus", money(typeof DEVBONUS === "numbe
 </div>
 ${sec("Game")}
 <div class="hb_card">
-${row("rooms", "rooms", "Rooms", rmSub, rmCount ? `<span class="hb_pill">${esc(rmCount)}</span>` : "")}
+${row("rooms", "rooms", "Rooms", rmSub, !si ? "" : rmCount ? `<span class="hb_pill">${esc(rmCount)}</span>` : "", si ? {} : { off: true })}
 ${row("lb", "trophy", "Leaderboard", si ? "Top 50 players" : "Sign in to see rankings", "", si ? {} : { off: true })}
 ${row("shop", "shop", "Shop", "Upgrades")}
 ${row("logs", "log", "Job logs", "Past calls and earnings")}
@@ -188,7 +188,7 @@ ${row("reset", "warn", "Reset game", "Wipes all progress. This cannot be undone.
     devtools: () => { devOpen = !devOpen; lastHtml = ""; render(); },
     edit: () => changeName(),
     avatar: el => { if (signedIn() && window.fcAvatar) avMenu(el); },
-    rooms: () => { close(); const b = $("#nav_rm"); if (b) b.click(); },
+    rooms: () => { if (!signedIn()) return; close(); const b = $("#nav_rm"); if (b) b.click(); },
     exp: () => { close(); exportSave(); },
     imp: () => { close(); importSave(); },
     auth: () => {

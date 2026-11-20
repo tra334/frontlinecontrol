@@ -253,11 +253,16 @@
   }
 
   // Invite buttons on the bottom nav / header: the count shows chat unread in a room, waiting invites when not in one
+  const RM_LOCK_MSG = "Create an account / sign up to use Rooms";
   function syncNavBadges() {
     ["nav_rm", "hd_rm"].forEach(id => {
       const b = document.getElementById(id);
       if (!b) return;
       b.classList.toggle("in", inRoom());
+      const locked = !myId();
+      b.classList.toggle("rm-off", locked);
+      b.setAttribute("aria-disabled", locked ? "true" : "false");
+      b.title = locked ? RM_LOCK_MSG : "Rooms";
       const n = b.querySelector(".rmn");
       if (n) {
         const cnt = inRoom() ? chatUnread : invites.length;
@@ -1374,7 +1379,7 @@
   function roomPanelInner() {
     syncRoomPanelMode();
     if (!AU) {
-      return `<div class="mu" style="padding:12px">Sign in to use Rooms. Cloud account required.</div>`;
+      return `<div class="mu" style="padding:12px">Create an account / sign up to use Rooms.</div>`;
     }
     if (!inRoom()) {
       return `<div style="padding:12px 4px">
@@ -1919,8 +1924,12 @@
     ensureBadge();
     ["nav_rm", "hd_rm"].forEach(id => {
       const b = document.getElementById(id);
-      if (b) b.onclick = openRooms;
+      if (b) b.onclick = () => {
+        if (!myId()) { if (typeof toast === "function") toast(RM_LOCK_MSG); return; }
+        openRooms();
+      };
     });
+    syncNavBadges();
     patchRecall();
     if (AU && myId()) rejoinIfNeeded();
     bumpRoomUi();
@@ -1945,6 +1954,8 @@
     if (!AU || !myId() || inRoom() || document.visibilityState === "hidden") return;
     loadInvites().catch(() => {});
   }, 20000);
+
+  setInterval(() => { try { syncNavBadges(); } catch (e) {} }, 1500);
 
   // Try immediately and after startGame
   if (document.readyState === "complete") setTimeout(onGameReady, 500);
