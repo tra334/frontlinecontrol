@@ -302,8 +302,7 @@ jobs:
               try:
                   result = post_discourse({
                       "topic_id": topic_id,
-                      "raw": raw,
-                      "whisper": "true"
+                      "raw": raw
                   })
                   print(
                       f"Posted commit {sha[:7]} "
