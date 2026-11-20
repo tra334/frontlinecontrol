@@ -30,9 +30,7 @@ const SKIP_LABEL = "discourse"; // internal label, never mirrored as a tag
 const FEATURE_LABEL = "feature request"; // added to issues from the features category, also never mirrored as a tag
 const isInternal = (x) => {
   const n = norm(x);
-  return n === norm(SKIP_LABEL) || n === norm(FEATURE_LABEL)
-    || (BUG_TRIGGER_TAG && n === norm(BUG_TRIGGER_TAG))
-    || (FEATURE_TRIGGER_TAG && n === norm(FEATURE_TRIGGER_TAG));
+  return n === norm(SKIP_LABEL) || n === norm(FEATURE_LABEL);
 };
 const ignored = new Set(
   [...IGNORE_USERS.split(","), FRONTLINE_USER, "system"].map((u) => u.trim().toLowerCase()).filter(Boolean)
