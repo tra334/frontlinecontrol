@@ -144,6 +144,7 @@ body[data-hf~="ally"] [data-f="ally"],body[data-hf~="allyv"] [data-f="allyv"],bo
 .rmb .rmn{position:absolute;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#ef4444;color:#fff;font:700 10px/16px system-ui;text-align:center;font-style:normal;box-sizing:border-box}
 .rmb .rmn[hidden]{display:none}
 .rmb.in svg{color:#a5b4fc}
+.rmb.rm-off{opacity:.45;filter:grayscale(1);cursor:not-allowed}
 @media(max-width:999px){
   #hd_rm{display:none}
   nav button{white-space:nowrap;padding-left:2px;padding-right:2px;font-size:12px;min-width:0}
