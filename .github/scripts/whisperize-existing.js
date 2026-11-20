@@ -3,6 +3,12 @@
 // Throttles requests and retries on Discourse rate limits (HTTP 429).
 const { DISCOURSE_URL, DISCOURSE_API_KEY, FRONTLINE_USER = "Frontline", DRY_RUN = "true" } = process.env;
 const dry = DRY_RUN !== "false";
+// Topics to leave alone entirely (e.g. 241 = server status log). Comma-separated IDs.
+const EXCLUDE = new Set((process.env.EXCLUDE_TOPICS ?? "241").split(",").map((x) => x.trim()).filter(Boolean));
+// Only posts that look like GitHub relay posts are converted.
+const isGithubRelay = (raw) =>
+  /^GitHub (issue|feature request) created: https:\/\/github\.com\//.test(raw) ||
+  (/^### /.test(raw) && raw.includes("github.com/") && raw.includes("🕒 [date="));
 const headers = { "Api-Key": DISCOURSE_API_KEY, "Api-Username": FRONTLINE_USER, "Content-Type": "application/json" };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -30,11 +36,13 @@ async function req(url, opts = {}) {
     offset += acts.length;
     for (const a of acts) {
       seen++;
+      if (EXCLUDE.has(String(a.topic_id))) continue;
       const p = await req(`${DISCOURSE_URL}/posts/${a.post_id}.json`);
       if (!p.ok) { console.error(`post ${a.post_id}: ${p.status}`); failed++; continue; }
       const post = await p.json();
       if (post.post_type !== 1) continue; // already whisper / moderator action
       if ((post.raw ?? "").includes("Browse files at this commit")) continue; // leave commit posts public
+      if (!isGithubRelay((post.raw ?? "").trim())) continue; // not a GitHub relay post, leave public
       console.log(`${dry ? "[dry run] would whisper" : "whispering"} post ${a.post_id} (topic ${a.topic_id})`);
       if (dry) { changed++; continue; }
       const u = await req(`${DISCOURSE_URL}/posts/${a.post_id}/post_type`, {
