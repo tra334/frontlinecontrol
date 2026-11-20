@@ -321,7 +321,7 @@ async function syncTopics(linked) {
     const reply = await req(`${DISCOURSE_URL}/posts.json`, {
       method: "POST",
       headers: dHeaders(),
-      body: JSON.stringify({ topic_id: t.id, raw: `GitHub ${isFeature ? "feature request" : "issue"} created: ${issue.html_url}` }),
+      body: JSON.stringify({ topic_id: t.id, raw: `GitHub ${isFeature ? "feature request" : "issue"} created: ${issue.html_url}`, whisper: true }),
     });
     if (!reply.ok) console.error(`Reply on topic ${t.id} failed: ${reply.status} ${await reply.text()}`);
     console.log(`Topic ${t.id} -> issue #${issue.number}`);

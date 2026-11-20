@@ -29,7 +29,7 @@ const raw =
       "Api-Username": isThomas ? THOMAS_USER : FRONTLINE_USER,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ topic_id: Number(m[1]), raw }),
+    body: JSON.stringify({ topic_id: Number(m[1]), raw, whisper: true }),
   });
   if (!res.ok) throw new Error(`Discourse ${res.status}: ${await res.text()}`);
   console.log(`Posted to topic ${m[1]} as ${isThomas ? THOMAS_USER : FRONTLINE_USER}`);

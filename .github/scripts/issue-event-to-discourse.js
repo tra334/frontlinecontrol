@@ -79,7 +79,7 @@ async function syncTag() {
       "Api-Username": FRONTLINE_USER,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ topic_id: topicId, raw }),
+    body: JSON.stringify({ topic_id: topicId, raw, whisper: true }),
   });
   if (!res.ok) throw new Error(`Discourse ${res.status}: ${await res.text()}`);
   console.log(`Posted "${heading}" to topic ${topicId}`);

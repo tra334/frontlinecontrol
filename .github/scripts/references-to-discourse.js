@@ -79,7 +79,7 @@ const gh = (path) => fetch(`https://api.github.com/repos/${GITHUB_REPOSITORY}${p
 const post = (topic_id, raw) => fetch(`${DISCOURSE_URL}/posts.json`, {
   method: "POST",
   headers: { "Api-Key": DISCOURSE_API_KEY, "Api-Username": FRONTLINE_USER, "Content-Type": "application/json" },
-  body: JSON.stringify({ topic_id, raw }),
+  body: JSON.stringify({ topic_id, raw, whisper: true }),
 });
 
 function card(job, n, issue) {
