@@ -12,6 +12,10 @@ const {
   FEATURES_CATEGORY_ID = "", // Discourse "Features" category id; leave empty to disable
   IGNORE_USERS = "Frontline",
   ISSUE_STYLE = "card", // "note" (callout header) or "card" (table header)
+  // Gate issue creation behind a tag instead of creating one for every new topic.
+  // Leave either empty to go back to "create immediately" for that category.
+  BUG_TRIGGER_TAG = "",
+  FEATURE_TRIGGER_TAG = "",
 } = process.env;
 
 const DISCOURSE_URL = String(DISCOURSE_URL_RAW).replace(/\/+$/, ""); // tolerate a trailing slash in the secret
@@ -24,7 +28,12 @@ const CLOSE_TAGS = {
 };
 const SKIP_LABEL = "discourse"; // internal label, never mirrored as a tag
 const FEATURE_LABEL = "feature request"; // added to issues from the features category, also never mirrored as a tag
-const isInternal = (x) => { const n = norm(x); return n === norm(SKIP_LABEL) || n === norm(FEATURE_LABEL); };
+const isInternal = (x) => {
+  const n = norm(x);
+  return n === norm(SKIP_LABEL) || n === norm(FEATURE_LABEL)
+    || (BUG_TRIGGER_TAG && n === norm(BUG_TRIGGER_TAG))
+    || (FEATURE_TRIGGER_TAG && n === norm(FEATURE_TRIGGER_TAG));
+};
 const ignored = new Set(
   [...IGNORE_USERS.split(","), FRONTLINE_USER, "system"].map((u) => u.trim().toLowerCase()).filter(Boolean)
 );
@@ -195,24 +204,55 @@ function imageLinksBlock(text) {
 }
 
 // ---------- 1. Discourse topics -> GitHub issues ----------
-async function syncTopics(linked) {
+
+// Lazily fetched and cached: only needed for a category that has no trigger tag configured.
+let _latestTopics = null;
+async function latestTopics() {
+  if (_latestTopics) return _latestTopics;
   const res = await req(`${DISCOURSE_URL}/latest.json?order=created`, { headers: dHeaders() });
   if (!res.ok) throw new Error(`Discourse latest ${res.status}`);
-  const topics = (await res.json()).topic_list.topics;
+  _latestTopics = (await res.json()).topic_list.topics;
+  return _latestTopics;
+}
 
-  const watched = new Set([CATEGORY_ID, FEATURES_CATEGORY_ID].filter(Boolean).map(String));
-  const recent = topics.filter(
+// Topics carrying a given tag, regardless of age (a topic can be tagged long after it's created).
+// Discourse's tag endpoint returns the same shape as /latest.json.
+async function taggedTopics(tag) {
+  const res = await req(`${DISCOURSE_URL}/tag/${encodeURIComponent(tag)}.json`, { headers: dHeaders() });
+  if (res.status === 404) return [];
+  if (!res.ok) throw new Error(`Discourse tag "${tag}" ${res.status}`);
+  return (await res.json()).topic_list?.topics ?? [];
+}
+
+// Candidate topics for one category: either everything new (old behaviour, time-windowed),
+// or only topics that carry that category's trigger tag (no time window, since the tag may
+// have been added well after the topic was created).
+async function candidatesFor(categoryId, triggerTag) {
+  if (!categoryId) return [];
+  if (triggerTag) {
+    return (await taggedTopics(triggerTag)).filter((t) => String(t.category_id) === String(categoryId));
+  }
+  return (await latestTopics()).filter(
     (t) =>
       t.archetype === "regular" &&
-      watched.has(String(t.category_id)) &&
+      String(t.category_id) === String(categoryId) &&
       new Date(t.created_at).getTime() >= cutoff
   );
+}
+
+async function syncTopics(linked) {
   const done = new Set(linked.map((l) => l.topicId));
 
-  for (const t of recent.reverse()) {
-    if (done.has(t.id)) continue;
+  const pools = [
+    { topics: await candidatesFor(CATEGORY_ID, BUG_TRIGGER_TAG), isFeature: false },
+    { topics: await candidatesFor(FEATURES_CATEGORY_ID, FEATURE_TRIGGER_TAG), isFeature: true },
+  ];
 
-    const isFeature = !!FEATURES_CATEGORY_ID && String(t.category_id) === String(FEATURES_CATEGORY_ID);
+  for (const { topics, isFeature } of pools) {
+  for (const t of topics.slice().reverse()) {
+    if (done.has(t.id)) continue;
+    done.add(t.id); // guard against the same topic turning up in both pools
+
     const topicUrl = `${DISCOURSE_URL}/t/${t.slug}/${t.id}`;
     let firstPost = "";
     let createdAt = t.created_at;
@@ -287,6 +327,7 @@ async function syncTopics(linked) {
     });
     if (!reply.ok) console.error(`Reply on topic ${t.id} failed: ${reply.status} ${await reply.text()}`);
     console.log(`Topic ${t.id} -> issue #${issue.number}`);
+  }
   }
 }
 
