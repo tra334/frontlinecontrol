@@ -124,7 +124,8 @@ ${row("shop", "shop", "Shop", "Upgrades")}
 ${row("logs", "log", "Logs", "Past calls and earnings")}
 </div>`;
 
-    const devTools = devOpen ? `<div class="hb_card">
+    const showDev = typeof spdOK === "function" && spdOK();
+    const devTools = devOpen && showDev ? `<div class="hb_card">
   <button type="button" class="hb_row" data-id="dbgtimer"><span class="hb_ic">${svg("clock")}</span><span class="hb_t"><b>Show debug call timer</b><small>Countdown next to the build button</small></span><span class="hb_sw${dbgOn ? " on" : ""}"></span></button>
   ${row("mspawn", "phone", "Manual spawn", "Pick any call at your rank and spawn it near your stations")}
   ${row("rspawn", "dice", "Spawn random call now", "Doesn't reset the new-call timer")}
@@ -137,10 +138,10 @@ ${row("set", "cog", "Settings", "Sound, display and more")}
 ${row("exp", "down", "Export save", "Download your progress")}
 ${si ? "" : row("imp", "up", "Import save", "Restore from a save file")}
 </div>
-<div class="hb_card">
+${showDev ? `<div class="hb_card">
 ${row("devtools", "bug", "Developer tools", "For testing and troubleshooting", `<span class="hb_chev${devOpen ? " open" : ""}">${svg("chev", 18)}</span>`, { noChev: true })}
 </div>
-${devTools}
+${devTools}` : ""}
 <div class="hb_card">
 ${row("reset", "warn", "Reset game", "Wipes all progress. This cannot be undone.", "", { danger: true })}
 </div>`;
