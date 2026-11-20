@@ -98,7 +98,7 @@ let _spdR=null;
 function spdSet(v,legacy){const r=new Set((v&&Array.isArray(v.roles))?v.roles:[]);if(v&&v.owner)r.add("owner");if(legacy)r.add("developer");_spdR=r}
 function spdRoleSet(){return _spdR||new Set()}
 function spdOK(){try{if(!_spdR&&typeof AU!=="undefined"&&AU&&AU.user&&AU.user.app_metadata&&AU.user.app_metadata.role==="developer")return true}catch(e){}
-const r=spdRoleSet();return r.has("owner")||r.has("admin")||r.has("developer")}
+const r=spdRoleSet();return r.has("owner")||r.has("admin")||r.has("developer")||r.has("alpha")}
 function spd(){try{if(typeof SRV!=="undefined"&&SRV&&SRV.on){const v=+(S&&S.spd);return v===2||v===5||v===10?v:1}}catch(e){}
 if(!spdOK())return 1;const v=+getSet().devSpeed;return v===2||v===5||v===10?v:1}
 function setSpd(n){const old=spd();if(n===old)return;
@@ -152,7 +152,7 @@ ov.innerHTML=`<div style="width:100%;max-width:440px;max-height:88%;position:rel
 fcMount(ov,"Logs");$("#jl_x").onclick=()=>ov.remove();ov.onclick=e=>{if(e.target===ov&&!ov.dataset.host)ov.remove()};ov.querySelectorAll("[data-jt]").forEach(b=>b.onclick=()=>openJobLogs(b.dataset.jt))}
 /* ===== staff roles: display only. The API checks roles again on every protected action. ===== */
 const fcRoles=(()=>{const API=window.FC_API||"https://api.frontlinecontrol.co.uk",TTL=60000;let c=null;
-const BADGES=[["owner","MANAGER","shield","#8b5cf6"],["admin","ADMIN","shield","#4f8cff"],["developer","DEV","code","#22d3ee"]];
+const BADGES=[["owner","MANAGER","shield","#8b5cf6"],["admin","ADMIN","shield","#4f8cff"],["developer","DEV","code","#22d3ee"],["alpha","ALPHA TESTER","bug","#ef4444"]];
 /* Ask the game API for the signed-in player's own roles. The server works out who is asking from the access token. */
 async function get(force){const id=AU&&AU.user&&AU.user.id;if(!(AU&&AU.access_token&&id))return null;
 if(!force&&c&&c.id===id&&Date.now()-c.t<TTL)return c.v;
