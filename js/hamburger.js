@@ -121,7 +121,7 @@ ${sec("Game")}
 ${row("rooms", "rooms", "Rooms", rmSub, !si ? "" : rmCount ? `<span class="hb_pill">${esc(rmCount)}</span>` : "", si ? {} : { off: true })}
 ${row("lb", "trophy", "Leaderboard", si ? "Top 50 players" : "Sign in to see rankings", "", si ? {} : { off: true })}
 ${row("shop", "shop", "Shop", "Upgrades")}
-${row("logs", "log", "Job logs", "Past calls and earnings")}
+${row("logs", "log", "Logs", "Past calls and earnings")}
 </div>`;
 
     const devTools = devOpen ? `<div class="hb_card">
@@ -167,7 +167,7 @@ ${row("reset", "warn", "Reset game", "Wipes all progress. This cannot be undone.
     shop: { t: "Shop", html: () => `<div class="hb_shop">${typeof atpH === "function" ? atpH() : ""}</div>` },
     dev: { t: "Dev bonus", html: () => window.rkDevH ? rkDevH() : "" },
     set: { t: "Settings", mount: () => openSettings() },
-    logs: { t: "Job logs", mount: () => openJobLogs() },
+    logs: { t: "Logs", mount: () => openJobLogs() },
     mspawn: { t: "Manual spawn", mount: () => { close(); openMissionSpawn(); } },
     dbglog: { t: "Debug log", mount: () => { if (window.DebugLog) DebugLog.open(); else toast("Debug log not loaded"); } }
   };
