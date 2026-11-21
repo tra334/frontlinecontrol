@@ -1,0 +1,6 @@
+/* Header logo: replaces the "Frontline Control" text with logo.png. Desktop and mobile. */
+header>div:first-child{display:flex;align-items:center;gap:10px;min-width:0}
+.hdr-logo{display:block;height:44px;width:auto;flex:none;object-fit:contain}
+header>div:first-child #sync{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}
+@media(max-width:999px){.hdr-logo{height:38px}}
+@media(max-width:480px){.hdr-logo{height:34px}}
