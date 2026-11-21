@@ -1,0 +1,3 @@
+#cr{display:inline-flex;align-items:center;padding:4px 12px;border-radius:999px;font-weight:700;font-size:13px;line-height:1.2;background:#05080d;border:1px solid #1f2a38;color:#e6edf7;font-variant-numeric:tabular-nums;white-space:nowrap}
+@media(prefers-color-scheme:light){:root:not([data-theme="dark"]) #cr{background:#ffffff;border:1px solid #cfd6e1;color:#0f172a}}
+:root[data-theme="light"] #cr{background:#ffffff;border:1px solid #cfd6e1;color:#0f172a}
