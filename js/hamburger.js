@@ -150,7 +150,8 @@ ${devTools}` : ""}
 <div class="hb_dz_head">${svg("warn", 14)} Danger zone</div>
 ${row("reset", "warn", "Reset game", "Wipes all progress. This cannot be undone.", "", { danger: true })}
 ${si ? row("delacct", "trash", "Delete account", "Cannot be undone. Removes your account and cloud data. To only wipe progress, use Reset game instead.", "", { danger: true }) : ""}
-</div>`;
+</div>
+<div class="hb_ver">A 2.0.5</div>`;
 
     const tabs = [["ov", "Overview", false], ["pl", "Play", pend > 0 || d.can || !!rmCount], ["ac", "Account", false]];
     const bar = `<div class="hb_tabs" role="tablist">${tabs.map(t => `<button type="button" role="tab" aria-selected="${tab === t[0]}" class="hb_tab${tab === t[0] ? " on" : ""}" data-id="tab" data-tab="${t[0]}">${t[1]}${t[2] ? '<i class="hb_tdot"></i>' : ""}</button>`).join("")}</div>`;
