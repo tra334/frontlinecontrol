@@ -96,7 +96,7 @@
 
     const overview = `<div class="hb_card hb_prof">
   <button type="button" class="hb_av" data-id="avatar" aria-label="${si ? "Change or remove profile picture" : "Profile picture"}">${av}${si ? `<span class="hb_avb" aria-hidden="true">${svg("pencil", 13)}</span>` : ""}</button>
-  <div class="hb_pn"><b>${esc(name)}<span class="hb_ed" data-id="edit" role="button" aria-label="Change display name">${svg("pencil", 14)}</span></b><small>${esc(si && u.email ? u.email : "Playing offline – not signed in")}</small><small>Member since ${esc(since)}</small>${roles ? `<div class="hb_roles">${roles}</div>` : ""}<button type="button" class="hb_so${si ? " out" : ""}" data-id="auth">${svg(si ? "signout" : "signin", 14)} ${si ? "Sign out" : "Sign in"}</button></div>
+  <div class="hb_pn"><b>${esc(name)}<span class="hb_ed" data-id="edit" role="button" aria-label="Change display name">${svg("pencil", 14)}</span></b><small>${esc(si && u.email ? u.email : "Playing offline – not signed in")}</small><small>Member since ${esc(since)}</small>${roles ? `<div class="hb_roles">${roles}</div>` : ""}</div>
 </div>
 <div class="hb_card hb_rankcard" data-id="ranks">
   <div class="hb_rank_top">${rankHtml}<div class="hb_rank_t"><small>Rank</small><b>${esc(rkName)}</b></div>${pend > 0 || d.can ? '<span class="hb_pill g">Claim</span>' : ""}</div>
