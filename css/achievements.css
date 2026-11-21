@@ -1,0 +1,18 @@
+/* ===== Achievements: progress cards in the Ranks tab and the mobile menu ===== */
+.ach-list{display:flex;flex-direction:column}
+.ach-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--bd)}
+.ach-item:last-child{border-bottom:0}
+.ach-ic{width:42px;height:42px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18),inset 0 2px 0 rgba(255,255,255,.35)}
+.ach-ic.t1{background:linear-gradient(#f6d365,#c8951f);color:#4a3205}
+.ach-ic.t2{background:linear-gradient(#cbd5e1,#8a97a8);color:#1f2937}
+.ach-ic.t3{background:linear-gradient(#e2a46b,#a8602a);color:#fff}
+.ach-item.locked .ach-ic{background:var(--bd);color:var(--mu);box-shadow:none}
+.ach-item.locked .ach-tx>.ach-line>b{opacity:.85}
+.ach-tx{flex:1;min-width:0}
+.ach-line{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.ach-line b{font-size:14px}
+.ach-ok{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:#16a34a;white-space:nowrap}
+.ach-tx .bar{margin-top:6px}
+.ach-note{margin-top:10px;font-size:12px;line-height:1.45}
+.ach-note a{color:inherit;text-decoration:underline}
+.ach-flat .ach-item{padding:10px 0}
