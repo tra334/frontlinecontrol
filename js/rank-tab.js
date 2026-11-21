@@ -64,13 +64,14 @@
     const staffClaim = typeof claimH === "function" ? claimH() : "";
     const d = drState(), p = rkPend();
 
+    const achSec = window.Ach ? rkDet("ach", false, 'class="card rk-sec"', `<summary ${SUM}><span class="t">${lci("medal")} Achievements</span><span class="mu">${Ach.summary()} unlocked</span></summary><div style="margin-top:10px">${Ach.bodyHtml()}</div>`) : "";
     const lbSec = lb ? rkDet("lb", true, 'class="card rk-sec"', `<summary ${SUM}><span class="t">${lci("trophy")} Leaderboard</span><span class="mu">Top 50</span></summary><div style="margin-top:10px">${lb}</div>`) : "";
     const dailySec = rkDet("daily", false, 'class="card rk-sec" style="border-left:4px solid var(--a)"', `<summary ${SUM}><span class="t">${lci("gift")} Daily bonus</span><span class="mu">${d.can ? "Claim " + money(drAmt(d.day)) : "Claimed today"}</span></summary><div style="margin-top:10px">${rkDays()}<div style="margin-top:8px">${rkDailyBtn()}</div></div>`);
     const bonusSec = p > 0 ? rkDet("rankup", false, 'class="card rk-sec" style="border-left:4px solid var(--ac)"', `<summary ${SUM}><span class="t">${lci("medal")} Rank-up bonus</span><span class="mu">${p} to claim</span></summary><div style="margin-top:10px">${rkBonusBtn()}</div>`) : "";
     const devSec = S.dv ? "" : rkDet("dev", false, 'class="card rk-sec" style="border-left:4px solid #eab308"', `<summary ${SUM}><span class="t">${lci("wrench")} Dev bonus</span><span class="mu">${money(DEVBONUS)} · one-time</span></summary><div style="margin-top:10px"><button class="s" onclick="claimDev()">Claim ${money(DEVBONUS)}</button></div>`);
     const shopSec = rkDet("shop", false, 'class="card rk-sec"', `<summary ${SUM}><span class="t">${lci("car-front")} Shop</span><span class="mu">Upgrades</span></summary><div style="margin-top:10px">${atpH()}</div>`);
 
-    return `<div class="rk-tab">${staffClaim}${offers}${rkCurrent()}${lbSec}${dailySec}${bonusSec}${devSec}${shopSec}</div>`;
+    return `<div class="rk-tab">${staffClaim}${offers}${rkCurrent()}${achSec}${lbSec}${dailySec}${bonusSec}${devSec}${shopSec}</div>`;
   };
 
   /* Flat in-panel versions for the mobile hamburger menu. No dropdowns: everything on the page is visible at once. */
