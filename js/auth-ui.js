@@ -15,8 +15,7 @@ const AUTH_SCENES=[
 ["Belfast",[[2,"Domestic incident","City Hall",54.5966,-5.9302,"PR33","p","awaiting dispatch"],[1,"Cardiac arrest","Great Victoria Street",54.5948,-5.9358,"AM12","a","mobile · ETA 4 min"],[3,"Fire alarm","Titanic Quarter",54.6081,-5.9108,"FP02","f","on scene"],[2,"RTC","Queen's University",54.5849,-5.9348,"FR05","f","mobile · ETA 6 min"]]],
 ["Sheffield",[[1,"House fire","Bramall Lane",53.3703,-1.4709,"FP13","f","on scene"],[2,"Stroke","Sheffield Station",53.3781,-1.4620,"AM17","a","mobile · ETA 5 min"],[3,"Theft","Winter Garden",53.3790,-1.4690,"PR07","p","awaiting dispatch"],[2,"Assault","Hallam University",53.3768,-1.4663,"PR21","p","mobile · ETA 4 min"]]]];
 
-const AUTH_PHONE='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.1-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>';
-const AUTH_GC={1:"#ef4444",2:"#f97316",3:"#94a3b8"},AUTH_SC={f:"#ef4444",p:"#3b82f6",a:"#22c55e"};
+const AUTH_GC={1:"#dc2626",2:"#f97316",3:"#eab308",4:"#64748b"},AUTH_SC={f:"#ef4444",p:"#3b82f6",a:"#22c55e"},AUTH_SB={f:"#d92d20",p:"#1d4ed8",a:"#16a34a"}; /* grade fill + service ring, as the in-game call icons */
 let authMapObj=null;
 
 /* a different city on every load (never the same one twice in a row) */
@@ -39,14 +38,14 @@ function authMapOn(sc){
       "#authmap:before{content:'';position:absolute;inset:0;z-index:450;pointer-events:none;background:linear-gradient(rgba(60,100,180,.09) 1px,transparent 1px) 0 0/60px 60px,linear-gradient(90deg,rgba(60,100,180,.09) 1px,transparent 1px) 0 0/60px 60px}"+
       "#authmap:after{content:'';position:absolute;inset:0;z-index:500;pointer-events:none;background:radial-gradient(circle,transparent 40%,rgba(0,0,0,.55))}"+
       "#authmap .ac{background:none;border:0}"+
-      ".aci{position:relative;width:30px;height:30px;border-radius:50%;background:var(--c);color:#fff;display:grid;place-items:center;box-shadow:0 0 14px var(--c)}"+
-      ".aci:before,.aci:after{content:'';position:absolute;inset:0;border-radius:50%;border:2px solid var(--c);animation:acp 2.2s ease-out infinite;animation-delay:var(--d)}"+
-      ".aci:after{animation-delay:calc(var(--d) + 1.1s)}"+
-      ".acr{position:absolute;inset:-12px;border-radius:50%;border:1px dashed var(--c);opacity:.55;animation:acs 14s linear infinite;pointer-events:none}"+
+      ".aci{position:relative;width:32px;height:32px;box-sizing:border-box;border-radius:50%;background:var(--c);border:3px solid var(--b);font:700 15px/1 system-ui;display:grid;place-items:center;box-shadow:inset 0 0 0 2px rgba(255,255,255,.9),0 0 14px var(--c)}"+
+      ".aci:before,.aci:after{content:'';position:absolute;inset:-3px;border-radius:50%;border:2px solid var(--c);animation:acp 4.6s ease-out infinite;animation-delay:var(--d)}"+
+      ".aci:after{animation-delay:calc(var(--d) + 2.3s)}"+
+      ".acr{position:absolute;inset:-12px;border-radius:50%;border:1px dashed var(--c);opacity:.55;animation:acs 28s linear infinite;pointer-events:none}"+
       ".acl{position:absolute;left:38px;top:5px;white-space:nowrap;padding:2px 8px;border-radius:4px;background:rgba(5,9,18,.85);border:1px solid #17233d;color:#eef1f8;font:500 11px system-ui}"+
       "@keyframes acp{from{transform:scale(1);opacity:.9}to{transform:scale(2.8);opacity:0}}@keyframes acs{to{transform:rotate(360deg)}}"+
       "@media(prefers-reduced-motion:reduce){.aci:before,.aci:after,.acr{animation:none}}"+
-      "@media(max-width:700px){.acl{display:none}}"+
+      "@media(max-width:700px){.acl,.acr{display:none}.acat{bottom:auto;top:41px}#authov{padding:44px 12px 54px!important}#authov>div[style*=\"padding:20px\"]{padding:14px 16px!important}#authov>div[style*=\"padding:20px\"]>div:first-child{display:none}#authov input{padding:9px 10px!important;margin-bottom:6px!important}#am{min-height:14px!important;margin-bottom:4px!important}}"+
       /* desktop: sign-in as a full-height right-hand panel; map fills the rest */
       "@media(min-width:900px){#authov{left:auto!important;width:460px;background:#060b16!important;border-left:1px solid #17233d;box-shadow:-24px 0 48px rgba(0,0,0,.45);align-items:center!important;padding:52px 28px 20px!important}#authov>div[style*=\"padding:20px\"]{background:transparent!important;border:0!important;border-radius:0!important;max-width:100%!important}#authov>.aq{max-width:100%!important}}"+
       ".acat{position:fixed;right:6px;bottom:4px;z-index:99998;font:10px system-ui;color:#5a7096}";
@@ -57,12 +56,12 @@ function authMapOn(sc){
   const narrow=innerWidth<700,pts=sc[1].map(q=>[q[3],q[4]]);
   const m=L.map("authmap",{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,touchZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false});
   /* zoom to the 4 incidents, keeping them clear of the sign-in card */
-  const right=narrow?30:500,bottom=narrow?Math.round(innerHeight*.6):60;
+  const right=narrow?30:500,bottom=narrow?Math.round(innerHeight*.42):60;
   if(m.fitBounds)m.fitBounds(pts,{paddingTopLeft:[40,70],paddingBottomRight:[right,bottom],maxZoom:15,animate:false});
   else m.setView([pts.reduce((a,p)=>a+p[0],0)/4,pts.reduce((a,p)=>a+p[1],0)/4],14);
   sc[1].forEach((q,i)=>{
-    L.marker([q[3],q[4]],{interactive:false,icon:L.divIcon({className:"ac",iconSize:[30,30],iconAnchor:[15,15],
-      html:'<i class="aci" style="--c:'+AUTH_GC[q[0]]+';--d:'+(i*.5)+'s"><s class="acr"></s>'+AUTH_PHONE+'<b class="acl">G'+q[0]+' '+q[1]+' · '+q[2]+'</b></i>'})}).addTo(m);
+    L.marker([q[3],q[4]],{interactive:false,icon:L.divIcon({className:"ac",iconSize:[32,32],iconAnchor:[16,16],
+      html:'<i class="aci" style="--c:'+AUTH_GC[q[0]]+';--b:'+AUTH_SB[q[6]]+';--d:'+(i*.9)+'s;color:'+(q[0]===3?'#000':'#fff')+'"><s class="acr"></s>'+q[0]+'<b class="acl">G'+q[0]+' '+q[1]+' · '+q[2]+'</b></i>'})}).addTo(m);
   });
   try{setTimeout(()=>m.invalidateSize(),0)}catch(e){}
   authMapObj=m;
@@ -89,7 +88,7 @@ let authQ="";
 function authBg(){
   const sc=authPick();authMapOn(sc);
   const rows=sc[1].map(q=>{const stc=/scene/.test(q[7])?"#eab308":AUTH_SC[q[6]];
-    return `<div style="display:flex;gap:10px;padding:8px 12px;border-top:1px solid #131e36"><b style="background:${AUTH_GC[q[0]]};color:#fff;font-size:10px;font-weight:500;border-radius:3px;padding:0 6px;height:16px;line-height:16px;flex:none;margin-top:1px">G${q[0]}</b><div style="min-width:0"><div style="font-size:11px;color:#dfe4ee">${q[1]} · ${q[2]}</div><div style="font-size:10px;color:${stc};display:flex;gap:6px;align-items:center"><svg width="16" height="9" viewBox="0 0 24 14"><use href="#av" width="24" height="14" fill="${AUTH_SC[q[6]]}"/></svg>${q[5]} ${q[7]}</div></div></div>`}).join("");
+    return `<div style="display:flex;gap:10px;padding:8px 12px;border-top:1px solid #131e36"><b style="background:${AUTH_GC[q[0]]};color:${q[0]===3?"#000":"#fff"};font-size:10px;font-weight:500;border-radius:3px;padding:0 6px;height:16px;line-height:16px;flex:none;margin-top:1px">G${q[0]}</b><div style="min-width:0"><div style="font-size:11px;color:#dfe4ee">${q[1]} · ${q[2]}</div><div style="font-size:10px;color:${stc};display:flex;gap:6px;align-items:center"><svg width="16" height="9" viewBox="0 0 24 14"><use href="#av" width="24" height="14" fill="${AUTH_SC[q[6]]}"/></svg>${q[5]} ${q[7]}</div></div></div>`}).join("");
   const seg=["#ef4444","#3b82f6","#ef4444","#3b82f6","#22c55e"].map(c=>`<i style="flex:1;background:${c}"></i>`).join("");
   authQ=`<div class="aq" style="position:relative;z-index:1;flex:none;width:100%;max-width:380px;margin:12px 0 auto;background:rgba(5,9,18,.92);border:1px solid #131e36;border-radius:10px;font-family:ui-monospace,monospace;overflow:hidden"><div style="display:flex;justify-content:space-between;padding:10px 12px;font-size:10px;letter-spacing:2px;color:#5a7096"><span>INCIDENT QUEUE · ${sc[0].toUpperCase()}</span><span>4 OPEN</span></div>${rows}</div>`;
   return `<style>@media(max-height:760px){.aq{display:none}}</style><svg width="0" height="0" style="position:absolute"><defs><symbol id="av" viewBox="0 0 24 14"><rect x="1" y="3" width="22" height="8" rx="2"/><rect x="8" y="0.5" width="8" height="3" rx="1" fill="#e5e9f2"/><circle cx="6" cy="11.5" r="2" fill="#04070d"/><circle cx="18" cy="11.5" r="2" fill="#04070d"/></symbol></defs></svg>`+
