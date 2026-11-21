@@ -186,3 +186,6 @@ body:has(#hb_menu:not([hidden])) nav button.on{
 
 /* leaderboard page inside the menu */
 #hb_menu .hb_lb .card{margin:0 0 12px;border-radius:18px}
+
+/* App version: bottom of the Account pane, below Danger zone (moved out of the header) */
+#hb_menu .hb_pane[data-p="ac"] .hb_ver{margin:18px 0 4px;text-align:center;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;color:var(--mu)}
