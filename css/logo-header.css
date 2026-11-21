@@ -4,3 +4,10 @@ header>div:first-child{display:flex;align-items:center;gap:10px;min-width:0}
 header>div:first-child #sync{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:260px}
 @media(max-width:999px){.hdr-logo{height:38px}}
 @media(max-width:480px){.hdr-logo{height:34px}}
+/* Header status: icon only, text is shown in a toast on tap */
+header #sync{display:inline-flex;align-items:center;cursor:pointer;min-width:16px;min-height:16px;margin:0;line-height:0;max-width:none;opacity:1}
+header #sync .sync-txt{display:none}
+header #sync .sync-dot{width:9px;height:9px;border-radius:50%;background:#64748b;flex:none}
+/* Status box shown under the header icon on tap */
+#sync-box{position:fixed;z-index:1000;max-width:260px;padding:8px 12px;border-radius:8px;background:var(--card,#fff);color:var(--tx,#111);border:1px solid var(--bd,#d0d5dd);box-shadow:0 4px 14px rgba(0,0,0,.25);font:500 13px/1.35 system-ui,-apple-system,sans-serif}
+#sync-box[hidden]{display:none}
