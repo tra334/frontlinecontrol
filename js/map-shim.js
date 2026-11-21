@@ -30,10 +30,10 @@ _r(){if(this._q)return;this._q=requestAnimationFrame(()=>{this._q=0;this._d()})}
 _d(){const[cx,cy]=this.pr(this.c.lat,this.c.lng,this.z);this.tx=cx-this.w/2;this.ty=cy-this.h/2;this.layers.forEach(l=>l._draw&&l._draw(this))}
 zoomAt(dz,px,py){const nz=cl(this.z+dz,2,19);if(nz===this.z)return this;const g=this.un(this.tx+px,this.ty+py,this.z);this.z=nz;const[gx,gy]=this.pr(g.lat,g.lng,nz);this.c=this.un(gx-px+this.w/2,gy-py+this.h/2,nz);this._r();return this}
 setView(a,z){this.c=ll(a);this.z=z;this._r();return this}
-fitBounds(pts,o){o=o||{};const p=o.padding||[0,0],a=pts.map(ll);let z=o.maxZoom||18;const W=Math.max(50,this.w-2*p[0]),H=Math.max(50,this.h-2*p[1]);
+fitBounds(pts,o){o=o||{};const p=o.padding||[0,0],tl=o.paddingTopLeft||p,br=o.paddingBottomRight||p,a=pts.map(ll);let z=o.maxZoom||18;const W=Math.max(50,this.w-tl[0]-br[0]),H=Math.max(50,this.h-tl[1]-br[1]);
 const la=a.map(x=>x.lat),lo=a.map(x=>x.lng),n=Math.max(...la),s=Math.min(...la),e=Math.max(...lo),w=Math.min(...lo);
 for(;z>2;z--){const A=this.pr(n,w,z),B=this.pr(s,e,z);if(B[0]-A[0]<=W&&B[1]-A[1]<=H)break}
-const A=this.pr(n,w,z),B=this.pr(s,e,z);this.z=z;this.c=this.un((A[0]+B[0])/2,(A[1]+B[1])/2,z);this._r();return this}
+const A=this.pr(n,w,z),B=this.pr(s,e,z);this.z=z;this.c=this.un((A[0]+B[0])/2+(br[0]-tl[0])/2,(A[1]+B[1])/2+(br[1]-tl[1])/2,z);this._r();return this}
 invalidateSize(){this.w=this.el.clientWidth;this.h=this.el.clientHeight;this._r();return this}
 createPane(){return{style:{}}}
 removeLayer(l){l._rm&&l._rm();this.layers.delete(l);return this}}

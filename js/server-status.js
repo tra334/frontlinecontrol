@@ -7,7 +7,7 @@
   const pill = document.createElement("a");
   pill.href = "status.html"; pill.target = "_blank"; pill.rel = "noopener";
   pill.setAttribute("aria-label", "Server status: open the status page");
-  pill.style.cssText = "position:fixed;left:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);z-index:100000;display:none;align-items:center;gap:7px;padding:6px 11px;border-radius:999px;background:rgba(15,23,42,.88);color:#e2e8f0;font:600 12px/1 system-ui,-apple-system,sans-serif;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,.35)";
+  pill.style.cssText = "position:fixed;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);z-index:100000;display:none;align-items:center;gap:7px;padding:6px 11px;border-radius:999px;background:rgba(15,23,42,.88);color:#e2e8f0;font:600 12px/1 system-ui,-apple-system,sans-serif;text-decoration:none;box-shadow:0 2px 10px rgba(0,0,0,.35)";
   const dot = document.createElement("span");
   dot.style.cssText = "width:9px;height:9px;border-radius:50%;background:#64748b;flex:none";
   const label = document.createElement("span");

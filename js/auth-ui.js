@@ -15,6 +15,21 @@ const AUTH_SCENES=[
 ["Belfast",[[2,"Domestic incident","City Hall",54.5966,-5.9302,"PR33","p","awaiting dispatch"],[1,"Cardiac arrest","Great Victoria Street",54.5948,-5.9358,"AM12","a","mobile · ETA 4 min"],[3,"Fire alarm","Titanic Quarter",54.6081,-5.9108,"FP02","f","on scene"],[2,"RTC","Queen's University",54.5849,-5.9348,"FR05","f","mobile · ETA 6 min"]]],
 ["Sheffield",[[1,"House fire","Bramall Lane",53.3703,-1.4709,"FP13","f","on scene"],[2,"Stroke","Sheffield Station",53.3781,-1.4620,"AM17","a","mobile · ETA 5 min"],[3,"Theft","Winter Garden",53.3790,-1.4690,"PR07","p","awaiting dispatch"],[2,"Assault","Hallam University",53.3768,-1.4663,"PR21","p","mobile · ETA 4 min"]]]];
 
+/* two extra incidents per city, shown on desktop only so the queue reads 6 open (phones keep the 4 above) */
+const AUTH_EXTRA={
+"Manchester":[[2,"Overdose","Northern Quarter",53.4845,-2.2350,"AM15","a","mobile · ETA 5 min"],[3,"Criminal damage","Manchester Victoria",53.4871,-2.2426,"PR12","p","awaiting dispatch"]],
+"Leeds":[[1,"Cardiac arrest","Kirkgate Market",53.7981,-1.5391,"AM11","a","mobile · ETA 3 min"],[3,"Shoplifting","Briggate",53.7986,-1.5434,"PR09","p","awaiting dispatch"]],
+"Birmingham":[[2,"Fall – elderly","Jewellery Quarter",52.4890,-1.9120,"AM18","a","mobile · ETA 5 min"],[3,"Fight","Broad Street",52.4772,-1.9080,"PR09","p","awaiting dispatch"]],
+"London":[[2,"Chest pain","Camden Market",51.5415,-0.1465,"AM19","a","mobile · ETA 5 min"],[1,"Stabbing","Elephant & Castle",51.4946,-0.1005,"PR14","p","mobile · ETA 3 min"]],
+"Glasgow":[[2,"Fire alarm","Buchanan Galleries",55.8638,-4.2515,"FP09","f","mobile · ETA 4 min"],[3,"Disturbance","Merchant City",55.8588,-4.2467,"PR21","p","awaiting dispatch"]],
+"Edinburgh":[[2,"Fall","Princes Street Gardens",55.9515,-3.1960,"AM17","a","mobile · ETA 4 min"],[3,"Theft","Grassmarket",55.9475,-3.1966,"PR12","p","awaiting dispatch"]],
+"Cardiff":[[2,"Chest pain","Cardiff Central",51.4755,-3.1792,"AM08","a","mobile · ETA 5 min"],[3,"Disturbance","St Mary Street",51.4786,-3.1770,"PR12","p","awaiting dispatch"]],
+"Bristol":[[2,"Stroke","Clifton Triangle",51.4577,-2.6094,"AM17","a","mobile · ETA 6 min"],[3,"Theft","Broadmead",51.4587,-2.5867,"PR12","p","awaiting dispatch"]],
+"Liverpool":[[2,"Fall – elderly","Edge Hill",53.4066,-2.9625,"AM17","a","mobile · ETA 5 min"],[3,"Theft","Church Street",53.4054,-2.9837,"PR07","p","awaiting dispatch"]],
+"Newcastle":[[2,"Fire alarm","Eldon Square",54.9775,-1.6140,"FP09","f","mobile · ETA 4 min"],[3,"Fight","Bigg Market",54.9733,-1.6165,"PR12","p","awaiting dispatch"]],
+"Belfast":[[2,"Stroke","Cathedral Quarter",54.6019,-5.9255,"AM17","a","mobile · ETA 5 min"],[3,"Theft","Victoria Square",54.5993,-5.9265,"PR07","p","awaiting dispatch"]],
+"Sheffield":[[2,"Chest pain","Devonshire Green",53.3770,-1.4795,"AM12","a","mobile · ETA 4 min"],[3,"Disturbance","Fargate",53.3814,-1.4701,"PR12","p","awaiting dispatch"]]};
+
 const AUTH_GC={1:"#dc2626",2:"#f97316",3:"#eab308",4:"#64748b"},AUTH_SC={f:"#ef4444",p:"#3b82f6",a:"#22c55e"},AUTH_SB={f:"#d92d20",p:"#1d4ed8",a:"#16a34a"}; /* grade fill + service ring, as the in-game call icons */
 let authMapObj=null;
 
@@ -23,7 +38,8 @@ function authPick(){
   let last=-1,i;try{last=+localStorage.getItem("authCity")}catch(e){}
   do{i=Math.floor(Math.random()*AUTH_SCENES.length)}while(i===last&&AUTH_SCENES.length>1);
   try{localStorage.setItem("authCity",i)}catch(e){}
-  return AUTH_SCENES[i];
+  const sc=AUTH_SCENES[i];
+  return innerWidth>=900?[sc[0],sc[1].concat(AUTH_EXTRA[sc[0]]||[])]:sc;
 }
 
 function authMapOn(sc){
@@ -47,18 +63,18 @@ function authMapOn(sc){
       "@media(prefers-reduced-motion:reduce){.aci:before,.aci:after,.acr{animation:none}}"+
       "@media(max-width:700px){.acl,.acr{display:none}.acat{bottom:auto;top:41px}#authov{padding:44px 12px 54px!important}#authov>div[style*=\"padding:20px\"]{padding:14px 16px!important}#authov>div[style*=\"padding:20px\"]>div:first-child{display:none}#authov input{padding:9px 10px!important;margin-bottom:6px!important}#am{min-height:14px!important;margin-bottom:4px!important}}"+
       /* desktop: sign-in as a full-height right-hand panel; map fills the rest */
-      "@media(min-width:900px){#authov{left:auto!important;width:460px;background:#060b16!important;border-left:1px solid #17233d;box-shadow:-24px 0 48px rgba(0,0,0,.45);align-items:center!important;padding:52px 28px 20px!important}#authov>div[style*=\"padding:20px\"]{background:transparent!important;border:0!important;border-radius:0!important;max-width:100%!important}#authov>.aq{max-width:100%!important}}"+
+      "@media(min-width:900px){#authov{right:auto!important;left:0!important;width:460px;background:#060b16!important;border-right:1px solid #17233d;box-shadow:24px 0 48px rgba(0,0,0,.45);align-items:center!important;padding:52px 28px 20px!important}#authov>div[style*=\"padding:20px\"]{background:transparent!important;border:0!important;border-radius:0!important;max-width:100%!important}#authov>.aq{max-width:100%!important}#authmap{left:460px}}"+
       ".acat{position:fixed;right:6px;bottom:4px;z-index:99998;font:10px system-ui;color:#5a7096}";
     document.head.appendChild(st);
   }
   const el=document.createElement("div");el.id="authmap";document.body.appendChild(el);
   const at=document.createElement("div");at.id="authmap-at";at.className="acat";at.textContent="OpenFreeMap © OpenMapTiles · Data from OpenStreetMap";document.body.appendChild(at);
-  const narrow=innerWidth<700,pts=sc[1].map(q=>[q[3],q[4]]);
+  const narrow=innerWidth<900,pts=sc[1].map(q=>[q[3],q[4]]);
   const m=L.map("authmap",{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,touchZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false});
   /* zoom to the 4 incidents, keeping them clear of the sign-in card */
-  const right=narrow?30:500,bottom=narrow?Math.round(innerHeight*.42):60;
-  if(m.fitBounds)m.fitBounds(pts,{paddingTopLeft:[40,70],paddingBottomRight:[right,bottom],maxZoom:15,animate:false});
-  else m.setView([pts.reduce((a,p)=>a+p[0],0)/4,pts.reduce((a,p)=>a+p[1],0)/4],14);
+  const left=narrow?40:60,right=narrow?30:260,top=narrow?70:80,bottom=narrow?Math.round(innerHeight*.42):80; /* desktop: the map only fills the area right of the panel; right pad leaves room for the marker labels */
+  if(m.fitBounds)m.fitBounds(pts,{paddingTopLeft:[left,top],paddingBottomRight:[right,bottom],maxZoom:15,animate:false});
+  else m.setView([pts.reduce((a,p)=>a+p[0],0)/pts.length,pts.reduce((a,p)=>a+p[1],0)/pts.length],14);
   sc[1].forEach((q,i)=>{
     L.marker([q[3],q[4]],{interactive:false,icon:L.divIcon({className:"ac",iconSize:[32,32],iconAnchor:[16,16],
       html:'<i class="aci" style="--c:'+AUTH_GC[q[0]]+';--b:'+AUTH_SB[q[6]]+';--d:'+(i*.9)+'s;color:'+(q[0]===3?'#000':'#fff')+'"><s class="acr"></s>'+q[0]+'<b class="acl">G'+q[0]+' '+q[1]+' · '+q[2]+'</b></i>'})}).addTo(m);
@@ -90,7 +106,7 @@ function authBg(){
   const rows=sc[1].map(q=>{const stc=/scene/.test(q[7])?"#eab308":AUTH_SC[q[6]];
     return `<div style="display:flex;gap:10px;padding:8px 12px;border-top:1px solid #131e36"><b style="background:${AUTH_GC[q[0]]};color:${q[0]===3?"#000":"#fff"};font-size:10px;font-weight:500;border-radius:3px;padding:0 6px;height:16px;line-height:16px;flex:none;margin-top:1px">G${q[0]}</b><div style="min-width:0"><div style="font-size:11px;color:#dfe4ee">${q[1]} · ${q[2]}</div><div style="font-size:10px;color:${stc};display:flex;gap:6px;align-items:center"><svg width="16" height="9" viewBox="0 0 24 14"><use href="#av" width="24" height="14" fill="${AUTH_SC[q[6]]}"/></svg>${q[5]} ${q[7]}</div></div></div>`}).join("");
   const seg=["#ef4444","#3b82f6","#ef4444","#3b82f6","#22c55e"].map(c=>`<i style="flex:1;background:${c}"></i>`).join("");
-  authQ=`<div class="aq" style="position:relative;z-index:1;flex:none;width:100%;max-width:380px;margin:12px 0 auto;background:rgba(5,9,18,.92);border:1px solid #131e36;border-radius:10px;font-family:ui-monospace,monospace;overflow:hidden"><div style="display:flex;justify-content:space-between;padding:10px 12px;font-size:10px;letter-spacing:2px;color:#5a7096"><span>INCIDENT QUEUE · ${sc[0].toUpperCase()}</span><span>4 OPEN</span></div>${rows}</div>`;
+  authQ=`<div class="aq" style="position:relative;z-index:1;flex:none;width:100%;max-width:380px;margin:12px 0 auto;background:rgba(5,9,18,.92);border:1px solid #131e36;border-radius:10px;font-family:ui-monospace,monospace;overflow:hidden"><div style="display:flex;justify-content:space-between;padding:10px 12px;font-size:10px;letter-spacing:2px;color:#5a7096"><span>INCIDENT QUEUE · ${sc[0].toUpperCase()}</span><span>${sc[1].length} OPEN</span></div>${rows}</div>`;
   return `<style>@media(max-height:760px){.aq{display:none}}</style><svg width="0" height="0" style="position:absolute"><defs><symbol id="av" viewBox="0 0 24 14"><rect x="1" y="3" width="22" height="8" rx="2"/><rect x="8" y="0.5" width="8" height="3" rx="1" fill="#e5e9f2"/><circle cx="6" cy="11.5" r="2" fill="#04070d"/><circle cx="18" cy="11.5" r="2" fill="#04070d"/></symbol></defs></svg>`+
   `<div style="position:fixed;top:0;left:0;right:0;z-index:0;height:34px;background:#070b14;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font:500 12px ui-monospace,monospace;color:#dfe4ee;letter-spacing:1.5px">FRONTLINE CONTROL<span style="color:#7f8ca3;font-size:11px;font-weight:400;letter-spacing:0"><i style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#22c55e;margin-right:6px"></i>LIVE <span id="aclk">${new Date().toLocaleTimeString("en-GB")}</span></span></div><div style="position:fixed;top:34px;left:0;right:0;z-index:0;height:3px;display:flex">${seg}</div>`;
 }
