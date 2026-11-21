@@ -30,7 +30,8 @@
     warn: '<path d="M12 3 22 21H2z"/><path d="M12 10v5M12 18h.01"/>',
     trophy: '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 4h3v2a3 3 0 0 1-3 3M7 4H4v2a3 3 0 0 0 3 3"/>',
     chev: '<path d="m9 18 6-6-6-6"/>',
-    trash: '<path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/>'
+    trash: '<path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/>',
+    mail: '<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>'
   };
   const svg = (k, s) => `<svg width="${s || 22}" height="${s || 22}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P[k]}</svg>`;
   const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -139,6 +140,7 @@ ${row("logs", "log", "Logs", "Past calls and earnings")}
 ${row("set", "cog", "Settings", "Sound, display and more")}
 ${row("exp", "down", "Export save", "Download your progress")}
 ${si ? "" : row("imp", "up", "Import save", "Restore from a save file")}
+${si ? row("chgemail", "mail", "Change email", "The email you sign in with") : ""}
 </div>
 ${showDev ? `<div class="hb_card">
 ${row("devtools", "bug", "Developer tools", "For testing and troubleshooting", `<span class="hb_chev${devOpen ? " open" : ""}">${svg("chev", 18)}</span>`, { noChev: true })}
@@ -207,6 +209,7 @@ ${si ? row("delacct", "trash", "Delete account", "Permanently deletes your accou
     spd: el => { const p = setSpd(+el.dataset.n); if (p && p.then) p.then(update); update(); },
     rspawn: () => spawnRandom(),
     reset: () => { close(); resetG(); },
+    chgemail: () => { close(); if (window.fcChangeEmail) fcChangeEmail(); },
     delacct: () => { close(); if (window.fcDeleteAccount) fcDeleteAccount(); }
   };
 
