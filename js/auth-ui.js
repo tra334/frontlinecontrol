@@ -32,39 +32,52 @@ function authMapOn(sc){
   if(!document.getElementById("authmap-css")){
     const st=document.createElement("style");st.id="authmap-css";
     st.textContent=
-      "#authmap{position:fixed;inset:0;z-index:99998;background:#06080c}"+
-      /* black tint: invert the light OSM tiles, drop the colour, darken */
-      "#authmap .leaflet-tile-pane{filter:invert(1) grayscale(1) brightness(.5) contrast(1.25)}"+
-      "#authmap:after{content:'';position:absolute;inset:0;z-index:500;pointer-events:none;background:radial-gradient(circle,transparent 35%,rgba(0,0,0,.6))}"+
+      "#authmap{position:fixed;inset:0;z-index:99998;background:#0b0f14}"+
+      /* only used if the CAD vector map can't load: plain OSM tiles, inverted to black */
+      "#authmap.o .leaflet-tile-pane{filter:invert(1) grayscale(1) brightness(.5) contrast(1.25)}"+
+      /* CAD grid + vignette */
+      "#authmap:before{content:'';position:absolute;inset:0;z-index:450;pointer-events:none;background:linear-gradient(rgba(60,100,180,.09) 1px,transparent 1px) 0 0/60px 60px,linear-gradient(90deg,rgba(60,100,180,.09) 1px,transparent 1px) 0 0/60px 60px}"+
+      "#authmap:after{content:'';position:absolute;inset:0;z-index:500;pointer-events:none;background:radial-gradient(circle,transparent 40%,rgba(0,0,0,.55))}"+
       "#authmap .ac{background:none;border:0}"+
       ".aci{position:relative;width:30px;height:30px;border-radius:50%;background:var(--c);color:#fff;display:grid;place-items:center;box-shadow:0 0 14px var(--c)}"+
       ".aci:before,.aci:after{content:'';position:absolute;inset:0;border-radius:50%;border:2px solid var(--c);animation:acp 2.2s ease-out infinite;animation-delay:var(--d)}"+
       ".aci:after{animation-delay:calc(var(--d) + 1.1s)}"+
+      ".acr{position:absolute;inset:-12px;border-radius:50%;border:1px dashed var(--c);opacity:.55;animation:acs 14s linear infinite;pointer-events:none}"+
       ".acl{position:absolute;left:38px;top:5px;white-space:nowrap;padding:2px 8px;border-radius:4px;background:rgba(5,9,18,.85);border:1px solid #17233d;color:#eef1f8;font:500 11px system-ui}"+
-      "@keyframes acp{from{transform:scale(1);opacity:.9}to{transform:scale(2.8);opacity:0}}"+
-      "@media(prefers-reduced-motion:reduce){.aci:before,.aci:after{animation:none}}"+
+      "@keyframes acp{from{transform:scale(1);opacity:.9}to{transform:scale(2.8);opacity:0}}@keyframes acs{to{transform:rotate(360deg)}}"+
+      "@media(prefers-reduced-motion:reduce){.aci:before,.aci:after,.acr{animation:none}}"+
       "@media(max-width:700px){.acl{display:none}}"+
-      /* desktop: sign-in card on the left so it never covers the incidents */
-      "@media(min-width:900px){#authov{align-items:flex-start!important;padding-left:7vw!important}}"+
+      /* desktop: sign-in as a full-height right-hand panel; map fills the rest */
+      "@media(min-width:900px){#authov{left:auto!important;width:460px;background:#060b16!important;border-left:1px solid #17233d;box-shadow:-24px 0 48px rgba(0,0,0,.45);align-items:center!important;padding:52px 28px 20px!important}#authov>div[style*=\"padding:20px\"]{background:transparent!important;border:0!important;border-radius:0!important;max-width:100%!important}#authov>.aq{max-width:100%!important}}"+
       ".acat{position:fixed;right:6px;bottom:4px;z-index:99998;font:10px system-ui;color:#5a7096}";
     document.head.appendChild(st);
   }
   const el=document.createElement("div");el.id="authmap";document.body.appendChild(el);
-  const at=document.createElement("div");at.id="authmap-at";at.className="acat";at.textContent="© OpenStreetMap contributors";document.body.appendChild(at);
+  const at=document.createElement("div");at.id="authmap-at";at.className="acat";at.textContent="OpenFreeMap © OpenMapTiles · Data from OpenStreetMap";document.body.appendChild(at);
   const narrow=innerWidth<700,pts=sc[1].map(q=>[q[3],q[4]]);
   const m=L.map("authmap",{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,touchZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false});
-  /* same tile source the game map uses (TP[0] in map.js) */
-  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,referrerPolicy:"origin"}).addTo(m);
   /* zoom to the 4 incidents, keeping them clear of the sign-in card */
-  const left=narrow?30:Math.round(innerWidth*.07)+440,bottom=narrow?Math.round(innerHeight*.6):60;
-  if(m.fitBounds)m.fitBounds(pts,{paddingTopLeft:[left,70],paddingBottomRight:[40,bottom],maxZoom:15,animate:false});
+  const right=narrow?30:500,bottom=narrow?Math.round(innerHeight*.6):60;
+  if(m.fitBounds)m.fitBounds(pts,{paddingTopLeft:[40,70],paddingBottomRight:[right,bottom],maxZoom:15,animate:false});
   else m.setView([pts.reduce((a,p)=>a+p[0],0)/4,pts.reduce((a,p)=>a+p[1],0)/4],14);
   sc[1].forEach((q,i)=>{
     L.marker([q[3],q[4]],{interactive:false,icon:L.divIcon({className:"ac",iconSize:[30,30],iconAnchor:[15,15],
-      html:'<i class="aci" style="--c:'+AUTH_GC[q[0]]+';--d:'+(i*.5)+'s">'+AUTH_PHONE+'<b class="acl">G'+q[0]+' '+q[1]+' · '+q[2]+'</b></i>'})}).addTo(m);
+      html:'<i class="aci" style="--c:'+AUTH_GC[q[0]]+';--d:'+(i*.5)+'s"><s class="acr"></s>'+AUTH_PHONE+'<b class="acl">G'+q[0]+' '+q[1]+' · '+q[2]+'</b></i>'})}).addTo(m);
   });
   try{setTimeout(()=>m.invalidateSize(),0)}catch(e){}
   authMapObj=m;
+  /* fallback: plain OSM tiles, tinted black */
+  const osm=()=>{if(authMapObj!==m)return;el.classList.add("o");at.textContent="© OpenStreetMap contributors";
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,referrerPolicy:"origin"}).addTo(m)};
+  /* the game's own "CAD - Dark" style: OpenFreeMap dark + dispatchStyle (both live in map.js) */
+  (async()=>{try{
+    if(L.shim||typeof loadVectorLibs!=="function"||typeof dispatchStyle!=="function")throw 0;
+    await loadVectorLibs();if(authMapObj!==m)return;
+    const lay=L.maplibreGL({style:"https://tiles.openfreemap.org/styles/dark",pane:"tilePane"}).addTo(m),gl=lay.getMaplibreMap();let ok=0;
+    const to=setTimeout(()=>{if(!ok){ok=1;try{m.removeLayer(lay)}catch(x){}osm()}},12000);
+    gl.on("error",e=>{if(!ok&&e&&!e.tile&&!e.sourceId){ok=1;clearTimeout(to);try{m.removeLayer(lay)}catch(x){}osm()}});
+    gl.once("load",()=>{if(ok)return;ok=1;clearTimeout(to);try{dispatchStyle(gl,"d")}catch(x){}});
+  }catch(e){osm()}})();
 }
 function authMapOff(){
   if(authMapObj){try{authMapObj.remove()}catch(e){}authMapObj=null}
