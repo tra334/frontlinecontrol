@@ -120,6 +120,7 @@ ${S.dv ? "" : row("dev", "wrench", "Dev bonus", money(typeof DEVBONUS === "numbe
 ${sec("Game")}
 <div class="hb_card">
 ${row("rooms", "rooms", "Rooms", rmSub, !si ? "" : rmCount ? `<span class="hb_pill">${esc(rmCount)}</span>` : "", si ? {} : { off: true })}
+${window.Ach ? row("ach", "trophy", "Achievements", Ach.summary() + " unlocked") : ""}
 ${row("lb", "trophy", "Leaderboard", si ? "Top 50 players" : "Sign in to see rankings", "", si ? {} : { off: true })}
 ${row("shop", "shop", "Shop", "Upgrades")}
 ${row("logs", "log", "Logs", "Past calls and earnings")}
@@ -164,6 +165,7 @@ ${si ? row("delacct", "trash", "Delete account", "Permanently deletes your accou
      Settings, Logs, Manual spawn and Debug log screens, which mount themselves into the panel through window.fcPanelMount. */
   const PAGES = {
     ranks: { t: "Ranks", html: () => window.rkFlatH ? rkFlatH() : "" },
+    ach: { t: "Achievements", html: () => window.Ach ? Ach.flatHtml() : "" },
     daily: { t: "Daily bonus", html: () => window.rkDailyH ? rkDailyH() : "" },
     rankup: { t: "Rank-up bonus", html: () => window.rkRankUpH ? rkRankUpH() : "" },
     lb: { t: "Leaderboard", html: () => `<div class="hb_lb">${window.lbHtml && signedIn() ? lbHtml() : '<div class="hb_panel">Sign in to see the leaderboard.</div>'}</div>` },
