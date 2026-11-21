@@ -146,9 +146,10 @@ ${showDev ? `<div class="hb_card">
 ${row("devtools", "bug", "Developer tools", "For testing and troubleshooting", `<span class="hb_chev${devOpen ? " open" : ""}">${svg("chev", 18)}</span>`, { noChev: true })}
 </div>
 ${devTools}` : ""}
-<div class="hb_card">
+<div class="hb_card hb_dzcard">
+<div class="hb_dz_head">${svg("warn", 14)} Danger zone</div>
 ${row("reset", "warn", "Reset game", "Wipes all progress. This cannot be undone.", "", { danger: true })}
-${si ? row("delacct", "trash", "Delete account", "Permanently deletes your account and cloud data", "", { danger: true }) : ""}
+${si ? row("delacct", "trash", "Delete account", "Cannot be undone. Removes your account and cloud data. To only wipe progress, use Reset game instead.", "", { danger: true }) : ""}
 </div>`;
 
     const tabs = [["ov", "Overview", false], ["pl", "Play", pend > 0 || d.can || !!rmCount], ["ac", "Account", false]];
