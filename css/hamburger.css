@@ -160,7 +160,11 @@ nav button[data-t="r"]{display:none!important}  /* Ranks tab: everything lives i
 #hb_menu .hb_av>.hb_avb{width:26px!important;height:26px!important}
 #hb_menu .hb_row.danger .hb_t small{white-space:normal;overflow:visible;text-overflow:clip}
 
-/* Sign out / Sign in, on their own */
+/* Account pane: one sign-out button, at the top of the Account column on both desktop and phones,
+   so it's reachable without scrolling. */
+#hb_menu .hb_panes[data-tab="ac"] .hb_pane[data-p="ac"]{display:flex;flex-direction:column}
+#hb_menu .hb_pane[data-p="ac"]>*{width:100%}
+#hb_menu .hb_pane[data-p="ac"] .hb_signout{order:-1;margin:0 0 12px}
 #hb_menu .hb_signout{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;box-sizing:border-box;margin:0 0 12px;padding:15px;border:2px solid var(--p);border-radius:14px;background:none;color:var(--p);font:700 17px system-ui;cursor:pointer;-webkit-tap-highlight-color:transparent}
 #hb_menu .hb_signout.out{border-color:#dc2626;background:rgba(220,38,38,.08);color:#ef4444}
 #hb_menu .hb_signout:active{transform:scale(.99)}
