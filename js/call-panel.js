@@ -4,8 +4,16 @@
    On phones the columns stack and the dispatch picker stays on its own Dispatch screen. */
 (function () {
   window.rdPick = function () { if (document.querySelector("#sheet .qdisp")) drawQ(); else drawD(); };
-  const card = (ico, title, badge, body, cls) =>
-    `<section class="qcard ${cls || ""}"><h4 class="qct">${lci(ico, 13)}<span>${title}</span>${badge != null && badge !== "" ? `<i class="qcn">${badge}</i>` : ""}</h4>${body}</section>`;
+  const card = (ico, title, badge, body, cls, extra, attrs) =>
+    `<section class="qcard ${cls || ""}" ${attrs || ""}><h4 class="qct">${lci(ico, 13)}<span>${title}</span>${badge != null && badge !== "" ? `<i class="qcn">${badge}</i>` : ""}${extra || ""}</h4>${body}</section>`;
+  /* transcript can be collapsed with the arrow in its header (remembered on this device) */
+  let trOff = false;
+  try { trOff = localStorage.getItem("fc_qtr_c") === "1"; } catch (e) {}
+  window.qtrToggle = function qtrToggle() {
+    trOff = !trOff;
+    try { localStorage.setItem("fc_qtr_c", trOff ? "1" : "0"); } catch (e) {}
+    drawQ();
+  };
   const row = (ico, k, v) => `<div class="qrow"><span class="qk">${lci(ico, 13)} ${k}</span><span class="qv">${v}</span></div>`;
 
   function statusPill(m) {
@@ -86,6 +94,23 @@
     return h;
   }
 
+  /* Transport picker: full-width banner right under the call header (was a small box at the bottom of column 1, easy to miss and cut off) */
+  function tdCard(m) {
+    const k = tdKind(m);
+    if (!k || !m._h || m.td) return "";
+    const who = k === "h" ? "patient" : "prisoner";
+    const pool = k === "h" ? S.hs.filter((x) => x.ty !== "pn") : S.hs.filter((x) => x.ty === "pn").concat(S.st.filter((x) => x.sv === "p" && x.cl));
+    const L = pool.map((d) => ({ d, km: km([m.la, m.lo], [d.lat, d.lon]), f: dcap(d) - hbusy(d) })).sort((a, b) => a.km - b.km);
+    const near = L.find((x) => x.f > 0);
+    const auto = `<button type="button" class="qto qa" onclick="setTD(${m.id},'auto')"><span class="qton"><b>Auto – nearest with space</b><small>${near ? esc(near.d.name) + " · " + Math.round(near.km) + " km" : "Nothing has space right now"}</small></span>${lci("wand-sparkles", 16)}</button>`;
+    const opts = L.map((x) => {
+      const full = x.f <= 0, c = full ? "no" : x.f === 1 ? "lo" : "ok";
+      return `<button type="button" class="qto" ${full ? "disabled" : ""} onclick="setTD(${m.id},'${x.d.id}')"><span class="qton"><b>${esc(x.d.name)}${near && x === near ? `<span class="qtag">Nearest</span>` : ""}</b><small>${Math.round(x.km)} km away</small></span><span class="qtoc"><span class="${c}">${full ? "Full" : x.f + " free"}</span></span></button>`;
+    }).join("");
+    const none = `<button type="button" class="qto qn" onclick="setTD(${m.id},'none')"><span class="qton"><b>No transport</b></span></button>`;
+    return `<section class="qtd" role="group" aria-label="Transport required"><div class="qtdh"><span class="qtdi">${lci("siren", 16)}</span><span class="qtdt">Transport required <em>– ${who}</em></span><span class="qtds">Choose where to take the ${who}. The call stays open until you pick a destination.</span></div><div class="qtdg">${auto}${opts}${none}</div></section>`;
+  }
+
   function radioCard(m) {
     const r = (m.rd || []).slice().sort((a, b) => a.t - b.t);
     const body = r.length
@@ -111,10 +136,11 @@
     const hadFocus = document.activeElement && document.activeElement.id === "uq";
     const caret = hadFocus ? document.activeElement.selectionStart : null;
     const tp = T[m.k], n = 1 + 2 * m.qa.length + (m.hw ? 1 : 0), off = met(m);
-    const pc = document.getElementById("clog"), same = !!pc && pc.dataset.mid == m.id;
-    const ps = same ? pc.scrollTop : null, pn = same ? +pc.dataset.n : 0;
+    const pc = document.getElementById("clog"), pq = document.querySelector("#sheet .qtr"), same = !!pq && pq.dataset.mid == m.id;
+    const ps = same && pc ? pc.scrollTop : null, pn = same && pc ? +pc.dataset.n : 0;
     const pl0 = document.getElementById("qpl"), pls = pl0 ? pl0.scrollTop : 0;
     const sh = $("#sheet");
+    const pqc = same ? Array.from(sh.querySelectorAll(".qc")).map((e) => e.scrollTop) : null;
     sh.dataset.qk = qk(m);
     const rw = typeof payOf === "function" ? payOf(m.k, rank()) : tp[5];
     const bub = (who, txt) => `<div class="qmsg ${who}"><small>${who === "d" ? "Control" : "Caller"}</small>${txt}</div>`;
@@ -128,22 +154,26 @@
       : S.un.some((u) => u.mid === m.id && need(shown(m), u))
       ? ""
       : `<div class="qqs">${QS.map((q, i) => ((q[2] && q[2] !== tp[0]) || (q[3] && q[3] !== tp[1]) || !cqShow(tp, q, i) || m.qa.some((x) => x[0] === q[0]) ? "" : `<button class="s g" onclick="ask(${i})">${q[0]}</button>`)).join("")}</div>`;
+    /* while the questions are available the transcript is always shown (so the answers are visible), whatever the collapse arrow was last set to */
+    const qOn = !m.roomOwner && qs.includes("<button"), trHide = trOff && !qOn;
     const qHtml = qs ? card("circle-help", "Questions", "", `<div class="qq">${qs}</div>`, "qqc") : "";
 
     sh.innerHTML =
       `<div class="qhead"><div class="qh1">${gch(gr(m.k))}<span class="qtitle">${tp[1]}</span><span class="qacts">${(window.Rooms && Rooms.shareBtnHtml) ? Rooms.shareBtnHtml(m) : ""}<button class="qdsp" onclick="openD(${m.id})">Dispatch</button></span></div>` +
       `<div class="qh2"><span class="qcad">${cadOf(m)}</span>${statusPill(m)}<span class="qrw">Reward £${fmt(rw)}</span>${wk(m) ? `<span id="qrem" class="qrem">${remT(m)}</span>` : ""}</div></div>` +
+      tdCard(m) +
       `<div class="qinfo"><div class="qi qi-loc"><small>Location</small><b>${m.adc ? m.loc : "Unknown"}</b></div><div class="qi"><small>Caller</small><b>${m.ph}</b></div><div class="qi"><small>Pinged location</small><b>${m.adr && m.adr.t ? m.adr.t : "Unknown"} <span class="qmono">${m.la.toFixed(4)}, ${m.lo.toFixed(4)}</span></b></div><div class="qadr ${m.adc ? "ok" : "no"}">${m.adc ? lci("circle-check", 13) + " Address confirmed" : lci("triangle-alert", 13) + " Ask for the address before dispatching"}</div></div>` +
       `<div class="qgrid"><div class="qc qc1">` +
-      card("message-square", "Call transcript", m.qa.length * 2 + 2, `<div class="clog${off ? " clog-off" : ""}${n > 6 ? " clog-long" : ""}" id="clog" data-mid="${m.id}" data-n="${n}">${transcript}</div>`, "qtr") +
+      card("message-square", "Call transcript", m.qa.length * 2 + 2, trHide ? "" : `<div class="clog${off ? " clog-off" : ""}${n > 6 ? " clog-long" : ""}" id="clog" data-mid="${m.id}" data-n="${n}">${transcript}</div>`, "qtr" + (trHide ? " qtr-c" : ""), (qOn ? "" : `<button type="button" class="qcol" onclick="qtrToggle()" aria-expanded="${trHide ? "false" : "true"}" aria-label="${trHide ? "Expand" : "Collapse"} call transcript" title="${trHide ? "Expand" : "Collapse"} transcript">${lci("chevron-up", 14)}</button>`), `data-mid="${m.id}"`) +
       qHtml +
       (m.ccdone && !S.un.some((u) => u.mid === m.id) ? `<div class="qwarn">${lci("triangle-alert", 14)} Awaiting units dispatch</div>` : "") +
-      tdH(m) +
       `</div><div class="qc qc2">${reqCard(m)}${pickCard(m)}</div><div class="qc qc3">${respCard(m)}${radioCard(m)}</div></div>` +
       `<div class="qfix">${window.__qbar}</div>`;
 
+    if (pqc) sh.querySelectorAll(".qc").forEach((e, i) => { if (pqc[i]) e.scrollTop = pqc[i]; });
     const cl = document.getElementById("clog");
     if (cl) cl.scrollTop = ps === null || n > pn ? cl.scrollHeight : ps;
+
     const pl = document.getElementById("qpl");
     if (pl) pl.scrollTop = pls;
     if (hadFocus) { const u = document.getElementById("uq"); if (u) { u.focus(); if (caret !== null) u.setSelectionRange(caret, caret); } }
