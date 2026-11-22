@@ -1,5 +1,5 @@
 /* Menu: profile, rank, stats, bonuses, play, save, account, dev tools and reset. Opens from the hamburger beside the avatar in the header. */
-#hb_btn{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:none;width:38px;height:38px;margin-left:10px;padding:0;border:1px solid var(--bd);border-radius:10px;background:none;color:var(--tx);cursor:pointer;-webkit-tap-highlight-color:transparent}
+#hb_btn{position:relative;display:inline-flex;align-items:center;justify-content:center;flex:none;width:38px;height:38px;margin-left:10px;padding:0;border:0;border-radius:10px;background:none;color:var(--tx);cursor:pointer;-webkit-tap-highlight-color:transparent}
 #hb_btn:active{transform:scale(.94)}
 #hb_btn.on{background:rgba(91,141,239,.18);color:var(--p)}
 #hb_btn .hb_dot{position:absolute;top:5px;right:5px;width:10px;height:10px;border-radius:50%;background:#ef4444;border:2px solid var(--card);box-sizing:border-box}
@@ -189,3 +189,9 @@ body:has(#hb_menu:not([hidden])) nav button.on{
 
 /* App version: bottom of the Account pane, below Danger zone (moved out of the header) */
 #hb_menu .hb_pane[data-p="ac"] .hb_ver{margin:18px 0 4px;text-align:center;font:600 11px ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.08em;color:var(--mu)}
+
+/* Forum shortcut in the header: icon only on small screens, icon + label on desktop */
+#hd_forum{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:none;width:38px;height:38px;margin:0;padding:0;border:0;border-radius:10px;background:none;color:var(--tx);font:700 12px system-ui;letter-spacing:.04em;cursor:pointer;-webkit-tap-highlight-color:transparent}
+#hd_forum span{display:none}
+#hd_forum:active{transform:scale(.94)}
+@media(min-width:1000px){#hd_forum{width:auto;padding:0 12px;border-radius:6px;height:34px}#hd_forum span{display:inline}}
