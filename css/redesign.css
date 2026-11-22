@@ -112,8 +112,11 @@ header{border-bottom:0!important}
  .qdsp{display:none}
  #sheet:has(.qhead){max-height:none;overflow:hidden;display:flex;flex-direction:column}
  #sw:has(.qhead){height:auto;max-height:min(86vh,calc(100vh - var(--th,0px) - 36px))}
- .qgrid{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) minmax(0,.95fr);flex:1;min-height:0;overflow:hidden}
- .qc{max-height:calc(min(86vh,100vh - 36px) - 100px);overflow-y:auto;overscroll-behavior:contain;padding-right:2px}
+ .qgrid{grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) minmax(0,.95fr);grid-template-rows:minmax(0,1fr);align-items:stretch;flex:1;min-height:0;overflow:hidden}
+ /* each column is exactly as tall as the grid and scrolls to its very end (it used to be taller than the grid, so the bottom was clipped) */
+ .qc{max-height:none;height:100%;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-right:2px;padding-bottom:4px}
+ /* the transcript scrolls by itself once it is long; the column also scrolls, so nothing is clipped */
+ #sheet .clog-long{max-height:clamp(220px,46vh,460px);overflow-y:auto;overscroll-behavior:contain;padding-right:6px}
  .qlist{max-height:calc(86vh - 400px);min-height:140px}
 }
 
@@ -279,3 +282,62 @@ body.qnp .qneed{display:none}
 #v .card .cad{display:none!important}
 #v .card.rs,#v .card.gn{box-shadow:none!important;border-left-width:4px}
 .gd{white-space:nowrap;flex:none}
+
+
+/* ===== Transport banner (call panel): sits right under the call header so it can't be missed ===== */
+.qtd{margin:0 0 12px;padding:12px 14px 14px;border-radius:12px;border:2px solid #dc2626;background:linear-gradient(180deg,#dc262622,#dc26260d);animation:qtdp 1.8s ease-in-out infinite}
+@keyframes qtdp{0%,100%{box-shadow:0 0 0 0 #dc262655}50%{box-shadow:0 0 0 5px #dc262622}}
+@media(prefers-reduced-motion:reduce){.qtd{animation:none}}
+.qtdh{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.qtdi{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;background:#dc2626;color:#fff;flex:none}
+.qtdt{font:800 15px/1.2 system-ui;letter-spacing:.05em;text-transform:uppercase;color:var(--rd-hi)}
+.qtdt em{font-style:normal;color:#f87171}
+.qtds{flex:1 1 260px;margin:0;font:500 12.5px/1.35 system-ui;color:var(--rd-mu)}
+.qtdg{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-top:10px;max-height:min(30vh,240px);overflow-y:auto;overscroll-behavior:contain;padding:2px}
+.qto{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:46px;padding:7px 12px;text-align:left;border-radius:10px;border:1.5px solid var(--rd-bd);background:var(--rd-card);color:var(--rd-hi);font:inherit;cursor:pointer;transition:border-color .12s,background .12s,transform .12s}
+.qto:hover:not(:disabled){border-color:#f87171;background:#dc262618;transform:translateY(-1px)}
+.qto:focus-visible{outline:2px solid #f87171;outline-offset:2px}
+.qto:active:not(:disabled){transform:none}
+.qto:disabled{opacity:.45;cursor:not-allowed}
+.qto .qton{display:flex;flex-direction:column;gap:1px;min-width:0}
+.qto .qton b{font:700 13.5px/1.25 system-ui;overflow-wrap:anywhere}
+.qto .qton small{font:500 11.5px/1.2 system-ui;color:var(--rd-mu)}
+.qto .qtoc{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex:none;font:700 11.5px/1.2 ui-monospace,Menlo,Consolas,monospace;white-space:nowrap}
+.qto .qtoc small{font:600 10.5px system-ui;letter-spacing:.02em}
+.qto .ok{color:#4ade80}.qto .lo{color:#fbbf24}.qto .no{color:#f87171}
+.qto.qa{background:#dc2626;border-color:#fff3;color:#fff}
+.qto.qa .qton small{color:#ffe4e4}
+.qto.qa:hover:not(:disabled){background:#ef3b3b;border-color:#fff}
+.qto.qn{justify-content:center;background:none;border-style:dashed;color:var(--rd-mu)}
+.qto.qn b{font-weight:600;font-size:12.5px}
+.qtag{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;background:#16a34a33;color:#4ade80;font:700 9.5px system-ui;letter-spacing:.06em;text-transform:uppercase;vertical-align:1px}
+@media(max-width:600px){
+ .qtd{padding:10px 10px 12px;margin-bottom:10px}
+ .qtdt{font-size:13.5px}
+ .qtds{flex-basis:100%;font-size:12px}
+ .qtdg{grid-template-columns:1fr 1fr;gap:6px;max-height:none;overflow:visible}
+ .qto{flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:3px;min-height:0;padding:9px 10px}
+ .qto .qtoc{flex-direction:row;align-items:center}
+ .qto.qa,.qto.qn{grid-column:1/-1}
+ .qto.qa{flex-direction:row;align-items:center;justify-content:space-between}
+ .qto.qn{min-height:38px;align-items:center}
+}
+
+/* ===== Transcript collapse arrow ===== */
+.qcol{display:inline-flex;align-items:center;justify-content:center;flex:none;width:26px;height:26px;margin-left:8px;padding:0;border-radius:7px;border:1px solid var(--rd-bd);background:var(--rd-in);color:var(--rd-mu);cursor:pointer;transition:background .12s,color .12s,border-color .12s}
+.qcol:hover{color:var(--rd-hi);border-color:var(--rd-mu)}
+.qcol:focus-visible{outline:2px solid var(--rd-blue);outline-offset:2px}
+.qcol svg{transition:transform .18s}
+.qtr-c .qcol svg{transform:rotate(180deg)}
+.qtr-c .qct{margin-bottom:0}
+@media(prefers-reduced-motion:reduce){.qcol svg{transition:none}}
+
+/* ===== Desktop left column: the transcript gives up height so the whole Questions card is always visible ===== */
+@media(min-width:1000px){
+ .qc1{display:flex;flex-direction:column}
+ .qc1>*{flex:none}
+ .qc1>.qtr{flex:0 1 auto;min-height:150px;display:flex;flex-direction:column}
+ .qc1>.qtr.qtr-c{min-height:0}
+ #sheet .qc1 .clog-long{max-height:none}
+ .qc1 .qtr .clog{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-right:6px}
+}
