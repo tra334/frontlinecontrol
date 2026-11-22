@@ -124,6 +124,7 @@ ${row("rooms", "rooms", "Rooms", rmSub, !si ? "" : rmCount ? `<span class="hb_pi
 ${window.Ach ? row("ach", "trophy", "Achievements", Ach.summary() + " unlocked") : ""}
 ${row("lb", "trophy", "Leaderboard", si ? "Top 50 players" : "Sign in to see rankings", "", si ? {} : { off: true })}
 ${row("shop", "shop", "Shop", "Upgrades")}
+${row("forum", "msg", "Forum", si ? "Join the community · signs you in" : "Join the community", "", { noChev: true })}
 ${row("logs", "log", "Logs", "Past calls and earnings")}
 </div>`;
 
@@ -151,7 +152,7 @@ ${devTools}` : ""}
 ${row("reset", "warn", "Reset game", "Wipes all progress. This cannot be undone.", "", { danger: true })}
 ${si ? row("delacct", "trash", "Delete account", "Cannot be undone. Removes your account and cloud data. To only wipe progress, use Reset game instead.", "", { danger: true }) : ""}
 </div>
-<div class="hb_ver">A 2.0.5</div>`;
+<div class="hb_ver">A 2.0.6</div>`;
 
     const tabs = [["ov", "Overview", false], ["pl", "Play", pend > 0 || d.can || !!rmCount], ["ac", "Account", false]];
     const bar = `<div class="hb_tabs" role="tablist">${tabs.map(t => `<button type="button" role="tab" aria-selected="${tab === t[0]}" class="hb_tab${tab === t[0] ? " on" : ""}" data-id="tab" data-tab="${t[0]}">${t[1]}${t[2] ? '<i class="hb_tdot"></i>' : ""}</button>`).join("")}</div>`;
@@ -189,6 +190,8 @@ ${si ? row("delacct", "trash", "Delete account", "Cannot be undone. Removes your
     persist(); paint(); update();
   }
 
+  function openForum() { window.open((window.FC_FORUM_URL || "https://forum.frontlinecontrol.co.uk").replace(/\/$/, "") + "/login", "_blank", "noopener"); }
+
   const actions = {
     close: () => close(),
     claimdaily: () => { try { claimDaily(); } catch (e) { console.error(e); } lastHtml = ""; update(); },
@@ -198,6 +201,9 @@ ${si ? row("delacct", "trash", "Delete account", "Cannot be undone. Removes your
     edit: () => changeName(),
     avatar: el => { if (signedIn() && window.fcAvatar) avMenu(el); },
     rooms: () => { if (!signedIn()) return; close(); const b = $("#nav_rm"); if (b) b.click(); },
+    /* Opens the forum's login page. The forum uses "Sign in with Frontline Control" (Supabase OAuth), which lands on oauth-consent.html;
+       that page reuses this game's saved session and approves automatically, so a signed-in player ends up logged in (account created on first visit). */
+    forum: () => openForum(),
     exp: () => { close(); exportSave(); },
     imp: () => { close(); importSave(); },
     auth: () => {
@@ -280,6 +286,17 @@ ${si ? row("delacct", "trash", "Delete account", "Cannot be undone. Removes your
     btn.innerHTML = svg("menu") + '<i class="hb_dot" hidden></i>';
     const rk = $("#rk");
     (rk ? rk.parentNode : hd).appendChild(btn);
+    /* Forum shortcut in the header (same sign-in route as the Forum row in the menu). */
+    if (!$("#hd_forum")) {
+      const fb = document.createElement("button");
+      fb.id = "hd_forum"; fb.type = "button";
+      fb.setAttribute("aria-label", "Forum"); fb.title = "Open the forum";
+      fb.innerHTML = svg("msg", 20) + "<span>Forum</span>";
+      fb.onclick = openForum;
+      /* Left side of the header, beside the logo, so it never squeezes the balance or avatar on the right. */
+      const lf = hd.firstElementChild;
+      if (lf) lf.appendChild(fb); else btn.parentNode.insertBefore(fb, btn);
+    }
 
     menu = document.createElement("div");
     menu.id = "hb_menu"; menu.hidden = true;
