@@ -1,0 +1,143 @@
+/* ===== shared vehicle card: same look as the dispatch window's unit rows ===== */
+.sxl,.vxg{display:flex;flex-direction:column;gap:8px}
+.sxc{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--rd-bd);border-radius:8px;background:var(--rd-in);min-width:0;box-sizing:border-box}
+.sxc:hover{border-color:#2b3b52}
+.sxi{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;cursor:pointer}
+.sxn{font-size:12.5px;line-height:1.3;color:var(--rd-hi);overflow-wrap:anywhere}
+.sxn b{margin-right:3px;font-weight:700}
+.sxs{font-size:11px;line-height:1.4;color:var(--rd-mu);overflow-wrap:anywhere}
+.sxs span{display:inline-flex;align-items:center;gap:4px}
+.sxa{display:flex;align-items:center;gap:6px;flex:none}
+.sxa .st{display:inline-flex;align-items:center;justify-content:center;padding:3px 9px;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;line-height:1.2}
+.sxa .mnb{width:32px;height:32px;border-radius:9px}
+
+/* ===== Stations tab: station card keeps its size; vehicles fold away behind one row ===== */
+#v .sxt{display:flex;align-items:center;gap:8px;width:100%;box-sizing:border-box;margin:8px 0 0;padding:8px 10px;border-radius:8px;border:1px solid var(--rd-bd);background:var(--rd-in);color:var(--rd-hi);font:600 12.5px system-ui;text-align:left;cursor:pointer}
+#v .sxt:hover{border-color:#2b3b52}
+#v .sxt .sxm{margin-left:auto;font-weight:400;font-size:11px;color:var(--rd-mu);white-space:nowrap}
+#v .sxt .sxch{display:inline-flex;color:var(--rd-mu);transition:transform .15s}
+#v .sxt .sxch.o{transform:rotate(90deg)}
+#v .sxl{margin:6px 0 2px}
+#v .sxc{padding:8px 9px}
+#v .sxn{font-size:12px}
+#v .sxs{font-size:10.5px}
+#v .sxa .st{font-size:9.5px;padding:2px 8px}
+
+/* ===== station pop-up on PC: wider, vehicles left, buy/upgrade right ===== */
+@media(min-width:1000px){
+ #sw:has(.ph2){max-width:min(1120px,calc(100vw - 48px))!important;max-height:min(88vh,calc(100vh - 36px))!important}
+ #sheet:has(.sxv){display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);column-gap:22px;align-items:start;padding:20px 22px 22px!important}
+ #sheet:has(.sxv)>.ph2,#sheet:has(.sxv)>.mor,#sheet:has(.sxv)>.mi,#sheet:has(.sxv)>.stt{grid-column:1/-1}
+ #sheet:has(.sxv) .ph2 .pn{font-size:24px}
+ #sheet:has(.sxv) .stt{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+ #sheet:has(.sxv) .sr b{font-size:20px}
+ #sheet:has(.sxv) .vl{margin-top:6px}
+ .sxv,.sxb{min-width:0}
+ .sxb{border-left:1px solid var(--rd-bd);padding-left:22px}
+ .sxc{padding:10px 12px}
+ .sxn{font-size:13.5px}
+ .sxs{font-size:12px}
+ .sxa .st{font-size:10.5px}
+}
+
+/* ===== station pop-up on phones: full-width sheet, sticky header, tile stats, touch-sized rows ===== */
+@media(max-width:999px){
+ #sw:has(.ph2){border-radius:18px 18px 0 0;border:0}
+ #sheet:has(.ph2){padding:0 0 calc(14px + env(safe-area-inset-bottom,0px))!important;border:0;border-radius:18px 18px 0 0;background:var(--bg)}
+ #sheet:has(.ph2)>.ph2{position:sticky;top:0;z-index:2;margin:0;padding:16px 56px 14px 16px;background:var(--rd-card);border-bottom:1px solid var(--rd-bd);border-radius:18px 18px 0 0}
+ #sheet:has(.ph2) .ph2 .pn{font-size:19px}
+ #sheet:has(.ph2) .ph2 .pen{width:34px;height:34px}
+ #sheet:has(.ph2) .ph2 .mnb{width:40px;height:40px}
+ #sheet:has(.ph2)>.mor{display:flex;justify-content:space-between;align-items:center;width:100%;box-sizing:border-box;margin:0;padding:12px 16px;font-size:13px;color:var(--rd-mu);border-bottom:1px solid var(--rd-bd)}
+ #sheet:has(.ph2)>.mi,#sheet:has(.ph2)>.stt,#sheet:has(.ph2)>.sxv,#sheet:has(.ph2)>.sxb,#sheet:has(.ph2)>div:not([class]){margin-left:14px;margin-right:14px}
+ #sheet:has(.ph2) .mi{margin-top:10px}
+ #sheet:has(.ph2) .stt{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+ #sw:has(.ph2) #xb{top:14px!important;right:12px!important}
+ #sheet:has(.ph2) .sr{padding:10px;border-radius:12px}
+ #sheet:has(.ph2) .sr b{font-size:17px}
+ #sheet:has(.ph2) .sr span{font-size:9px}
+ #sheet:has(.ph2) .vl{margin:16px 0 8px}
+ #sheet:has(.ph2) .sxc{padding:11px 11px;gap:10px}
+ #sheet:has(.ph2) .sxn{font-size:14px}
+ #sheet:has(.ph2) .sxs{font-size:11.5px}
+ #sheet:has(.ph2) .sxa .st{font-size:10px;padding:3px 9px}
+ #sheet:has(.ph2) .sxa .mnb{width:38px;height:38px}
+ #sheet:has(.ph2) .bvh{padding:12px 14px;font-size:14px}
+ .sxb{margin-top:10px}
+}
+
+/* ===== station status tiles: separate boxes, coloured numbers ===== */
+#sheet:has(.sxv) .stt,#sheet:has(.ph2) .stt{gap:8px}
+#sheet:has(.ph2) .stt .sr{background:var(--rd-card);border:1px solid var(--rd-bd);border-radius:10px}
+#sheet:has(.ph2) .sr .nv{font-style:normal;color:var(--rd-hi)}
+#sheet:has(.ph2) .sr .nv.av{color:#22c55e}
+#sheet:has(.ph2) .sr .nv.dp{color:#60a5fa}
+#sheet:has(.ph2) .sr .nv.oo{color:#f04438}
+#sheet:has(.ph2) .sr .nv.bu{color:#fbbf24}
+#sheet:has(.ph2) .sr .nv.co{color:#c4b5fd}
+
+/* ===== station card header: bays count + round i button ===== */
+#v .sxh{display:flex;align-items:center;gap:8px;flex:none}
+#v .sxib{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;padding:0;border-radius:50%;border:1px solid var(--rd-bd);background:var(--rd-in);color:var(--rd-hi);cursor:pointer;flex:none}
+#v .sxib:hover{border-color:#2f6fed;color:#60a5fa}
+
+/* ===== PC popup: vehicles three per line (dispatch-sheet unit styling) */
+/* ===== PC popup: vehicles two per line, buy/upgrade section below ===== */
+@media(min-width:1000px){
+ #sheet:has(.sxv)>.sxv{grid-column:1/-1}
+ #sheet:has(.sxv)>.sxb{grid-column:1/-1;border-left:0;padding-left:0;border-top:1px solid var(--rd-bd);padding-top:14px;margin-top:6px}
+ #sheet:has(.sxv) .vxg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+ #sheet:has(.sxv) .sxc{cursor:pointer}
+}
+
+/* ===== smaller status tiles (pop-up) and compact vehicles row (Stations tab), with status colours ===== */
+#sheet:has(.ph2) .stt{gap:6px;margin:8px 0}
+#sheet:has(.ph2) .stt .sr{padding:5px 8px;gap:1px;border-radius:8px}
+#sheet:has(.ph2) .stt .sr span{font-size:8.5px;letter-spacing:.08em}
+#sheet:has(.ph2) .stt .sr b{font-size:13px!important;line-height:1.2}
+#v .sxt{padding:5px 9px;font-size:11.5px;margin-top:6px}
+#v .sxt .sxm{font-size:10.5px}
+#v .sxt .nv{font-style:normal;font-weight:700}
+#v .sxt .nv.av{color:#22c55e}
+#v .sxt .nv.dp{color:#60a5fa}
+
+/* ===== compact status tiles: label and number on one line ===== */
+#sheet:has(.ph2) .stt .sr{flex-direction:row;justify-content:space-between;align-items:center;gap:8px;padding:6px 10px}
+#sheet:has(.ph2) .stt .sr span{font-size:9px;letter-spacing:.06em;white-space:nowrap}
+#sheet:has(.ph2) .stt .sr b{font-size:14px!important}
+@media(max-width:999px){
+ #sheet:has(.ph2) .stt{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #sheet:has(.ph2) .stt .sr{padding:6px 8px}
+ #sheet:has(.ph2) .stt .sr span{font-size:8px;white-space:normal;line-height:1.2}
+}
+
+/* ===== station type heading next to the name (pop-up) ===== */
+.ptyp{font:700 10.5px system-ui;letter-spacing:.1em;text-transform:uppercase;color:var(--rd-mu);white-space:nowrap;align-self:center;flex:none}
+.pt{flex-wrap:wrap;row-gap:2px}
+
+/* ===== vehicle cards: coloured left line by status (same colours as the status pills) ===== */
+.sxc{border-left-width:4px!important;border-left-style:solid!important}
+.sxc.sx-idle{border-left-color:#22c55e!important}
+.sxc.sx-scene{border-left-color:#16a34a!important}
+.sxc.sx-out{border-left-color:#f59e0b!important}
+.sxc.sx-back{border-left-color:#3b82f6!important}
+.sxc.sx-hosp,.sxc.sx-hand{border-left-color:#a855f7!important}
+.sxc.sx-oos{border-left-color:#ef4444!important}
+@media(max-width:999px){ #sheet:has(.ph2)>.stt{margin:10px 14px 0} }
+
+/* ===== phone pop-up header: same colour as the sheet, type sits under the name ===== */
+@media(max-width:999px){
+ #sheet:has(.ph2)>.ph2{background:var(--bg);border-bottom:1px solid var(--rd-bd)}
+ #sheet:has(.ph2) .pt{flex-wrap:wrap;row-gap:4px}
+ #sheet:has(.ph2) .pn{order:0}
+ #sheet:has(.ph2) .pen{order:1}
+ #sheet:has(.ph2) .ptyp{order:2;flex-basis:100%;margin:0;font-size:9.5px}
+}
+@media(max-width:999px){
+ #sheet:has(.ph2) .pn{flex:0 1 auto;min-width:0;font-size:18px}
+ #sheet:has(.ph2) .pen{flex:none}
+}
+@media(max-width:999px){
+ #sheet:has(.ph2)>.ph2{padding-right:52px}
+ #sheet:has(.ph2) .pt{gap:8px}
+}
