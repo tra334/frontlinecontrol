@@ -1,21 +1,21 @@
 /* ==========================================================================
-   Mobile bottom nav: floating frosted-glass bar with icons
+   Mobile bottom nav: solid bar with icons, blue highlight on the selected tab
    Loaded last so it overrides the older bottom-bar rules. Desktop is untouched.
    ========================================================================== */
-:root{--navg:rgba(255,255,255,.58);--navbd:rgba(255,255,255,.55);--navon:rgba(11,58,143,.11);--navt:#0b3a8f;--navmu:#5b6578}
-@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--navg:rgba(26,31,41,.6);--navbd:rgba(255,255,255,.12);--navon:rgba(91,141,239,.2);--navt:#b4ccff;--navmu:#98a2b3}}
-:root[data-theme="dark"]{--navg:rgba(26,31,41,.6);--navbd:rgba(255,255,255,.12);--navon:rgba(91,141,239,.2);--navt:#b4ccff;--navmu:#98a2b3}
+:root{--navg:#ffffff;--navbd:#dfe3ea;--navon:rgba(29,78,216,.12);--navt:#1d4ed8;--navmu:#667085}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--navg:#1a1f29;--navbd:#2b3240;--navon:rgba(91,141,239,.22);--navt:#6ea0ff;--navmu:#98a2b3}}
+:root[data-theme="dark"]{--navg:#1a1f29;--navbd:#2b3240;--navon:rgba(91,141,239,.22);--navt:#6ea0ff;--navmu:#98a2b3}
 
 @media(max-width:999px){
-  /* the bar floats above the bottom edge instead of sitting flush on it */
+  /* solid bar, flush with the bottom edge */
   nav{
     left:0!important;right:0!important;bottom:env(safe-area-inset-bottom,0px)!important;
     top:auto;max-width:none;margin:0;
     display:flex;align-items:stretch;gap:2px;padding:5px;
-    background:var(--navg);
-    -webkit-backdrop-filter:blur(22px) saturate(180%);backdrop-filter:blur(22px) saturate(180%);
-    border:1px solid var(--navbd);border-radius:24px 24px 0 0;
-    box-shadow:0 10px 30px rgba(15,23,42,.18),0 2px 6px rgba(15,23,42,.08),inset 0 1px 0 rgba(255,255,255,.28);
+    background:var(--navg)!important;
+    -webkit-backdrop-filter:none;backdrop-filter:none;
+    border:0;border-top:1px solid var(--navbd)!important;border-radius:0;
+    box-shadow:none;
   }
   nav button{
     position:relative;flex:1 1 0;min-width:0;
@@ -34,7 +34,7 @@
   nav #nav_rm.in{color:var(--navt)}
   /* Ranks' gift badge: pin it to the icon's corner instead of wrapping it onto its own line */
   nav [data-t="r"] .li{position:absolute;top:6px;left:calc(50% + 9px);width:11px;height:11px}
-  /* content scrolls underneath the glass; keep the last row clear of the bar */
+  /* keep the last row clear of the bar */
   main{padding-bottom:calc(var(--nh,70px) + 12px)}
   /* Leaflet attribution: smaller so it stays out of the way of the bar */
   .leaflet-control-attribution{font-size:8px!important;line-height:1.3;padding:0 3px!important}
