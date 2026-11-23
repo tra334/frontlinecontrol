@@ -95,8 +95,8 @@
     const head = d.can
       ? `<small>Ready to claim</small><b>${money(drAmt(d.day))}</b><span>Day ${d.day} of 7</span>`
       : `<small>Claimed today</small><b>Come back tomorrow</b><span>Next: ${money(drAmt(d.day % 7 + 1))}</span>`;
-    const btn = d.can ? `<button class="hb_cta" onclick="claimDaily()">Claim ${money(drAmt(d.day))}</button>` : "";
-    return `<div class="hb_hero"><div class="hb_hero_t">${head}</div></div><div class="hb_days">${tiles}</div><div class="hb_act">${btn}</div>`;
+    const btn = d.can ? `<button type="button" class="hb_cta" data-id="claimdaily">Claim ${money(drAmt(d.day))}</button>` : "";
+    return `<div class="hb_dhead">${head}</div><div class="hb_days">${tiles}</div>${btn ? `<div class="hb_act">${btn}</div>` : ""}`;
   };
   window.rkRankUpH = function () {
     const p = rkPend();
