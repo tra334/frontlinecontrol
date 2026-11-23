@@ -89,9 +89,11 @@
       return `<div class="hb_card hb_pad"><div class="hb_t"><b>Vehicle speed</b><small>Speeds vehicles up for testing.</small></div><div class="hb_chips">${chip(1, "1×")}${chip(2, "2×")}${chip(5, "5×")}${chip(10, "10×")}</div></div>`;
     })() : "";
 
+    const gbo = window.gbOffers ? gbOffers() : [];   // custom bonuses created in the admin panel
     const pl = [];
     if (d.can) pl.push(["claimdaily", "Daily bonus", money(d.amt)]);
     if (pend > 0) { let t = 0; try { t = rbSum(S.rcl || 0, r); } catch (e) {} pl.push(["claimrank", "Rank-up bonus", money(t)]); }
+    gbo.forEach(o => pl.push(["claimgb:" + o.id, o.title, money(o.amount)]));
     const pendHtml = pl.length ? `<div class="hb_pend">${pl.map(x => `<button type="button" class="hb_claim" data-id="${x[0]}"><span><b>${x[1]}</b> ready · ${x[2]}</span><em>Claim now</em></button>`).join("")}</div>` : "";
 
     const overview = `<div class="hb_card hb_prof">
@@ -115,6 +117,7 @@ ${pendHtml}<div class="hb_grid">
     const play = `${sec("Bonuses")}
 <div class="hb_card">
 ${row("daily", "gift", "Daily bonus", d.can ? "Claim " + money(d.amt) : "Claimed today", d.can ? '<span class="hb_pill g">Claim</span>' : "")}
+${gbo.map(o => row("claimgb:" + o.id, "gift", o.title, "Claim " + money(o.amount) + " · ends " + new Date(o.ends_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" }), '<span class="hb_pill g">Claim</span>')).join("")}
 ${pend > 0 ? row("rankup", "medal", "Rank-up bonus", pend + " to claim", '<span class="hb_pill g">Claim</span>') : ""}
 ${S.dv ? "" : row("dev", "wrench", "Dev bonus", money(typeof DEVBONUS === "number" ? DEVBONUS : 1000000) + " · one-time", "", { y: true })}
 </div>
@@ -154,7 +157,7 @@ ${si ? row("delacct", "trash", "Delete account", "Cannot be undone. Removes your
 </div>
 <div class="hb_ver">A 2.0.12</div>`;
 
-    const tabs = [["ov", "Overview", false], ["pl", "Play", pend > 0 || d.can || !!rmCount], ["ac", "Account", false]];
+    const tabs = [["ov", "Overview", false], ["pl", "Play", pend > 0 || d.can || !!rmCount || gbo.length > 0], ["ac", "Account", false]];
     const bar = `<div class="hb_tabs" role="tablist">${tabs.map(t => `<button type="button" role="tab" aria-selected="${tab === t[0]}" class="hb_tab${tab === t[0] ? " on" : ""}" data-id="tab" data-tab="${t[0]}">${t[1]}${t[2] ? '<i class="hb_tdot"></i>' : ""}</button>`).join("")}</div>`;
     const dtop = `<div class="hb_dtop"><span class="hb_dt">${svg("menu", 20)}<b>Menu</b></span><span class="hb_esc">Esc to close</span><button type="button" class="hb_x" data-id="close" aria-label="Close menu">${svg("x", 18)}</button></div>`;
     return dtop + bar + `<div class="hb_panes" data-tab="${tab}"><section class="hb_pane" data-p="ov"><div class="hb_ph">Profile</div>${overview}</section><section class="hb_pane" data-p="pl"><div class="hb_ph">Play</div>${play}</section><section class="hb_pane" data-p="ac"><div class="hb_ph">Account</div>${account}</section></div>`;
@@ -317,6 +320,7 @@ ${si ? row("delacct", "trash", "Delete account", "Cannot be undone. Removes your
       const el = e.target.closest("[data-id]");
       if (!el || el.classList.contains("off")) return;
       const id = el.dataset.id;
+      if (id.indexOf("claimgb:") === 0) { try { gbClaim(id.slice(8)); } catch (err) { console.error(err); } lastHtml = ""; update(); return; }
       if (PAGES[id]) { showSub(id); return; }
       const a = actions[id];
       if (a) { try { a(el); } catch (err) { console.error(err); } }
@@ -355,7 +359,7 @@ ${si ? row("delacct", "trash", "Delete account", "Cannot be undone. Removes your
   function update() {
     if (!btn) return;
     let claim = false;
-    try { claim = rank() > (S.rcl || 0) || drState().can; } catch (e) {}
+    try { claim = rank() > (S.rcl || 0) || drState().can || (window.gbOffers && gbOffers().length > 0); } catch (e) {}
     const rn = $("#nav_rm .rmn");
     const dot = btn.querySelector(".hb_dot"); if (dot) dot.hidden = !(claim || (rn && !rn.hidden));
     if (menu.hidden) return;
