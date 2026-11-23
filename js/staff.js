@@ -92,7 +92,7 @@ openT=function(id){openCrew(id)};
 const vehOnly=k=>{const m=minCk(k),r=(U[k][5]||[]).length;return Math.round(U[k][2]/(1+.03*m+.02*r)/100)*100};
 const priceX=(k,x)=>{const m=minCk(k),f=U[k][2],sh=(f-vehOnly(k))/m;return Math.round((f-x*sh)/100)*100};
 const spareN=(sid,k)=>sfAt(sid).filter(x=>!x.uid&&!x.tq&&(!k||fits(x,{ty:k}))).length;
-const spareLink=(s,k,lk,why)=>{const sp=spareN(s.id,k);if(lk||why||sp<1||!(U[k][5]||[]).length||!accepts(s).includes(k))return"";const x=Math.min(sp,minCk(k));return `<button class="s g" style="white-space:normal;text-align:center;font-size:12px;line-height:1.25" ${S.cr<priceX(k,x)?"disabled":""} onclick="spareDlg(${s.id},'${k}')">${lci("hard-hat",12)} Cheaper: crew it with your spare staff · £${fmt(priceX(k,x))}</button>`};
+const spareLink=(s,k,lk,why)=>{const sp=spareN(s.id,k);if(lk||why||sp<1||!(U[k][5]||[]).length||!accepts(s).includes(k))return"";const x=Math.min(sp,minCk(k));return `<button class="s g bvsp" ${S.cr<priceX(k,x)?"disabled":""} onclick="spareDlg(${s.id},'${k}')"><span class="bvl1">Buy vehicle</span><span class="bvp">£${fmt(priceX(k,x))}</span><span class="bvs">Discount · crews with spare station staff</span></button>`};
 function spareDlg(sid,k){const s=stn(sid),rq=U[k][5]||[],mx=Math.min(spareN(sid,k),minCk(k));if(!s||mx<1||!rq.length)return;
 const pool=sfAt(sid).filter(x=>!x.uid&&!x.tq&&fits(x,{ty:k})).sort((p,q)=>rq.filter(c=>q.tr.includes(c)).length-rq.filter(c=>p.tr.includes(c)).length);
 window.spSel=new Set(pool.slice(0,mx).map(x=>x.id));
