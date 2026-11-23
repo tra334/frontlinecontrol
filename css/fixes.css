@@ -361,5 +361,6 @@ select.asg:focus-visible{outline:2px solid var(--p);outline-offset:2px}
 .rk-day.cur{border:2px solid var(--p)}
 
 #room_ov .rm-row{position:relative}
-#room_ov .rm-del{margin-left:auto;align-self:flex-start;background:none;border:0;padding:4px 6px;font-size:14px;opacity:.55;cursor:pointer}
+#room_ov .rm-del{margin-left:auto;align-self:flex-start;background:none;border:0;padding:4px 6px;line-height:0;color:#e5484d;opacity:.8;cursor:pointer}
+#room_ov .rm-del svg{display:block}
 #room_ov .rm-del:hover,#room_ov .rm-del:focus-visible{opacity:1}
