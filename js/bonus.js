@@ -38,6 +38,7 @@
     }
     busy = false;
     try { paint(); } catch (e) {}
+    try { window.fcPanelRefresh && fcPanelRefresh(); } catch (e) {}
   }
 
   /* card shown at the top of the Ranks tab */
@@ -55,6 +56,7 @@
     if (!o || !ready()) return;
     offers = offers.filter(x => x.id !== id);   /* hide at once so it can't be double-tapped */
     try { paint(); } catch (e) {}
+    try { window.fcPanelRefresh && fcPanelRefresh(); } catch (e) {}
     /* server mode: the game server records the claim and adds the credits (a browser-only credit is overwritten by the server's save) */
     if (window.SRV && SRV.on) {
       try { await SRV.act({ type: "claimbonus", id }); } catch (e) {}
@@ -85,6 +87,7 @@
   };
 
   /* put the card at the top of the Ranks & rewards tab */
+  window.gbOffers = () => (ready() ? offers : []);   // the hamburger menu (hamburger.js) lists these
   window.gbCardHtml = cardHtml;   // the Ranks tab (rank-tab.js) places the offers itself
 
   setInterval(refresh, POLL_MS);
