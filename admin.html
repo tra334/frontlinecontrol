@@ -665,7 +665,7 @@ body.logged-out main{max-width:none}
     $("#main").innerHTML = '<div class="card mu">Loading…</div>';
     try {
       const j = await api("/api/admin/room?id=" + encodeURIComponent(id));
-      const r = j.room, mem = j.members, open = j.missions, hist = j.recent;
+      const r = j.room, mem = j.members, open = j.missions, hist = j.recent, chat = j.chat || [];
       const pname = x => x.name || x.display_name || "Player";
       $("#main").innerHTML = `<button class="btn sm" id="rback">← All rooms</button>
         <h3>${esc(r.name || "Room")} <span class="mu">code ${esc(r.code)}</span></h3>
@@ -676,6 +676,8 @@ body.logged-out main{max-width:none}
         <h3>Open calls</h3><div class="card">${open.length ? open.map(x => `<div class="item"><div class="m"><b>${esc(x.loc || "Call")}</b><span class="mu">${esc(x.owner_name || "Ally")} · ${esc(x.status)}</span></div>
             <div class="acts admin-only"><button class="btn sm ghr" data-mc="${esc(x.id)}">Cancel</button></div></div>`).join("") : '<div class="empty">No open calls</div>'}</div>
         <h3>Recently finished</h3><div class="card">${hist.length ? hist.map(x => `<div class="lg"><b>${esc(x.loc || "Call")}</b> <span class="mu">${esc(x.status)} · ${esc(x.owner_name || "")} · ${esc(when(x.updated_at))}</span></div>`).join("") : '<div class="empty">None</div>'}</div>
+        <h3>Chat messages</h3><div class="card">${chat.length ? chat.map(x => `<div class="item"><div class="m"><b>${esc(x.display_name || "Player")}</b><span class="mu">${esc(when(x.created_at))}</span><div style="overflow-wrap:anywhere">${esc(x.body)}</div></div>
+            <div class="acts admin-only"><button class="btn sm ghr" data-md="${esc(String(x.id))}">Delete</button></div></div>`).join("") : '<div class="empty">No messages</div>'}</div>
         <h3>Danger zone</h3><div class="card"><button class="btn red" id="rclose" style="width:100%">Close this room</button>
           <div class="mu" style="margin-top:8px">Removes everyone, cancels open calls and hides the room from players. Rewards already earned are kept.</div></div>`;
       $("#rback").onclick = showRooms;
@@ -685,6 +687,10 @@ body.logged-out main{max-width:none}
         const x = mem.find(v => v.user_id === b.dataset.rm);
         ask("Remove " + pname(x) + "?", "They leave this room and their open calls here are cancelled.", { ok: "Remove", danger: 1, reason: 1 })
           .then(y => { if (y) roomAct({ type: "room_member_remove", roomId: id, uid: x.user_id, reason: y.reason }); });
+      });
+      $("#main").querySelectorAll("[data-md]").forEach(b => b.onclick = () => {
+        ask("Delete this message?", "It is removed for everyone in the room.", { ok: "Delete", danger: 1, reason: 1 })
+          .then(y => { if (y) roomAct({ type: "room_message_delete", roomId: id, messageId: b.dataset.md, reason: y.reason }); });
       });
       $("#main").querySelectorAll("[data-mc]").forEach(b => b.onclick = () => {
         ask("Cancel this call?", "The call stops for everyone in the room.", { ok: "Cancel call", danger: 1, reason: 1 })
@@ -704,10 +710,10 @@ body.logged-out main{max-width:none}
   const ACTION_NAMES = { credits: "Credits", ban: "Suspended", unban: "Unsuspended", reset: "Game reset", deletegame: "Game deleted",
     delvehicle: "Vehicle removed", delstation: "Station removed", delhospital: "Hospital removed", movevehicle: "Vehicle moved",
     setroles: "Roles", deleteuser: "User deleted", removeavatar: "Picture removed", announce: "Announcement", announce_end: "Announcement ended", incident: "Incident", incident_update: "Incident update",
-    setrank: "Rank changed", bonus: "Bonus created", bonus_end: "Bonus ended", room_close: "Room closed", room_member_remove: "Removed from room", room_mission_cancel: "Call cancelled", mission_save: "Mission saved", mission_live: "Mission published", builtin_save: "Built-in call saved" };
+    setrank: "Rank changed", bonus: "Bonus created", bonus_end: "Bonus ended", room_close: "Room closed", room_member_remove: "Removed from room", room_mission_cancel: "Call cancelled", room_message_delete: "Room message deleted", mission_save: "Mission saved", mission_live: "Mission published", builtin_save: "Built-in call saved" };
   const CAT = { credits: "money", unban: "info", ban: "danger", setroles: "info", reset: "warn", deletegame: "danger", deleteuser: "danger", removeavatar: "warn", delvehicle: "danger",
     delstation: "danger", delhospital: "danger", movevehicle: "info", announce: "info", announce_end: "info", incident: "warn", incident_update: "warn",
-    setrank: "info", bonus: "money", bonus_end: "info", room_close: "danger", room_member_remove: "danger", room_mission_cancel: "warn" };
+    setrank: "info", bonus: "money", bonus_end: "info", room_close: "danger", room_member_remove: "danger", room_mission_cancel: "warn", room_message_delete: "danger" };
   const plural = (n, w) => n + " " + w + (n === 1 ? "" : "s");
   function relTime(t) {
     const s = (Date.now() - Date.parse(t)) / 1000;
@@ -744,6 +750,7 @@ body.logged-out main{max-width:none}
       case "incident_update": return { say: A + " set an incident to " + esc(d.status) };
       case "room_close": return { say: A + " closed the room <b>" + esc(d.room || "") + "</b>", meta: d.code ? "Code " + esc(d.code) : "" };
       case "room_member_remove": return { say: A + " removed " + P + " from a room" };
+      case "room_message_delete": return { say: A + " deleted a message in a room" };
       case "room_mission_cancel": return { say: A + " cancelled a call in a room", meta: d.call ? "Call: " + esc(d.call) : "" };
       case "mission_save": return { say: A + " saved the mission <b>" + esc(d.name || "") + "</b>", meta: "Saved as a draft" };
       case "mission_live": return { say: A + " published the mission <b>" + esc(d.name || "") + "</b>", meta: d.seq ? "Version " + d.seq : "" };
