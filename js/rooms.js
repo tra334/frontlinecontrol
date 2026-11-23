@@ -522,7 +522,7 @@
     });
     presence = map;
     tickAllyUnits();
-    takeChat(j.chat || [], lastId);
+    takeChat(j.chat || [], lastId, j.chat_deleted);
   }
 
   /* ---------- Chat ---------- */
@@ -531,7 +531,13 @@
   const fetchChat = () => fetchState();
 
   // Called with the chat rows from a state reply: the latest page on first load, only what is new afterwards.
-  function takeChat(rows, lastId) {
+  function takeChat(rows, lastId, deletedIds) {
+    if (deletedIds && deletedIds.length) {
+      const gone = new Set(deletedIds.map(String));
+      const before = roomChat.length;
+      roomChat = roomChat.filter(m => !gone.has(String(m.id)));
+      if (roomChat.length !== before) renderChat();
+    }
     if (!rows.length) {
       if (!chatInitDone) chatInitDone = true;
       return; // nothing changed, no re-render needed
@@ -566,6 +572,19 @@
     return true;
   }
 
+  // Own message (any member) or any message (room owner). The server enforces the same rule.
+  async function deleteChat(id) {
+    if (!inRoom() || !id) return;
+    try {
+      await api("/" + room.id + "/chat/" + encodeURIComponent(id) + "/delete", {});
+      roomChat = roomChat.filter(m => String(m.id) !== String(id));
+      renderChat();
+      toast("Message deleted");
+    } catch (e) {
+      toast((e && e.message) || "Could not delete message");
+    }
+  }
+
   function renderChat() {
     const box = document.getElementById("rm_chat_list");
     if (!box) return;
@@ -577,6 +596,7 @@
           return `<div class="rm-row${mine ? " me" : ""}">
             <span class="rm-ra">${esc(nm.trim().charAt(0).toUpperCase() || "C")}${window.fcAvatar ? fcAvatar.img(m.user_id) : ""}</span>
             <div class="rm-rb"><div class="rm-rn"><b>${esc(nm)}</b>${mine ? '<em>you</em>' : ""}<small>${t}</small></div><div class="rm-rt">${esc(m.body)}</div></div>
+            ${(mine || (room && room.host_id === myId())) && m.id ? `<button type="button" class="rm-del" data-del-msg="${esc(String(m.id))}" aria-label="Delete message" title="Delete message">🗑</button>` : ""}
           </div>`;
         }).join("")
       : `<div class="rm-empty" style="margin:16px"><b>No messages yet</b><span>Say hello.</span></div>`;
@@ -1626,6 +1646,11 @@
         const cs3 = document.getElementById("rm_chat_send");
         if (cs3) cs3.disabled = false;
       }
+    };
+    const cl = document.getElementById("rm_chat_list");
+    if (cl) cl.onclick = e => {
+      const b = e.target.closest && e.target.closest("[data-del-msg]");
+      if (b && confirm("Delete this message?")) deleteChat(b.dataset.delMsg);
     };
     if (cs) cs.onclick = doSend;
     if (ci) ci.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); doSend(); } };
