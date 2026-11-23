@@ -596,7 +596,7 @@
           return `<div class="rm-row${mine ? " me" : ""}">
             <span class="rm-ra">${esc(nm.trim().charAt(0).toUpperCase() || "C")}${window.fcAvatar ? fcAvatar.img(m.user_id) : ""}</span>
             <div class="rm-rb"><div class="rm-rn"><b>${esc(nm)}</b>${mine ? '<em>you</em>' : ""}<small>${t}</small></div><div class="rm-rt">${esc(m.body)}</div></div>
-            ${(mine || (room && room.host_id === myId())) && m.id ? `<button type="button" class="rm-del" data-del-msg="${esc(String(m.id))}" aria-label="Delete message" title="Delete message">🗑</button>` : ""}
+            ${(mine || (room && room.host_id === myId())) && m.id ? `<button type="button" class="rm-del" data-del-msg="${esc(String(m.id))}" aria-label="Delete message" title="Delete message"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg></button>` : ""}
           </div>`;
         }).join("")
       : `<div class="rm-empty" style="margin:16px"><b>No messages yet</b><span>Say hello.</span></div>`;
