@@ -1,0 +1,65 @@
+/* ===== Manage staff pop-up: same look as the station pop-up (header, status tiles, bordered cards) ===== */
+.sfov{position:fixed;inset:0;z-index:99993;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px}
+.sfp{width:100%;max-width:440px;max-height:calc(100vh - 32px);overflow:auto;background:var(--bg);color:var(--tx);border:1px solid var(--rd-bd);border-radius:14px;padding:0 16px 16px;box-sizing:border-box}
+.sfp[data-m="stn"],.sfp[data-m="veh"]{max-width:min(1120px,calc(100vw - 48px));max-height:min(88vh,calc(100vh - 36px))}
+.sfp[data-m="veh"]{max-width:min(760px,calc(100vw - 48px))}
+.sfhd{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 -16px 12px;padding:16px 16px 12px;background:var(--bg);border-bottom:1px solid var(--rd-bd)}
+.sft{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;min-width:0}
+.sfnm{font:700 22px/1.2 system-ui;color:var(--rd-hi);overflow-wrap:anywhere}
+.sfty{font:700 10.5px system-ui;letter-spacing:.1em;text-transform:uppercase;color:var(--rd-mu)}
+.sfhd .cx{flex:none;width:34px;height:34px;background:rgba(15,20,28,.78)!important;border:1px solid rgba(255,255,255,.35)!important}
+/* status tiles */
+.sfst{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 12px}
+.sfst .sr{display:flex;flex-direction:row;justify-content:space-between;align-items:center;gap:8px;padding:7px 11px;background:var(--rd-card);border:1px solid var(--rd-bd);border-radius:10px}
+.sfst .sr span{font:600 9.5px system-ui;letter-spacing:.07em;text-transform:uppercase;color:var(--rd-mu);white-space:nowrap}
+.sfst .sr b{font-size:15px;color:var(--rd-hi)}
+.sfst .nv{font-style:normal}.sfst .nv.av{color:#22c55e}.sfst .nv.dp{color:#60a5fa}.sfst .nv.bu{color:#fbbf24}.sfst .nv.co{color:#c4b5fd}
+/* recruit + crew cards */
+.sftop{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 12px}
+.sfrc{background:var(--rd-card);border:1px solid var(--rd-bd);border-radius:10px;padding:10px 12px;min-width:0}
+.sfct{font:700 10.5px system-ui;letter-spacing:.12em;text-transform:uppercase;color:var(--rd-mu);margin-bottom:4px}
+.sfrn{font-size:12px;color:var(--rd-mu);line-height:1.4}
+.sfrr{display:flex;gap:8px;align-items:center;margin:8px 0 6px}
+.sfrr input{width:72px;padding:7px 8px;border-radius:8px;border:1px solid var(--rd-bd);background:var(--rd-in);color:var(--tx);font:inherit}
+/* tabs + section headers */
+.sfp .sftabs{margin:0 0 4px}
+.sfp .sfsec{margin:14px 0 8px}
+/* staff cards */
+.sfg{display:grid;grid-template-columns:repeat(auto-fill,minmax(195px,1fr));gap:10px}
+.sfc{display:flex;flex-direction:column;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--rd-bd);border-left:4px solid #3b82f6;border-radius:8px;background:var(--rd-card);min-width:0;box-sizing:border-box}
+.sfc:hover{border-color:#2b3b52}
+.sfc.sf-veh{border-left-color:#22c55e}.sfc.sf-spare{border-left-color:#3b82f6}.sfc.sf-tr{border-left-color:#a855f7}
+.sfi{display:flex;flex-direction:column;gap:3px;min-width:0}
+.sfn{font:700 13.5px/1.3 system-ui;color:var(--rd-hi);overflow-wrap:anywhere}
+.sfs{font-size:11.5px;line-height:1.4;color:var(--rd-mu);overflow-wrap:anywhere}
+.sfs .mu{font-size:inherit}
+.sfa{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.sfa .s,.sfa select.asg{flex:1 1 auto;justify-content:center}
+.sfc{position:relative}
+.sfi{padding-right:30px}
+.sfa .s[title="Release"]{position:absolute;top:9px;right:9px;flex:none;width:28px;height:28px;padding:0;margin:0;display:inline-flex;align-items:center;justify-content:center}
+.sfa .s{flex:0 0 auto}
+.sfa select.asg{flex:1 1 0;min-width:0;max-width:none;padding-right:20px;background-position:right 6px center}
+/* Assign-to picker: same height, radius, padding and text colour as the Train / Unassign buttons beside it */
+select.asg{line-height:1.4}
+.sfp .u{border:1px solid var(--rd-bd);border-radius:8px;background:var(--rd-card);padding:10px 12px;margin-bottom:8px}
+@media(min-width:1000px){.sfp{padding:0 22px 22px}.sfhd{margin:0 -22px 14px;padding:18px 22px 14px}.sfg{grid-template-columns:repeat(5,minmax(0,1fr))}}
+/* phones: full-width bottom sheet like the station pop-up */
+@media(max-width:999px){
+ .sfov{padding:0;align-items:flex-end}
+ .sfp,.sfp[data-m]{max-width:100%;max-height:92vh;border:0;border-radius:18px 18px 0 0;padding:0 14px calc(14px + env(safe-area-inset-bottom,0px))}
+ .sfhd{margin:0 -14px 12px;padding:16px 14px 12px;border-radius:18px 18px 0 0}
+ .sfnm{font-size:19px}
+ .sfst{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .sftop{grid-template-columns:1fr}
+ .sfg{grid-template-columns:1fr;gap:8px}
+ /* staff card: name at top, delete icon top-right, action buttons in one row along the bottom (same layout as desktop) */
+ .sfc{position:relative;flex-direction:column;align-items:stretch;gap:8px;padding:11px}
+ .sfi{flex:none;padding-right:34px}
+ .sfn{font-size:14px}.sfs{font-size:11.5px}
+ .sfa{flex-direction:row;flex-wrap:nowrap;align-items:stretch;flex:none;width:100%;gap:6px}
+ .sfa .s,.sfa select.asg{flex:1 1 0;min-width:0;width:auto;max-width:none;margin:0;box-sizing:border-box;justify-content:center;white-space:nowrap}
+ /* the picker matches the Train / Unassign buttons: same 12px text, height, padding, radius and grey fill */
+ .sfa select.asg{font-size:12px!important;line-height:1.4;padding:5px 22px 5px 9px;background:var(--bd) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 7px center/11px 11px}
+ .sfa .s[title="Release"]{position:absolute;top:9px;right:9px;flex:none;width:30px;height:30px;padding:0;margin:0;display:inline-flex;align-items:center;justify-content:center}
+}
