@@ -1,5 +1,5 @@
 /* Menu: the one place for everything that used to be on the Account page. Opens from the hamburger beside the avatar in the header.
-   Every row opens inside this panel (a page with a back arrow). Nothing opens as a dropdown or a separate floating window. */
+   Rows open inside this panel (a page with a back arrow); the Daily bonus row instead expands as a dropdown under itself. Nothing opens as a separate floating window. */
 (function () {
   "use strict";
   const $ = s => document.querySelector(s);
@@ -39,7 +39,7 @@
   const initials = n => { const w = String(n || "?").trim().split(/[\s._-]+/).filter(Boolean); return ((w[0] || "?")[0] + (w.length > 1 ? w[1][0] : "")).toUpperCase(); };
   const signedIn = () => { try { return !!(AU && AU.user && AU.user.id); } catch (e) { return false; } };
 
-  let btn, menu, list, sub, pages, lastHtml = "", rolesCache = null, tab = "ov", devOpen = false;
+  let btn, menu, list, sub, pages, lastHtml = "", rolesCache = null, tab = "ov", devOpen = false, dailyOpen = false;
 
   const row = (id, ic, title, sub, right, o) => {
     o = o || {};
@@ -116,7 +116,8 @@ ${pendHtml}<div class="hb_grid">
 
     const play = `${sec("Bonuses")}
 <div class="hb_card">
-${row("daily", "gift", "Daily bonus", d.can ? "Claim " + money(d.amt) : "Claimed today", d.can ? '<span class="hb_pill g">Claim</span>' : "")}
+${row("dailydrop", "gift", "Daily bonus", d.can ? "Claim " + money(d.amt) : "Claimed today", (d.can ? '<span class="hb_pill g">Claim</span>' : "") + `<span class="hb_chev${dailyOpen ? " open" : ""}">${svg("chev", 18)}</span>`, { noChev: true })}
+${dailyOpen && window.rkDailyH ? `<div class="hb_drop">${rkDailyH()}</div>` : ""}
 ${gbo.map(o => row("claimgb:" + o.id, "gift", o.title, "Claim " + money(o.amount) + " · ends " + new Date(o.ends_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" }), '<span class="hb_pill g">Claim</span>')).join("")}
 ${pend > 0 ? row("rankup", "medal", "Rank-up bonus", pend + " to claim", '<span class="hb_pill g">Claim</span>') : ""}
 ${S.dv ? "" : row("dev", "wrench", "Dev bonus", money(typeof DEVBONUS === "number" ? DEVBONUS : 1000000) + " · one-time", "", { y: true })}
@@ -174,7 +175,6 @@ ${si ? row("delacct", "trash", "Delete account", "Cannot be undone. Removes your
   const PAGES = {
     ranks: { t: "Ranks", html: () => window.rkFlatH ? rkFlatH() : "" },
     ach: { t: "Achievements", html: () => window.Ach ? Ach.flatHtml() : "" },
-    daily: { t: "Daily bonus", html: () => window.rkDailyH ? rkDailyH() : "" },
     rankup: { t: "Rank-up bonus", html: () => window.rkRankUpH ? rkRankUpH() : "" },
     lb: { t: "Leaderboard", html: () => `<div class="hb_lb">${window.lbHtml && signedIn() ? lbHtml() : '<div class="hb_panel">Sign in to see the leaderboard.</div>'}</div>` },
     shop: { t: "Shop", html: () => `<div class="hb_shop">${typeof atpH === "function" ? atpH() : ""}</div>` },
@@ -201,6 +201,8 @@ ${si ? row("delacct", "trash", "Delete account", "Cannot be undone. Removes your
     claimrank: () => { try { claimRank(); } catch (e) { console.error(e); } lastHtml = ""; update(); },
     tab: el => { tab = el.dataset.tab; lastHtml = ""; render(); },
     devtools: () => { devOpen = !devOpen; lastHtml = ""; render(); },
+    /* Daily bonus expands in place under its row (a dropdown) instead of opening a full page. */
+    dailydrop: () => { dailyOpen = !dailyOpen; lastHtml = ""; render(); },
     edit: () => changeName(),
     avatar: el => { if (signedIn() && window.fcAvatar) avMenu(el); },
     rooms: () => { if (!signedIn()) return; close(); const b = $("#nav_rm"); if (b) b.click(); },
@@ -334,7 +336,7 @@ ${si ? row("delacct", "trash", "Delete account", "Cannot be undone. Removes your
   function open() {
     if (!menu || !menu.hidden) return;
     sub.hidden = true; list.hidden = false; pages.innerHTML = "";
-    lastHtml = ""; tab = "ov"; devOpen = false;
+    lastHtml = ""; tab = "ov"; devOpen = false; dailyOpen = false;
     render(); menu.hidden = false; btn.classList.add("on"); btn.setAttribute("aria-expanded", "true"); setIcon("x"); update();
     /* Roles decide who sees the dev tools and speed control; load them whenever the menu opens. */
     try {
