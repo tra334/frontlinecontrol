@@ -16,11 +16,15 @@
   };
   const row = (ico, k, v) => `<div class="qrow"><span class="qk">${lci(ico, 13)} ${k}</span><span class="qv">${v}</span></div>`;
 
+  /* units finishing another call that are queued to come straight here (their u.mid is still the earlier call, so they are not in the normal responding list) */
+  const queuedFor = (m) => S.un.filter((u) => u.nx === m.id && u.mid !== m.id && nxM(u));
+
   function statusPill(m) {
     const us = S.un.filter((u) => u.mid === m.id);
     const rr = window.Rooms && Rooms.respRows ? Rooms.respRows(m).n : 0;
     if (us.some((u) => u.st === "scene")) return `<span class="qpill ok"><i></i>On scene</span>`;
     if (us.some((u) => u.st === "out") || rr) return `<span class="qpill rsp"><i></i>Units en route</span>`;
+    if (queuedFor(m).length) return `<span class="qpill rsp"><i></i>Units queued</span>`;
     return `<span class="qpill wait"><i></i>Awaiting dispatch</span>`;
   }
 
@@ -74,13 +78,18 @@
     const rs = window.Rooms && Rooms.sceneRows ? Rooms.sceneRows(m) : { n: 0, h: "" };
     const unitRow = (u, isScene) =>
       `<div class="qresp"><span class="qri"><b>${u.cs}</b> ${U[u.ty][1]}<small>${stn(u.sid).name}</small>${nxLine(u)}</span><span class="st ${stc(u)}">${isScene && window.World3D && World3D.landing(u) ? "Landing" : SLU(u)}</span><button class="s ucb" onclick="cancelU(${u.id})">Cancel</button></div>`;
+    const qd = queuedFor(m);
+    const queuedRow = (u) => {
+      const c = mm(u.mid);
+      return `<div class="qresp"><span class="qri"><b>${u.cs}</b> ${U[u.ty][1]}<small>${stn(u.sid).name}</small><small>${lci("hourglass", 11)} Goes direct here after ${esc(c ? T[c.k][1] : "current call")}</small></span><span class="st" style="background:#1d4ed8;color:#fff">Queued</span><button class="s ucb" onclick="unqU(${u.id})">Cancel</button></div>`;
+    };
     let h = "";
-    if (us.length || rr.n)
+    if (us.length || rr.n || qd.length)
       h += card(
         "siren",
         "Responding",
-        us.length + rr.n,
-        lim(us, "dn" + m.id, (u) => unitRow(u, 0), "xpQ") + rr.h + (us.length > 1 ? `<div class="qall"><button class="s ucb" onclick="cancelU(0,1,'out')">Cancel all</button></div>` : ""),
+        us.length + rr.n + qd.length,
+        lim(us, "dn" + m.id, (u) => unitRow(u, 0), "xpQ") + qd.map(queuedRow).join("") + rr.h + (us.length > 1 ? `<div class="qall"><button class="s ucb" onclick="cancelU(0,1,'out')">Cancel all</button></div>` : ""),
         "qrsp"
       );
     if (sc.length || rs.n)
