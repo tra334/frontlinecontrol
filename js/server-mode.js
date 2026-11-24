@@ -150,7 +150,7 @@
     claimDaily = () => { const d = drState(); if (!d.can) return; fn("claimDaily", []).then(() => { try { dailyPop(d.day); } catch (e) {} }); };
     claimRank = () => fn("claimRank", []);
     claimStaff = () => fn("claimStaff", []);
-    claimDev = () => { try { toast("The dev bonus isn't available in server mode."); } catch (e) {} };
+    claimDev = () => { if (S.dv || !devBonusOK()) return; fn("claimDev", []); };
     togglePause = () => fn("togglePause", []).then(() => { try { pzUp(); } catch (e) {} });
     sfAsg = (xid, uid) => {
       const x = S.sf.find(v => v.id === xid), u = uid && S.un.find(v => v.id === uid);

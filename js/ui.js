@@ -137,8 +137,8 @@ document.body.appendChild(w);$("#drx").onclick=()=>w.remove();w.onclick=e=>{if(e
 
 function claimRank(){const n=rank()-(S.rcl||0);if(n<=0)return;const amt=rbSum(S.rcl||0,rank());S.cr+=amt;ldg("bn","Rank-up bonus",amt);S.rcl=rank();log("🎖 Rank-up bonus claimed: +£"+fmt(amt));persist();paint()}
 const DEVBONUS=1000000;
-const devH=()=>`<div class="card" style="border-left-color:#eab308"><div class="row"><span class="t">${lci("wrench")} Dev bonus</span><span class="mu">£${fmt(DEVBONUS)} · one-time</span></div><div style="margin-top:8px">`+(S.dv?`<div class="mu">${lci("circle-check",0,"#16a34a")} Dev bonus already claimed.</div>`:`<button onclick="claimDev()">Claim £${fmt(DEVBONUS)}</button>`)+`</div></div>`;
-function claimDev(){if(S.dv)return;S.dv=1;S.cr+=DEVBONUS;ldg("bn","Dev bonus",DEVBONUS);log("🛠 Dev bonus claimed: +£"+fmt(DEVBONUS));persist();$("#v").dataset.k="";paint()}
+const devH=()=>!devBonusOK()?"":`<div class="card" style="border-left-color:#eab308"><div class="row"><span class="t">${lci("wrench")} Dev bonus</span><span class="mu">£${fmt(DEVBONUS)} · one-time</span></div><div style="margin-top:8px">`+(S.dv?`<div class="mu">${lci("circle-check",0,"#16a34a")} Dev bonus already claimed.</div>`:`<button onclick="claimDev()">Claim £${fmt(DEVBONUS)}</button>`)+`</div></div>`;
+function claimDev(){if(S.dv||!devBonusOK())return;S.dv=1;S.cr+=DEVBONUS;ldg("bn","Dev bonus",DEVBONUS);log("🛠 Dev bonus claimed: +£"+fmt(DEVBONUS));persist();$("#v").dataset.k="";paint()}
 // move a building: pick new spot on map, pay £20,000
 const MOVECOST=10000,movB=()=>mv?(mv.t==="h"?S.hs.find(x=>x.id===mv.id):stn(mv.id)):null;
 function moveBlock(t,b){if(t==="h"){const n=hlock(b);return n?b.name+" can't move while units are on the way or at the facility, or patients/prisoners are still inside.":""}const away=S.un.filter(u=>u.sid===b.id&&u.st!=="idle");return away.length?b.name+" can't move: "+away.length+" vehicle"+(away.length>1?"s are":" is")+" still out ("+away.map(u=>u.cs).join(", ")+"). All vehicles must be back in the station.":""}

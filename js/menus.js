@@ -99,6 +99,10 @@ function spdSet(v,legacy){const r=new Set((v&&Array.isArray(v.roles))?v.roles:[]
 function spdRoleSet(){return _spdR||new Set()}
 function spdOK(){try{if(!_spdR&&typeof AU!=="undefined"&&AU&&AU.user&&AU.user.app_metadata&&AU.user.app_metadata.role==="developer")return true}catch(e){}
 const r=spdRoleSet();return r.has("owner")||r.has("admin")||r.has("developer")||r.has("alpha")}
+/* Dev bonus: ONLINE (server game) only, and only for staff: manager (owner) / admin / developer. Offline players, guests and everyone else never see or claim it. */
+function devBonusOK(){try{if(typeof SRV==="undefined"||!SRV||!SRV.on)return false}catch(e){return false}
+try{if(!_spdR&&typeof AU!=="undefined"&&AU&&AU.user&&AU.user.app_metadata&&AU.user.app_metadata.role==="developer")return true}catch(e){}
+const r=spdRoleSet();return r.has("owner")||r.has("admin")||r.has("developer")}
 function spd(){try{if(typeof SRV!=="undefined"&&SRV&&SRV.on){const v=+(S&&S.spd);return v===2||v===5||v===10?v:1}}catch(e){}
 if(!spdOK())return 1;const v=+getSet().devSpeed;return v===2||v===5||v===10?v:1}
 function setSpd(n){const old=spd();if(n===old)return;
