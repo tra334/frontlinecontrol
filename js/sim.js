@@ -47,9 +47,16 @@ const credit=u=>{if(u.rt&&u.t0)u.km=(u.km||0)+Math.min(Math.max(0,dd(u)),u.rt.le
    so the vehicle finishes the trip there instead of parking at the end of the road while the clock runs. Gap must be 20 m - 2 km. */
 const tail=(p,b)=>{try{const l=p[p.length-1],g=l?km(l,b):0;if(g>.02&&g<2){const r=p.concat([[+(+b[0]).toFixed(5),+(+b[1]).toFixed(5)]]);r.tl=1;return r}}catch(e){}return p};
 function leg(u,a,b,st){credit(u);u.st=st;if(st!=="back")u.rl=0;u.rt=null;u.app=null;u.a=a;u.b=b;const tk=u.lk=(u.lk||0)+1,fly=SP[u.ty]>=150;
-const fin=(p,len)=>{if(u.lk!==tk)return;if(p.length<2)p=[a,b];const d=[0];for(let i=1;i<p.length;i++)d.push(+(d[i-1]+km(p[i-1],p[i])).toFixed(3));u.rt={p,d,len:len||d[d.length-1],tl:p.tl?1:0};u.t0=(u.bk0&&u.bk0<now())?u.bk0:now();u.bk0=0;dirty=true};
+const fin=(p,len,sl)=>{if(u.lk!==tk)return;if(p.length<2)p=[a,b];const d=[0];for(let i=1;i<p.length;i++)d.push(+(d[i-1]+km(p[i-1],p[i])).toFixed(3));u.rt={p,d,len:len||d[d.length-1],tl:p.tl?1:0,sl:sl?1:0};u.t0=(u.bk0&&u.bk0<now())?u.bk0:now();u.bk0=0;dirty=true};
 if(fly){fin([a,b],km(a,b));return}
-J("https://router.project-osrm.org/route/v1/driving/"+a[1]+","+a[0]+";"+b[1]+","+b[0]+"?overview="+(km(a,b)>40?"simplified":"full")+"&geometries=geojson",12000).then(j=>{const q=j&&j.routes&&j.routes[0];q?fin(tail(q.geometry.coordinates.map(c=>[+c[1].toFixed(5),+c[0].toFixed(5)]),b)):fin([a,b],km(a,b)*1.3)})}
+const qs=a[1]+","+a[0]+";"+b[1]+","+b[0]+"?overview="+(km(a,b)>40?"simplified":"full")+"&geometries=geojson",ok=j=>j&&j.routes&&j.routes[0];
+/* main routing server first, then a second one; only if both fail do we fall back to a straight line (flagged sl, so reroad() keeps retrying for the real road) */
+J("https://router.project-osrm.org/route/v1/driving/"+qs,12000).then(j=>ok(j)?j:J("https://routing.openstreetmap.de/routed-car/route/v1/driving/"+qs,12000)).then(j=>{const q=ok(j);q?fin(tail(q.geometry.coordinates.map(c=>[+c[1].toFixed(5),+c[0].toFixed(5)]),b)):fin([a,b],km(a,b)*1.3,1)})}
+/* Replace straight-line fallback routes with real road routes. Starts again from the vehicle's CURRENT position (leg() does this), so it never jumps.
+   Offline play only (in server mode the server owns routes). At most 2 vehicles per call and each vehicle at most every 30 s, to be kind to the routing servers. */
+function reroad(){try{if(window.SRV&&SRV.on||window._sim||!S||!S.un)return;const t=Date.now();let n=0;
+S.un.forEach(u=>{if(n>=2||!u.rt||!u.rt.sl||!u.b||(u.st!=="out"&&u.st!=="back"&&u.st!=="hosp")||SP[u.ty]>=150||(u._rr||0)>t)return;if(dd(u)>=u.rt.len)return;u._rr=t+30000;n++;leg(u,upos(u),u.b,u.st)})}catch(e){}}
+setInterval(reroad,15000);
 /* queued "next call": a unit still busy on call A can be told to go straight to call B when A finishes, instead of returning to base */
 const nxM=u=>{const t=u.nx?mm(u.nx):null;return t&&t.ans&&t.id!==u.mid?t:null};
 const canQ=u=>!!u.mid&&!!mm(u.mid)&&(u.st==="out"||u.st==="scene"||u.st==="hosp"||u.st==="hand")&&crewed(u)&&!u.oos;

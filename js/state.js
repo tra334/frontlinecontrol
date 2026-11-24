@@ -55,11 +55,11 @@ const AWAY_MIN=120000,AWAY_CAP=108e5,AWAY_EVERY=720000,AWAY_MAXJOBS=6,AWAY_PAY=.
 function seenBeat(){try{localStorage.setItem(curKey+"_seen",String(Date.now()))}catch(e){}}
 addEventListener("pagehide",seenBeat);addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")seenBeat()});
 /* replay units/missions through the elapsed time on a virtual clock (no network, no new spawns, no repaint) */
-function fixRt(){S.un.forEach(u=>{if((u.st==="out"||u.st==="back"||u.st==="hosp")&&!u.rt&&u.a&&u.b){const k=km(u.a,u.b);u.lk=(u.lk||0)+1;u.rt={p:[u.a,u.b],d:[0,+k.toFixed(3)],len:Math.max(.001,k*(SP[u.ty]>=150?1:1.3))};u.t0=now();dirty=true}})}
+function fixRt(){S.un.forEach(u=>{if((u.st==="out"||u.st==="back"||u.st==="hosp")&&!u.rt&&u.a&&u.b){const k=km(u.a,u.b);u.lk=(u.lk||0)+1;u.rt={p:[u.a,u.b],d:[0,+k.toFixed(3)],len:Math.max(.001,k*(SP[u.ty]>=150?1:1.3)),sl:1};u.t0=now();dirty=true}})}
 function simAway(from){const T0=Date.now(),pz0=S.pz,st0=window.setTimeout,pa0=paint,ls0=lastSave;
 S.pz=1;window._sim=1;lastSave=1e18;window.setTimeout=(f)=>{if(typeof f==="function"){try{f()}catch(e){}}return 0};paint=function(){};
 try{for(let v=from+AWAY_STEP;;v+=AWAY_STEP){const vv=Math.min(v,T0);SIMOFF=vv-Date.now();fixRt();tick();if(vv>=T0)break}}
-finally{SIMOFF=0;window._sim=0;window.setTimeout=st0;paint=pa0;S.pz=pz0;lastSave=ls0;fixRt();dirty=true;try{paint();sync()}catch(e){}}}
+finally{SIMOFF=0;window._sim=0;window.setTimeout=st0;paint=pa0;S.pz=pz0;lastSave=ls0;fixRt();dirty=true;try{paint();sync()}catch(e){}try{window.setTimeout(()=>{if(typeof reroad==="function")reroad()},1500)}catch(e){}}}
 function catchUp(){let seen=0;try{seen=+localStorage.getItem(curKey+"_seen")||0}catch(e){}
 const t=now(),last=Math.max(+S.ts||0,seen);seenBeat();
 if(!last||S.pz)return;let away=t-last;if(!(away>AWAY_MIN))return;away=Math.min(away,AWAY_CAP);
