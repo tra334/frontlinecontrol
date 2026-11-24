@@ -120,7 +120,7 @@ ${row("dailydrop", "gift", "Daily bonus", d.can ? "Claim " + money(d.amt) : "Cla
 ${dailyOpen && window.rkDailyH ? `<div class="hb_drop">${rkDailyH()}</div>` : ""}
 ${gbo.map(o => row("claimgb:" + o.id, "gift", o.title, "Claim " + money(o.amount) + " · ends " + new Date(o.ends_at).toLocaleDateString("en-GB", { day: "numeric", month: "short" }), '<span class="hb_pill g">Claim</span>')).join("")}
 ${pend > 0 ? row("rankup", "medal", "Rank-up bonus", pend + " to claim", '<span class="hb_pill g">Claim</span>') : ""}
-${S.dv ? "" : row("dev", "wrench", "Dev bonus", money(typeof DEVBONUS === "number" ? DEVBONUS : 1000000) + " · one-time", "", { y: true })}
+${S.dv || !devBonusOK() ? "" : row("dev", "wrench", "Dev bonus", money(typeof DEVBONUS === "number" ? DEVBONUS : 1000000) + " · one-time", "", { y: true })}
 </div>
 ${sec("Game")}
 <div class="hb_card">
@@ -178,7 +178,7 @@ ${si ? row("delacct", "trash", "Delete account", "Cannot be undone. Removes your
     rankup: { t: "Rank-up bonus", html: () => window.rkRankUpH ? rkRankUpH() : "" },
     lb: { t: "Leaderboard", html: () => `<div class="hb_lb">${window.lbHtml && signedIn() ? lbHtml() : '<div class="hb_panel">Sign in to see the leaderboard.</div>'}</div>` },
     shop: { t: "Shop", html: () => `<div class="hb_shop">${typeof atpH === "function" ? atpH() : ""}</div>` },
-    dev: { t: "Dev bonus", html: () => window.rkDevH ? rkDevH() : "" },
+    dev: { t: "Dev bonus", html: () => window.rkDevH && devBonusOK() ? rkDevH() : "" },
     set: { t: "Settings", mount: () => openSettings() },
     logs: { t: "Logs", mount: () => openJobLogs() },
     mspawn: { t: "Manual spawn", mount: () => { close(); openMissionSpawn(); } },
