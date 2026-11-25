@@ -30,9 +30,24 @@ const css=document.createElement("style");css.textContent=`
 #w3ov .tip{margin-top:14px;font-size:12px;opacity:.55}
 #map3d{position:absolute;inset:0;z-index:2;background:#0b0f14}
 .w3hud{position:absolute;z-index:1300;left:10px;top:calc(var(--hh,52px) + 8px);max-height:calc(100% - var(--hh,52px) - 90px);overflow:auto;display:flex;flex-direction:column;gap:6px}
-.w3hud button,#w3tog{border:0;border-radius:10px;padding:8px 11px;font:700 13px system-ui;background:#0f172ae6;color:#fff;box-shadow:0 2px 8px #0006;cursor:pointer}
+.w3hud button,#w3tog,#w3diff{border:0;border-radius:10px;padding:8px 11px;font:700 13px system-ui;background:#0f172ae6;color:#fff;box-shadow:0 2px 8px #0006;cursor:pointer}
 .w3hud button.on{background:#2563eb}
-#w3tog{position:absolute;z-index:1300;right:56px;top:10px}
+.w3hud .sm{display:none}
+/* 3D controls: one button at the top left opens a dropdown. Desktop sits below the zoom buttons; phones sit under the header. */
+.w3hud{left:8px;top:calc(var(--hh,52px) + 8px);right:auto;bottom:auto;max-height:none;display:flex;flex-direction:column;align-items:flex-start;overflow:visible;gap:0;z-index:1300}
+@media(min-width:1000px){.w3hud{top:calc(var(--hh,52px) + 84px)}}
+.w3tr{display:inline-flex;align-items:center;gap:7px;min-height:38px;padding:0 13px;border-radius:10px;font:700 13px system-ui,sans-serif;box-shadow:0 2px 8px #0006;background:#0f172ae6;color:#fff;border:0;cursor:pointer}
+.w3tr::after{content:"▾";font-size:11px;opacity:.8;transition:transform .15s}
+.w3hud.open .w3tr{background:#2563eb}
+.w3hud.open .w3tr::after{transform:rotate(180deg)}
+.w3pan{display:none;position:absolute;top:100%;left:0;margin-top:6px;min-width:230px;padding:6px;flex-direction:column;gap:3px;background:#0f172af2;border-radius:12px;box-shadow:0 6px 18px #0008;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.w3hud.open .w3pan{display:flex}
+.w3pan button{display:flex;align-items:center;gap:10px;width:100%;min-height:40px;padding:8px 12px;border:0;border-radius:8px;background:transparent;color:#e5e7eb;font:600 14px/1.2 system-ui,sans-serif;text-align:left;cursor:pointer;box-shadow:none}
+.w3pan button:hover,.w3pan button:focus-visible{background:#1e293b}
+.w3pan button.on{background:#2563eb;color:#fff}
+.w3pan button .ic{width:22px;text-align:center;font-size:17px;line-height:1;flex:none}
+@media(max-width:899px){.w3tr{min-height:44px;padding:0 15px;font-size:14px;border-radius:12px}.w3pan button{min-height:46px;font-size:15px}}
+#w3tog{position:absolute;z-index:1300;right:56px;top:10px}#w3diff{position:absolute;z-index:1300;right:150px;top:10px}
 .w3m{display:flex;flex-direction:column;align-items:center;cursor:pointer;font:600 11px system-ui;color:#fff;pointer-events:auto;--c:#2563eb}
 .w3m .w3l{background:#0b1220d9;padding:1px 6px;border-radius:6px;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
 .w3st .w3l{display:none}
@@ -56,36 +71,9 @@ function loadLibs(){return libs||(libs=(async()=>{
  if(!window.maplibregl||!window.THREE)throw new Error("libs");
 })().catch(e=>{libs=null;throw e}))}
 
-/* ---------- startup chooser (every start-up) ---------- */
-function chooseMode(){return new Promise(res=>{
- const last=lsGet(MODE_KEY)==="3d"?"3d":"2d",gl=hasGL(),ov=document.createElement("div");ov.id="w3ov";
- ov.innerHTML=`<div class="bx"><h1>Frontline Control</h1><p class="sub">How do you want to play this session?</p><div class="cards">
- <button class="cd${last==="2d"?" last":""}" data-m="2d"><i>🗺️</i><b>Classic map</b><span>The normal flat dispatch map. Lightest, works on any device.</span></button>
- <button class="cd${last==="3d"?" last":""}" data-m="3d"${gl?"":" disabled"}><i>🏙️</i><b>3D world <small style="opacity:.7">(beta)</small></b><span>${gl?"Tilted 3D city, real vehicle models, blue lights when responding.":"3D isn't supported by this browser/device."}</span></button></div>
- <div class="tip">Press 1 or 2 · You can switch any time with the 2D/3D button on the map</div></div>`;
- document.body.appendChild(ov);
- const done=m=>{document.removeEventListener("keydown",kd);lsSet(MODE_KEY,m);ov.remove();res(m)};
- const kd=e=>{if(e.key==="1")done("2d");else if(e.key==="2"&&gl)done("3d")};document.addEventListener("keydown",kd);
- const b3=ov.querySelector('[data-m="3d"]');
- if(gl){const pre=()=>{loadLibs().catch(()=>{})};b3.addEventListener("pointerenter",pre,{once:true});b3.addEventListener("touchstart",pre,{once:true,passive:true})}
- ov.querySelectorAll(".cd").forEach(b=>b.onclick=()=>{if(!b.disabled)done(b.dataset.m)});
- const f=ov.querySelector(".last");if(f)f.focus();
-})}
-
-/* ---------- difficulty chooser (asked right after Classic / 3D) ----------
-   Easy: control room operators answer calls and question callers; you dispatch.  Hard: no operators, you do it all. */
-function chooseDiff(){return new Promise(res=>{
- const last=lsGet("fc_diff")==="hard"?"hard":"easy",ov=document.createElement("div");ov.id="w3ov";
- ov.innerHTML=`<div class="bx"><h1>Choose difficulty</h1><p class="sub">How much do you want to handle yourself?</p><div class="cards">
- <button class="cd${last==="easy"?" last":""}" data-m="easy"><i>🎧</i><b>Easy</b><span>Control room operators pick up unanswered 999 calls and question the caller for you. You just dispatch units.</span></button>
- <button class="cd${last==="hard"?" last":""}" data-m="hard"><i>☎️</i><b>Hard</b><span>No operators. You answer every call, question the caller and dispatch.</span></button></div>
- <div class="tip">Press 1 or 2</div></div>`;
- document.body.appendChild(ov);
- const done=m=>{document.removeEventListener("keydown",kd);lsSet("fc_diff",m);window.FC_DIFF=m;ov.remove();res(m)};
- const kd=e=>{if(e.key==="1")done("easy");else if(e.key==="2")done("hard")};document.addEventListener("keydown",kd);
- ov.querySelectorAll(".cd").forEach(b=>b.onclick=()=>done(b.dataset.m));
- const f=ov.querySelector(".last");if(f)f.focus();
-})}
+/* ---------- difficulty: no start-up screen. Read from the last choice (default Easy); changed on the map (desktop) or in Settings. ---------- */
+const diffNow=()=>(lsGet("fc_diff")==="hard"?"hard":"easy");
+function setDiff(m){m=m==="hard"?"hard":"easy";lsSet("fc_diff",m);window.FC_DIFF=m;setTog();try{typeof toast==="function"&&toast(m==="hard"?"Hard: you answer and dispatch every call yourself.":"Easy: control room operators take calls and question callers for you.")}catch(e){}}
 
 /* ---------- vehicle models: UK emergency-service liveries (units = metres, forward = -z, y up) ---------- */
 let T3,BOX,CYL,SPH,CIR,PLN,GLOW,MATS={};
@@ -602,13 +590,13 @@ function syncNight(){if(!map3)return;const t=nightAmount();
  updateNightLights(t)}
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)kick()});
 function showHud(on){if(hud){hud.remove();hud=null}if(!on)return;
- hud=document.createElement("div");hud.className="w3hud";hud.innerHTML=`<button data-a="reset">⟲ Reset view</button><button data-a="follow">🚨 Follow responder</button><button data-a="radio">📻 Radio follow</button><button data-a="tilt">⬍ Tilt</button><button data-a="night">${nightLabel()}</button>`;
- hud.onclick=e=>{const a=e.target.dataset&&e.target.dataset.a;if(!a)return;
+ hud=document.createElement("div");hud.className="w3hud";hud.innerHTML=`<button type="button" class="w3tr" aria-expanded="false" aria-label="3D controls"><span class="ic">🎛</span><span class="lg"> 3D controls</span></button><div class="w3pan"><button data-a="reset"><span class="ic">⟲</span><span>Reset view</span></button><button data-a="follow"><span class="ic">🚨</span><span>Follow responder</span></button><button data-a="radio"><span class="ic">📻</span><span>Radio follow</span></button><button data-a="tilt"><span class="ic">⬍</span><span>Tilt</span></button><button data-a="night"><span class="ic">🌙</span><span>Night: ${nightLabel().replace("🌙 ","")}</span></button></div>`;
+ hud.onclick=e=>{const tr=e.target.closest&&e.target.closest(".w3tr");if(tr){const o=hud.classList.toggle("open");tr.setAttribute("aria-expanded",o?"true":"false");return}const bt=e.target.closest&&e.target.closest("[data-a]");const a=bt&&bt.dataset.a;if(!a)return;
   if(a==="reset"){stopFollow();const b=bounds();map3.fitBounds(b,{padding:70,maxZoom:16,pitch:62,bearing:-20,duration:900})}
   else if(a==="tilt"){map3.easeTo({pitch:map3.getPitch()>45?0:65,duration:600})}
   else if(a==="follow")startFollow();
   else if(a==="radio")radioFollowToggle();
-  else if(a==="night"){setNightPref({auto:"night",night:"day",day:"auto"}[nightPref()]||"auto");hud.querySelector('[data-a="night"]').textContent=nightLabel();NT=-1;syncNight()}};
+  else if(a==="night"){setNightPref({auto:"night",night:"day",day:"auto"}[nightPref()]||"auto");hud.querySelector('[data-a="night"] span:last-child').textContent="Night: "+nightLabel().replace("🌙 ","");NT=-1;syncNight()}};
  $("#mapw").appendChild(hud)}
 function bounds(){const b=new maplibregl.LngLatBounds();let n=0;S.st.forEach(s=>{b.extend([s.lon,s.lat]);n++});S.hs.forEach(h=>{b.extend([h.lon,h.lat]);n++});
  if(!n){const c=map.getCenter();b.extend([c.lng-.01,c.lat-.01]);b.extend([c.lng+.01,c.lat+.01])}return b}
@@ -708,8 +696,11 @@ function exit3D(silent){timers.forEach(clearInterval);timers=[];clearTimeout(rpT
  showHud(false);active=false;busy=false;try{origSync()}catch(e){}try{map.invalidateSize();if(c)map.setView([c.lat,c.lng],map.getZoom())}catch(e){}
  setTog();if(!silent)lsSet(MODE_KEY,"2d")}
 
-function setTog(){let b=$("#w3tog");const w=$("#mapw");if(!w)return;if(!b){b=document.createElement("button");b.id="w3tog";b.type="button";b.onclick=()=>active?exit3D():enter3D();w.appendChild(b)}
- b.textContent=active?"🗺️ 2D":"🏙️ 3D";b.title=active?"Back to the classic map":"Switch to the 3D world";b.hidden=!hasGL()}
+function setTog(){const w=$("#mapw");if(!w)return;const phone=innerWidth<900;let b=$("#w3tog");if(!b){b=document.createElement("button");b.id="w3tog";b.type="button";b.onclick=()=>active?exit3D():enter3D();w.appendChild(b)}
+ b.textContent=active?"🗺️ 2D":"🏙️ 3D";b.title=active?"Back to the classic map":"Switch to the 3D world";b.hidden=!hasGL()||phone;
+ let d=$("#w3diff");if(!d){d=document.createElement("button");d.id="w3diff";d.type="button";d.onclick=()=>setDiff(diffNow()==="easy"?"hard":"easy");w.appendChild(d)}
+ d.textContent=diffNow()==="hard"?"☎️ Hard":"🎧 Easy";d.title="Easy: operators take calls. Hard: you take every call. Click to switch.";d.hidden=phone}
+window.addEventListener("resize",()=>{try{setTog()}catch(e){}});
 
 /* the hidden classic (Leaflet) map is still synced twice a second by the game loop; skip that while the 3D world is showing */
 const origSync=sync;
@@ -718,6 +709,42 @@ sync=function(){if(active&&map3)return;return origSync.apply(this,arguments)};
 /* ---------- hook into start-up ---------- */
 const origStart=startGame;
 startGame=function(st){if(asked)return origStart.apply(this,arguments);asked=true;
- chooseMode().then(m=>chooseDiff().then(()=>{origStart(st);setTog();if(m==="3d")setTimeout(enter3D,50)}))};
-window.World3D={landing:landingNow,enter:enter3D,exit:exit3D,center(){return map3?map3.getCenter():null},get active(){return active},debug(){return{libs:{three:window.THREE&&THREE.REVISION,maplibre:window.maplibregl&&maplibregl.getVersion&&maplibregl.getVersion()},onAdd:W3.adds,frames:W3.frames,error:W3.err,units:S&&S.un.length,models:Object.keys(fleet).length,sceneChildren:scene&&scene.children.length}}};
+ window.FC_DIFF=diffNow();origStart(st);setTog();if(lsGet(MODE_KEY)==="3d"&&hasGL())setTimeout(enter3D,50);setTimeout(firstRunSetup,700)};
+
+/* first play on this device: one setup screen for view (2D/3D) and difficulty. Saved in localStorage; shown once. */
+function firstRunSetup(){
+ /* SETUP_V: bump this to ask every player again after a change to the setup. Stored once answered. */
+ const SETUP_V="2";
+ if(lsGet("fc_setup_v")===SETUP_V)return;
+ const gl=hasGL();
+ let mode=(lsGet(MODE_KEY)==="3d"&&gl)?"3d":"2d", diff=diffNow();
+ const ov=document.createElement("div");ov.id="setupov";
+ ov.style.cssText="position:fixed;inset:0;z-index:200001;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:16px;font-family:system-ui,sans-serif";
+ const card=(g,v,on,icon,title,desc,dis)=>`<button type="button" data-g="${g}" data-v="${v}" aria-pressed="${on}"${dis?" disabled":""} style="flex:1;min-width:0;text-align:left;display:flex;flex-direction:column;gap:6px;padding:14px;border-radius:12px;border:2px solid ${on?"#3b82f6":"#243049"};background:${on?"#13203d":"#0f172a"};color:#e5e7eb;cursor:${dis?"not-allowed":"pointer"};opacity:${dis?.45:1};font:inherit"><span style="font-size:24px;line-height:1">${icon}</span><b style="font-size:15px">${title}</b><span style="font-size:12px;opacity:.75;line-height:1.35">${desc}</span></button>`;
+ const draw=()=>{ov.innerHTML=`<div role="dialog" aria-modal="true" aria-labelledby="setuph" style="width:100%;max-width:520px;background:#0b1220;color:#e5e7eb;border:1px solid #243049;border-radius:16px;padding:20px;box-shadow:0 10px 30px #000a">`+
+  `<div id="setuph" style="font-size:20px;font-weight:700">Welcome to Frontline Control</div><div style="opacity:.7;font-size:13px;margin:4px 0 16px">Choose how to play. Your choices are saved in this browser. You can change them any time on the map or in Settings.</div>`+
+  `<div style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;opacity:.6;margin-bottom:6px">View</div>`+
+  `<div style="display:flex;gap:10px">`+
+  card("m","2d",mode==="2d","🗺️","Classic map","The normal flat dispatch map. Lightest, works on any device.")+
+  card("m","3d",mode==="3d","🏙️","3D world (beta)",gl?"Tilted 3D city, real vehicle models, blue lights when responding.":"Not supported by this browser or device.",!gl)+
+  `</div>`+
+  `<div style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;opacity:.6;margin:16px 0 6px">Difficulty</div>`+
+  `<div style="display:flex;gap:10px">`+
+  card("d","easy",diff==="easy","🎧","Easy","Control room operators pick up unanswered 999 calls and question the caller for you. You just dispatch units.")+
+  card("d","hard",diff==="hard","☎️","Hard","No operators. You answer every call, question the caller and dispatch.")+
+  `</div>`+
+  `<button id="setupGo" type="button" style="width:100%;margin-top:18px;padding:13px;border:0;border-radius:12px;background:#2563eb;color:#fff;font:700 15px system-ui;cursor:pointer">Start playing</button></div>`;
+  ov.querySelector("#setupGo").onclick=finish;
+ };
+ const finish=()=>{
+  lsSet("fc_diff",diff);window.FC_DIFF=diff;
+  lsSet("fc_setup_v",SETUP_V);
+  ov.remove();
+  if(mode==="3d"&&gl){enter3D()}else{lsSet(MODE_KEY,"2d");setTog()}
+  setTog();
+ };
+ ov.addEventListener("click",e=>{const b=e.target.closest("[data-g]");if(!b||b.disabled)return;if(b.dataset.g==="m")mode=b.dataset.v;else diff=b.dataset.v;draw()});
+ draw();document.body.appendChild(ov);
+}
+window.World3D={landing:landingNow,enter:enter3D,exit:exit3D,supported:hasGL,setDiff,diff:diffNow,center(){return map3?map3.getCenter():null},get active(){return active},debug(){return{libs:{three:window.THREE&&THREE.REVISION,maplibre:window.maplibregl&&maplibregl.getVersion&&maplibregl.getVersion()},onAdd:W3.adds,frames:W3.frames,error:W3.err,units:S&&S.un.length,models:Object.keys(fleet).length,sceneChildren:scene&&scene.children.length}}};
 })();
