@@ -141,3 +141,9 @@
  #sheet:has(.ph2)>.ph2{padding-right:52px}
  #sheet:has(.ph2) .pt{gap:8px}
 }
+
+/* ===== PC: keep the close X clear of the pop-up's scrollbar ===== */
+@media(min-width:1000px){
+ #modal #sw:has(#sheet) #sheet{scrollbar-width:thin;scrollbar-gutter:stable}
+ #modal #sw:has(#sheet) #xb{right:24px!important}
+}
