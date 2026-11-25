@@ -136,7 +136,6 @@ ${row("logs", "log", "Logs", "Past calls and earnings")}
     const devTools = devOpen && showDev ? `<div class="hb_card">
   <button type="button" class="hb_row" data-id="dbgtimer"><span class="hb_ic">${svg("clock")}</span><span class="hb_t"><b>Show debug call timer</b><small>Countdown next to the build button</small></span><span class="hb_sw${dbgOn ? " on" : ""}"></span></button>
   ${row("mspawn", "phone", "Manual spawn", "Pick any call at your rank and spawn it near your stations")}
-  ${row("ukseed", "cog", "Create UK emergency stations", "Free stations and vehicles for every UK fire, police and ambulance station (online play, once)")}
   ${row("rspawn", "dice", "Spawn random call now", "Doesn't reset the new-call timer")}
   ${row("dbglog", "bug", "Debug log", dbgN ? dbgN + " entries" : "Errors and failed requests")}
 </div>${speedCard ? `<div style="height:12px"></div>${speedCard}` : ""}` : "";
@@ -186,22 +185,6 @@ ${si ? row("delacct", "trash", "Delete account", "Cannot be undone. Removes your
     dbglog: { t: "Debug log", mount: () => { if (window.DebugLog) DebugLog.open(); else toast("Debug log not loaded"); } }
   };
 
-  /* Developer tool: asks the game server to create every UK fire, police and ambulance station (from js/data/uk-stations.json),
-     with two of each vehicle type per station, all free. Online play only; the server checks the developer role too. */
-  function devSeedUK() {
-    if (!window.SRV || !SRV.on) { toast("Turn on online play first. This tool runs on the game server."); return; }
-    confirmDlg("Create UK stations?",
-      "This adds every UK fire, police and ambulance station, plus two vehicles of each type at each one, all <b>free</b>. It can take a while and it cannot be undone from the game.",
-      "Create stations",
-      () => {
-        toast("Creating UK stations on the server...");
-        SRV.act({ type: "devseed_uk" }).then(j => {
-          toast(j && j.ok ? (j.msg || "UK stations created.") : ("Failed: " + ((j && j.msg) || "server error")));
-          lastHtml = ""; update();
-        }).catch(() => toast("Can't reach the game server"));
-      }, "#1d4ed8");
-  }
-
   async function spawnRandom() {
     close();
     if (!S.st.length) { toast("Build a station first."); return; }
@@ -238,7 +221,6 @@ ${si ? row("delacct", "trash", "Delete account", "Cannot be undone. Removes your
     dbgtimer: () => { setSet("dbgInd", !getSet().dbgInd); dbgUp(); update(); },
     spd: el => { const p = setSpd(+el.dataset.n); if (p && p.then) p.then(update); update(); },
     rspawn: () => spawnRandom(),
-    ukseed: () => { close(); devSeedUK(); },
     reset: () => { close(); resetG(); },
     chgemail: () => { close(); if (window.fcChangeEmail) fcChangeEmail(); },
     delacct: () => { close(); if (window.fcDeleteAccount) fcDeleteAccount(); }
