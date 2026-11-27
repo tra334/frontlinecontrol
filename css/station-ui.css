@@ -146,4 +146,6 @@
 @media(min-width:1000px){
  #modal #sw:has(#sheet) #sheet{scrollbar-width:thin;scrollbar-gutter:stable}
  #modal #sw:has(#sheet) #xb{right:24px!important}
+ /* sticky opaque header so content scrolls under a solid bar, never under the close X */
+ #sheet:has(.sxv)>.ph2{position:sticky;top:0;z-index:2;background:var(--bg);margin:-20px -22px 6px;padding:20px 64px 12px 22px;border-bottom:1px solid var(--rd-bd);border-radius:12px 12px 0 0}
 }
