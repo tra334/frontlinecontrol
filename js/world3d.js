@@ -50,7 +50,8 @@ const css=document.createElement("style");css.textContent=`
 #w3tog{position:absolute;z-index:1300;right:56px;top:10px}#w3diff{position:absolute;z-index:1300;right:150px;top:10px}
 .w3m{display:flex;flex-direction:column;align-items:center;cursor:pointer;font:600 11px system-ui;color:#fff;pointer-events:auto;--c:#2563eb}
 .w3m .w3l{background:#0b1220d9;padding:1px 6px;border-radius:6px;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
-.w3st .w3l{display:none}
+.w3st .w3l,.w3hs .w3l{display:none}
+body.w3names .w3st .w3l,body.w3names .w3hs .w3l{display:block}
 .w3m .w3b{width:34px;height:34px;border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;background:var(--c);box-shadow:0 2px 8px #0009;font-size:17px;font-weight:800;overflow:hidden}
 .w3m .w3b img{width:100%;height:100%;object-fit:cover}
 .w3m .w3p{width:2px;height:24px;background:linear-gradient(var(--c),transparent)}
@@ -483,7 +484,7 @@ function syncFleet(){if(!scene||!S)return;const seen={};
  for(const id in fleet){const V=fleet[id];if(V.u.st!=="scene"||!isAmb(V.u)||V.land){if(V.u.st!=="scene")V.told=0;continue}if(!V.told){V.told=1;toast("🚁 "+V.u.cs+" is on scene: tap the map where it should land")}}}
 
 /* DOM markers: stations, hospitals/custody, calls + unit callsign chips */
-function mkEl(cls,c,inner,label,onClick){const e=document.createElement("div");e.className="w3m "+cls;e.style.setProperty("--c",c);
+function mkEl(cls,c,inner,label,onClick,f){const e=document.createElement("div");e.className="w3m "+cls;if(f)e.dataset.f=f;e.style.setProperty("--c",c);
  e.innerHTML=`<div class="w3l">${esc2(label)}</div><div class="w3b">${inner}</div><div class="w3p"></div><div class="w3d"></div>`;
  e.addEventListener("click",ev=>{ev.stopPropagation();onClick()});e.addEventListener("pointerdown",ev=>ev.stopPropagation());return e}
 function upsert(group,id,ll,key,make){let o=mk[group][id];
@@ -491,8 +492,8 @@ function upsert(group,id,ll,key,make){let o=mk[group][id];
  if(!o)o=mk[group][id]={k:key,la:ll[0],lo:ll[1],mk:new maplibregl.Marker({element:make(),anchor:"bottom",offset:[0,4]}).setLngLat([ll[1],ll[0]]).addTo(map3)};
  else if(o.la!==ll[0]||o.lo!==ll[1]){o.la=ll[0];o.lo=ll[1];o.mk.setLngLat([ll[1],ll[0]])}}
 function syncMarkers(){if(!map3||!S)return;const seen={s:{},h:{},m:{},u:{}};
- S.st.forEach(s=>{seen.s[s.id]=1;upsert("s",s.id,[s.lat,s.lon],s.sv+"|"+s.name+"|"+(IMGS["s"+s.id]?1:0),()=>mkEl("w3st",SC[s.sv],bIco("s",s),s.name,()=>openS(s.id)))});
- S.hs.forEach(x=>{seen.h[x.id]=1;const pn=x.ty==="pn";upsert("h",x.id,[x.lat,x.lon],x.ty+"|"+x.name,()=>mkEl("w3hs",pn?"#475569":"#0369a1",bIco("h",x),x.name,()=>openH(x.id)))});
+ S.st.forEach(s=>{seen.s[s.id]=1;upsert("s",s.id,[s.lat,s.lon],s.sv+"|"+s.name+"|"+(IMGS["s"+s.id]?1:0),()=>mkEl("w3st",SC[s.sv],bIco("s",s),s.name,()=>openS(s.id),s.sv))});
+ S.hs.forEach(x=>{seen.h[x.id]=1;const pn=x.ty==="pn";upsert("h",x.id,[x.lat,x.lon],x.ty+"|"+x.name,()=>mkEl("w3hs",pn?"#475569":"#0369a1",bIco("h",x),x.name,()=>openH(x.id),pn?"pn":"h"))});
  S.ms.forEach(m=>{seen.m[m.id]=1;const g=gr(m.k),r=resp(m),key=(m.ans?"a"+g:"p")+"|"+(r?1:0)+"|"+m.k;
   upsert("m",m.id,[m.la,m.lo],key,()=>m.ans?mkEl("w3call"+(r?" w3rs":""),GC[g],`<span style="color:${g===3?"#000":"#fff"}">${g}</span>`,T[m.k][1],()=>openQ(m.id)):mkEl("w3call","#f59e0b",lci("phone"),"Incoming 999 call",()=>openQ(m.id)))});
  for(const g in mk)for(const id in mk[g])if(!seen[g]||!seen[g][id]){mk[g][id].mk.remove();delete mk[g][id]}}
@@ -682,7 +683,7 @@ async function enter3D(){if(active||busy||!S)return;busy=true;
    const tickA=safe(()=>{syncFleet();syncMarkers();syncRoutes();kick();syncNight();syncLandMarks()}),tickB=safe(()=>{syncLabels();syncPin()}),tickC=safe(followTick);
    tickA();tickB();
    timers.push(setInterval(tickA,500),setInterval(tickB,250),setInterval(tickC,33))});
-  active=true;showHud(true);setTog();lsSet(MODE_KEY,"3d")}
+  active=true;showHud(true);setTog();filterSync();lsSet(MODE_KEY,"3d")}
  catch(e){console.error(e);toast("3D mode couldn't start on this device – using the classic map.");exit3D(true)}
  busy=false}
 
@@ -694,7 +695,10 @@ function exit3D(silent){timers.forEach(clearInterval);timers=[];clearTimeout(rpT
  try{renderer&&renderer.dispose()}catch(e){}renderer=scene=camera=null;
  const el=$("#map3d");if(el)el.style.display="none";const m2=$("#map");if(m2)m2.style.display="";
  showHud(false);active=false;busy=false;try{origSync()}catch(e){}try{map.invalidateSize();if(c)map.setView([c.lat,c.lng],map.getZoom())}catch(e){}
- setTog();if(!silent)lsSet(MODE_KEY,"2d")}
+ setTog();filterSync();if(!silent)lsSet(MODE_KEY,"2d")}
+
+/* the map filter lists different rows in 2D and 3D */
+function filterSync(){try{window.mapFilterSync&&window.mapFilterSync()}catch(e){}}
 
 function setTog(){const w=$("#mapw");if(!w)return;const phone=innerWidth<900;let b=$("#w3tog");if(!b){b=document.createElement("button");b.id="w3tog";b.type="button";b.onclick=()=>active?exit3D():enter3D();w.appendChild(b)}
  b.textContent=active?"🗺️ 2D":"🏙️ 3D";b.title=active?"Back to the classic map":"Switch to the 3D world";b.hidden=!hasGL()||phone;
