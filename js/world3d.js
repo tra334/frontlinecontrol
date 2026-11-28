@@ -47,6 +47,7 @@ const css=document.createElement("style");css.textContent=`
 .w3pan button.on{background:#2563eb;color:#fff}
 .w3tr .ic,.w3pan button .ic{display:flex;justify-content:center;flex:none}.w3pan button .ic{width:22px}
 @media(max-width:899px){.w3tr{min-height:44px;padding:0 15px;font-size:14px;border-radius:12px}.w3pan button{min-height:46px;font-size:15px}}
+#w3tog,#w3diff{display:inline-flex;align-items:center;gap:6px}#w3tog[hidden],#w3diff[hidden]{display:none}
 #w3tog{position:absolute;z-index:1300;right:56px;top:10px}#w3diff{position:absolute;z-index:1300;right:150px;top:10px}
 .w3m{display:flex;flex-direction:column;align-items:center;cursor:pointer;font:600 11px system-ui;color:#fff;pointer-events:auto;--c:#2563eb}
 .w3m .w3l{background:#0b1220d9;padding:1px 6px;border-radius:6px;max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
@@ -702,9 +703,9 @@ function exit3D(silent){timers.forEach(clearInterval);timers=[];clearTimeout(rpT
 function filterSync(){try{window.mapFilterSync&&window.mapFilterSync()}catch(e){}}
 
 function setTog(){const w=$("#mapw");if(!w)return;const phone=innerWidth<900;let b=$("#w3tog");if(!b){b=document.createElement("button");b.id="w3tog";b.type="button";b.onclick=()=>active?exit3D():enter3D();w.appendChild(b)}
- b.textContent=active?"🗺️ 2D":"🏙️ 3D";b.title=active?"Back to the classic map":"Switch to the 3D world";b.hidden=!hasGL()||phone;
+ b.innerHTML=active?lci("map",16)+"2D":lci("box",16)+"3D";b.title=active?"Back to the classic map":"Switch to the 3D world";b.hidden=!hasGL()||phone;
  let d=$("#w3diff");if(!d){d=document.createElement("button");d.id="w3diff";d.type="button";d.onclick=()=>setDiff(diffNow()==="easy"?"hard":"easy");w.appendChild(d)}
- d.textContent=diffNow()==="hard"?"☎️ Hard":"🎧 Easy";d.title="Easy: operators take calls. Hard: you take every call. Click to switch.";d.hidden=phone}
+ d.innerHTML=diffNow()==="hard"?lci("shield-exclamation-point",16)+"Hard":lci("shield-check",16)+"Easy";d.title="Easy: operators take calls. Hard: you take every call. Click to switch.";d.hidden=phone}
 window.addEventListener("resize",()=>{try{setTog()}catch(e){}});
 
 /* the hidden classic (Leaflet) map is still synced twice a second by the game loop; skip that while the 3D world is showing */
@@ -730,13 +731,13 @@ function firstRunSetup(){
   `<div id="setuph" style="font-size:20px;font-weight:700">Welcome to Frontline Control</div><div style="opacity:.7;font-size:13px;margin:4px 0 16px">Choose how to play. Your choices are saved in this browser. You can change them any time on the map or in Settings.</div>`+
   `<div style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;opacity:.6;margin-bottom:6px">View</div>`+
   `<div style="display:flex;gap:10px">`+
-  card("m","2d",mode==="2d","🗺️","Classic map","The normal flat dispatch map. Lightest, works on any device.")+
-  card("m","3d",mode==="3d","🏙️","3D world (beta)",gl?"Tilted 3D city, real vehicle models, blue lights when responding.":"Not supported by this browser or device.",!gl)+
+  card("m","2d",mode==="2d",lci("map",24),"Classic map","The normal flat dispatch map. Lightest, works on any device.")+
+  card("m","3d",mode==="3d",lci("box",24),"3D world (beta)",gl?"Tilted 3D city, real vehicle models, blue lights when responding.":"Not supported by this browser or device.",!gl)+
   `</div>`+
   `<div style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;opacity:.6;margin:16px 0 6px">Difficulty</div>`+
   `<div style="display:flex;gap:10px">`+
-  card("d","easy",diff==="easy","🎧","Easy","Control room operators pick up unanswered 999 calls and question the caller for you. You just dispatch units.")+
-  card("d","hard",diff==="hard","☎️","Hard","No operators. You answer every call, question the caller and dispatch.")+
+  card("d","easy",diff==="easy",lci("shield-check",24),"Easy","Control room operators pick up unanswered 999 calls and question the caller for you. You just dispatch units.")+
+  card("d","hard",diff==="hard",lci("shield-exclamation-point",24),"Hard","No operators. You answer every call, question the caller and dispatch.")+
   `</div>`+
   `<button id="setupGo" type="button" style="width:100%;margin-top:18px;padding:13px;border:0;border-radius:12px;background:#2563eb;color:#fff;font:700 15px system-ui;cursor:pointer">Start playing</button></div>`;
   ov.querySelector("#setupGo").onclick=finish;
