@@ -45,7 +45,7 @@ const css=document.createElement("style");css.textContent=`
 .w3pan button{display:flex;align-items:center;gap:10px;width:100%;min-height:40px;padding:8px 12px;border:0;border-radius:8px;background:transparent;color:#e5e7eb;font:600 14px/1.2 system-ui,sans-serif;text-align:left;cursor:pointer;box-shadow:none}
 .w3pan button:hover,.w3pan button:focus-visible{background:#1e293b}
 .w3pan button.on{background:#2563eb;color:#fff}
-.w3pan button .ic{width:22px;text-align:center;font-size:17px;line-height:1;flex:none}
+.w3tr .ic,.w3pan button .ic{display:flex;justify-content:center;flex:none}.w3pan button .ic{width:22px}
 @media(max-width:899px){.w3tr{min-height:44px;padding:0 15px;font-size:14px;border-radius:12px}.w3pan button{min-height:46px;font-size:15px}}
 #w3tog{position:absolute;z-index:1300;right:56px;top:10px}#w3diff{position:absolute;z-index:1300;right:150px;top:10px}
 .w3m{display:flex;flex-direction:column;align-items:center;cursor:pointer;font:600 11px system-ui;color:#fff;pointer-events:auto;--c:#2563eb}
@@ -536,7 +536,8 @@ function addExtrusions(gl){try{if(gl.getLayer("ofm-3d"))return;const st=gl.getSt
 const NIGHT_KEY="fc_night",NORIG=new Map();let NT=-1,NLK_="";
 function nightPref(){try{return localStorage.getItem(NIGHT_KEY)||"auto"}catch(e){return "auto"}}
 function setNightPref(v){try{localStorage.setItem(NIGHT_KEY,v)}catch(e){}}
-function nightLabel(){return "🌙 "+({auto:"Auto",night:"Night",day:"Day"}[nightPref()]||"Auto")}
+function nightLabel(){return "Night: "+({auto:"Auto",night:"Night",day:"Day"}[nightPref()]||"Auto")}
+function nightIcon(){return lci({night:"moon",day:"sun"}[nightPref()]||"sun-moon",18)}
 /* the sun's altitude in degrees (standard low-precision solar position, good to a fraction of a degree) */
 function sunAlt(lat,lon,ms){const d=(ms-Date.UTC(2000,0,1,12))/86400000,g=(357.528+.9856003*d)*D2R,L=(280.46+.9856474*d)*D2R,
  lam=L+(1.915*Math.sin(g)+.02*Math.sin(2*g))*D2R,eps=(23.439-4e-7*d)*D2R,
@@ -591,13 +592,13 @@ function syncNight(){if(!map3)return;const t=nightAmount();
  updateNightLights(t)}
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)kick()});
 function showHud(on){if(hud){hud.remove();hud=null}if(!on)return;
- hud=document.createElement("div");hud.className="w3hud";hud.innerHTML=`<button type="button" class="w3tr" aria-expanded="false" aria-label="3D controls"><span class="ic">🎛</span><span class="lg"> 3D controls</span></button><div class="w3pan"><button data-a="reset"><span class="ic">⟲</span><span>Reset view</span></button><button data-a="follow"><span class="ic">🚨</span><span>Follow responder</span></button><button data-a="radio"><span class="ic">📻</span><span>Radio follow</span></button><button data-a="tilt"><span class="ic">⬍</span><span>Tilt</span></button><button data-a="night"><span class="ic">🌙</span><span>Night: ${nightLabel().replace("🌙 ","")}</span></button></div>`;
+ hud=document.createElement("div");hud.className="w3hud";hud.innerHTML=`<button type="button" class="w3tr" aria-expanded="false" aria-label="3D controls"><span class="ic">${lci("box",18)}</span><span class="lg">3D controls</span></button><div class="w3pan"><button data-a="reset"><span class="ic">${lci("rotate-ccw",18)}</span><span>Reset view</span></button><button data-a="follow"><span class="ic">${lci("user-round-check",18)}</span><span>Follow responder</span></button><button data-a="radio"><span class="ic">${lci("radio",18)}</span><span>Radio follow</span></button><button data-a="tilt"><span class="ic">${lci("arrow-up",18)}</span><span>Tilt</span></button><button data-a="night"><span class="ic">${nightIcon()}</span><span>${nightLabel()}</span></button></div>`;
  hud.onclick=e=>{const tr=e.target.closest&&e.target.closest(".w3tr");if(tr){const o=hud.classList.toggle("open");tr.setAttribute("aria-expanded",o?"true":"false");return}const bt=e.target.closest&&e.target.closest("[data-a]");const a=bt&&bt.dataset.a;if(!a)return;
   if(a==="reset"){stopFollow();const b=bounds();map3.fitBounds(b,{padding:70,maxZoom:16,pitch:62,bearing:-20,duration:900})}
   else if(a==="tilt"){map3.easeTo({pitch:map3.getPitch()>45?0:65,duration:600})}
   else if(a==="follow")startFollow();
   else if(a==="radio")radioFollowToggle();
-  else if(a==="night"){setNightPref({auto:"night",night:"day",day:"auto"}[nightPref()]||"auto");hud.querySelector('[data-a="night"] span:last-child').textContent="Night: "+nightLabel().replace("🌙 ","");NT=-1;syncNight()}};
+  else if(a==="night"){setNightPref({auto:"night",night:"day",day:"auto"}[nightPref()]||"auto");const nb=hud.querySelector('[data-a="night"]');nb.querySelector(".ic").innerHTML=nightIcon();nb.querySelector("span:last-child").textContent=nightLabel();NT=-1;syncNight()}};
  $("#mapw").appendChild(hud)}
 function bounds(){const b=new maplibregl.LngLatBounds();let n=0;S.st.forEach(s=>{b.extend([s.lon,s.lat]);n++});S.hs.forEach(h=>{b.extend([h.lon,h.lat]);n++});
  if(!n){const c=map.getCenter();b.extend([c.lng-.01,c.lat-.01]);b.extend([c.lng+.01,c.lat+.01])}return b}
